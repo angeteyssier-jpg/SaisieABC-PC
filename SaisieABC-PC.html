@@ -1,0 +1,1844 @@
+<style>
+  .abc-app, .abc-app * { box-sizing: border-box; min-width: 0; }
+  .abc-app button, .abc-app .tab, .abc-app .k { -webkit-tap-highlight-color: transparent; }
+  .abc-app { width: 100%; max-width: 100%; padding: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: #1a1a1a; background: #f5f4ef; border-radius: 8px;
+    position: relative; overflow-x: hidden; }
+  .abc-app.fullscreen { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; border-radius: 0; z-index: 9999; overflow-y: auto; }
+
+  /* === LAYOUT PC : 2 colonnes === */
+  .pc-layout { display: grid; grid-template-columns: 460px 1fr; gap: 10px; align-items: stretch; }
+  .pc-left { display: flex; flex-direction: column; gap: 6px; }
+  .pc-right { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+  .ver-badge { display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: #5f5e5a;
+    background: #ebe9e0; padding: 4px 10px; border-radius: 6px; margin-bottom: 4px; }
+  .ver-badge b { color: #1a1a1a; font-weight: 700; }
+
+  .abc-card { background: #ffffff; border: 1px solid #d8d6ce; border-radius: 6px; padding: 6px; height: 100%; }
+  /* Partition occupe toute la hauteur de la fenêtre (badge + marges déduits) */
+  .score-wrap { width: 100%; height: calc(100vh - 60px); min-height: 600px; }
+  .score-wrap svg { width: 100%; height: 100%; display: block; }
+
+  .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 20px; color: #1a1a1a; line-height: 1.3; font-weight: 700; }
+  .ctx-card > div { margin: 2px 0; }
+  .ctx-card .line-small { font-size: 14px; font-weight: 700; }
+  .ctx-card b { color: #185fa5; font-weight: 700; }
+
+  /* Boutons standards : compacts pour PC souris */
+  .abc-app button.k { display: flex; align-items: center; justify-content: center; gap: 4px;
+    width: 100%; height: 44px; padding: 0 4px;
+    background: #ffffff; border: 2px solid #b4b2a9; border-radius: 8px;
+    font-family: inherit; font-size: 18px; font-weight: 700; color: #1a1a1a;
+    cursor: pointer; text-align: center; line-height: 1;
+    -webkit-tap-highlight-color: transparent; -webkit-appearance: none; appearance: none;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    transition: background 0.1s; }
+  .abc-app button.k:hover { background: #f0eee5; }
+  .abc-app button.k:active { background: #e8e6df; }
+  .abc-app button.k:disabled { color: #bbb8a8; background: #f3f1ea; cursor: not-allowed; }
+  .abc-app button.k.active { background: #cfe5fa; border-color: #185fa5; color: #0c447c; }
+  .abc-app button.k.symbol { font-size: 22px; font-family: "Times New Roman", serif; }
+  .abc-app button.k.primary { background: #185fa5; border-color: #185fa5; color: #ffffff; }
+  .abc-app button.k.primary:hover { background: #1a6cbb; }
+  .abc-app button.k.clef-small { font-size: 20px; }
+
+  /* Notes : un peu plus hautes avec sub-label */
+  .note-btn { flex-direction: column !important; gap: 1px !important; height: 56px !important; }
+  .note-btn .lbl { font-size: 20px; font-weight: 700; line-height: 1; }
+  .note-btn .sub { font-size: 14px; font-weight: 400; color: #5f5e5a; line-height: 1; }
+
+  .row-grid { display: grid; gap: 5px; }
+  .row-2 { grid-template-columns: 1fr 1fr; }
+  .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .row-5 { grid-template-columns: repeat(5, 1fr); }
+  .row-6 { grid-template-columns: repeat(6, 1fr); }
+  .row-7 { grid-template-columns: repeat(7, 1fr); }
+
+  /* Navigation : 6 boutons (à droite, au-dessus partition) */
+  .nav-bar { display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+    background: #fdf1d8; border: 2px solid #e2b840; padding: 5px;
+    border-radius: 10px; }
+  .nav-bar .k { background: #fffaee; border-color: #e2b840;
+    font-size: 20px; height: 42px; padding: 0; }
+  .nav-bar .k.dbtxt { font-size: 18px; font-weight: 700; }
+  .nav-bar .k:hover { background: #faecc4; }
+  .nav-bar .k:active { background: #f5e2a8; }
+
+  /* Onglets : disposés en grille 2 colonnes dans la colonne de gauche */
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
+    border-bottom: 2px solid #b4b2a9; }
+  .tab { height: 44px;
+    background: #ebe9e0; border: 2px solid #b4b2a9; border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    font-family: inherit; font-size: 15px; font-weight: 700; color: #5f5e5a;
+    cursor: pointer; padding: 0 2px;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; transition: background 0.1s; }
+  .tab:hover { background: #ddd9c9; }
+  .tab.active { background: #ffffff; color: #0c447c; border-color: #185fa5;
+    margin-bottom: -2px; padding-bottom: 2px; }
+  .tab:active { background: #d6d4cb; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: flex; flex-direction: column; gap: 5px; }
+
+  /* Octave / contrôles : compactes */
+  .oct-row, .control-row { display: grid; grid-template-columns: 1fr 1.4fr 1fr;
+    gap: 5px;
+    background: #ebe9e0; padding: 5px; border-radius: 10px;
+    align-items: center; }
+  .oct-row .label, .control-row .label { font-size: 20px; color: #1a1a1a; text-align: center; font-weight: 700; }
+  .oct-row .label b, .control-row .label b { color: #185fa5; font-size: 22px; margin-left: 4px; }
+
+  /* Ligne transposer */
+  .transpose-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;
+    background: #ebe9e0; padding: 5px; border-radius: 10px; align-items: center; }
+  .transpose-row .label { font-size: 16px; color: #1a1a1a; text-align: center; font-weight: 700; }
+
+  /* Panel d'édition : overlay centré (positionné en absolute par-dessus le layout) */
+  .panel { background: #e6f1fb; border: 2px solid #378add; border-radius: 12px;
+    padding: 12px; display: none;
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 90%; max-width: 700px;
+    max-height: 90vh; overflow-y: auto;
+    z-index: 10000; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+  .panel.open { display: block; }
+  /* Backdrop affiché automatiquement quand le panel est ouvert (via :has) */
+  .panel-backdrop { display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35); z-index: 9999; }
+  .abc-app:has(.panel.open) .panel-backdrop { display: block; }
+  .panel .title-row { display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 10px; }
+  .panel .title { font-size: 26px; color: #0c447c; font-weight: 700; }
+  .panel .title-mes { font-size: 22px; color: #185fa5; font-weight: 700; }
+  .panel .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .panel input, .panel textarea { flex: 1; min-height: 44px; font-family: inherit;
+    font-size: 20px; padding: 8px 12px; border: 2px solid #b4b2a9;
+    border-radius: 8px; background: #ffffff; color: #1a1a1a; font-weight: 700; }
+  .panel textarea { width: 100%; min-height: 120px; line-height: 1.3; }
+  .panel .field-label { font-family: inherit; font-size: 20px;
+    color: #0c447c; font-weight: 700; min-width: 70px; }
+  .panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .panel .actions.three { grid-template-columns: 1fr 1fr 1fr; }
+  .panel .actions.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .panel .actions .k { width: 100% !important; padding: 0 8px !important;
+    height: 44px !important; font-size: 16px !important; }
+  .panel .stepper { display: grid; grid-template-columns: 56px 1fr 56px;
+    gap: 10px; align-items: center; margin-bottom: 6px; }
+  .panel .stepper .k { height: 44px !important; font-size: 22px !important; padding: 0 !important; }
+  .panel .stepper .val { text-align: center; font-family: inherit;
+    font-size: 24px; color: #0c447c; font-weight: 700; }
+  .panel .stepper-label { font-size: 16px; color: #1a1a1a; font-weight: 700; margin-bottom: 2px; text-align: center; }
+  .panel small { display: block; color: #5f5e5a; font-size: 14px;
+    margin-bottom: 8px; font-style: italic; font-weight: 600; }
+  .panel .save-list { max-height: 320px; overflow-y: auto;
+    border: 2px solid #b4b2a9; border-radius: 8px;
+    background: #ffffff; margin-bottom: 10px; }
+  .panel .save-list .item { padding: 10px 12px; border-bottom: 1px solid #ebe9e0;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 18px; cursor: pointer; font-weight: 700; }
+  .panel .save-list .item:hover { background: #f0eee5; }
+  .panel .save-list .item .del { color: #c34536; font-size: 22px; padding: 0 10px; cursor: pointer; font-weight: 700; }
+  .panel .mes-active { font-size: 18px; color: #0c447c; font-weight: 700;
+    background: #ffffff; padding: 10px; border-radius: 8px; border: 2px solid #b4b2a9;
+    text-align: center; margin-bottom: 10px; }
+
+  /* Accord */
+  .chord-input { width: 100%; min-height: 44px; font-family: inherit;
+    font-size: 22px; padding: 8px 12px; border: 2px solid #b4b2a9;
+    border-radius: 8px; background: #ffffff; color: #1a1a1a; font-weight: 700;
+    margin-bottom: 10px; text-align: center; }
+  .chord-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-bottom: 10px; }
+  .chord-pad .k { height: 40px !important; font-size: 16px !important; padding: 0 !important; }
+</style>
+
+<div class="abc-app" id="app">
+  <div class="ver-badge">
+    <span>Éditeur ABC <b>v0.04 PC</b></span>
+    <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
+  </div>
+
+  <!-- Panel d'édition en overlay centré -->
+  <div class="panel-backdrop" id="panel-backdrop"></div>
+  <div class="panel" id="panel">
+    <div class="title-row">
+      <div class="title" id="panel-title">Édition</div>
+      <div class="title-mes" id="panel-mes"></div>
+    </div>
+    <div id="panel-body"></div>
+    <div class="actions">
+      <button class="k" id="panel-cancel">Annuler</button>
+      <button class="k primary" id="panel-ok">OK</button>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept=".abc,text/plain" style="display:none;"/>
+
+  <!-- Layout PC : 2 colonnes -->
+  <div class="pc-layout">
+
+    <!-- COLONNE GAUCHE : référence mesure + nav + onglets + contrôles -->
+    <div class="pc-left">
+      <div class="ctx-card">
+        <div>Mes <b id="meas-pos">1</b> · slot <b id="slot-pos">1</b></div>
+        <div class="line-small">Rythmique : <b id="info-meter">4/4</b> · Armure : <b id="info-key">C maj : 0</b> · Clé : <b id="info-clef">Sol</b></div>
+      </div>
+
+      <div class="nav-bar">
+        <button class="k" id="cur-prev">←</button>
+        <button class="k" id="meas-prev">⟪</button>
+        <button class="k dbtxt" id="meas-start">Deb</button>
+        <button class="k dbtxt" id="meas-end">Fin</button>
+        <button class="k" id="meas-next">⟫</button>
+        <button class="k" id="cur-next">→</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="notes">Notes</button>
+        <button class="tab" data-tab="mesure">Mesure</button>
+        <button class="tab" data-tab="play">Play</button>
+        <button class="tab" data-tab="titre">Titre</button>
+        <button class="tab" data-tab="fichier">Fichier</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="notes">
+        <div class="oct-row">
+          <button class="k" id="oct-down">▽</button>
+          <div class="label">Oct <b id="oct-val">0</b></div>
+          <button class="k" id="oct-up">△</button>
+        </div>
+        <div class="row-grid row-7" id="notes-row"></div>
+        <div class="row-grid row-6" id="dur-row"></div>
+        <div class="row-grid row-5" id="alt-row"></div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-tie">⌒</button>
+          <button class="k" id="btn-del">⌫</button>
+        </div>
+        <div class="row-grid row-3">
+          <button class="k" id="btn-tuplet">3:2</button>
+          <button class="k" id="btn-chord">Cm</button>
+          <button class="k" id="btn-orn">~T</button>
+        </div>
+        <div class="transpose-row">
+          <div class="label">Transp.</div>
+          <button class="k" id="btn-trans-down">↓</button>
+          <button class="k" id="btn-trans-up">↑</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-undo">↶</button>
+          <button class="k" id="btn-redo">↷</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="mesure">
+        <div class="row-grid row-2">
+          <button class="k" id="meas-del">− Mes</button>
+          <button class="k" id="meas-add">+ Mes</button>
+        </div>
+        <div class="row-grid"><button class="k" data-hdr="M">Rythme</button></div>
+        <div class="row-grid"><button class="k" data-hdr="K">Armure</button></div>
+        <div class="row-grid"><button class="k" data-hdr="CLEF">Clé</button></div>
+        <div class="row-grid">
+          <button class="k" id="btn-disarm" style="font-size:16px;">Armure → C majeur</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-rep-start">𝄆</button>
+          <button class="k" id="btn-rep-end">𝄇</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-volta1">|1</button>
+          <button class="k" id="btn-volta2">|2</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-copy-mes">📋</button>
+          <button class="k" id="btn-paste-mes">📥</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-undo-mes">↶</button>
+          <button class="k" id="btn-redo-mes">↷</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="play">
+        <div class="row-grid row-3">
+          <button class="k" id="btn-play">▶</button>
+          <button class="k" id="btn-stop">■</button>
+          <button class="k" id="btn-viewmode">👁</button>
+        </div>
+        <div class="control-row">
+          <button class="k" id="vol-d">−</button>
+          <div class="label">Vol <b id="vol-v">60</b></div>
+          <button class="k" id="vol-u">+</button>
+        </div>
+        <div class="control-row">
+          <button class="k" id="tempo-d">−</button>
+          <div class="label">♩ <b id="tempo-v">100</b></div>
+          <button class="k" id="tempo-u">+</button>
+        </div>
+        <div class="row-grid"><button class="k" id="btn-fs">⛶</button></div>
+      </div>
+
+      <div class="tab-panel" data-panel="titre">
+        <div class="row-grid"><button class="k" data-hdr="X" style="font-size:18px;">X: <span style="color:#185fa5;" id="hdr-x-val">1</span></button></div>
+        <div class="row-grid"><button class="k" data-hdr="T" style="font-size:18px;">Titre : <span id="hdr-t-val">—</span></button></div>
+        <div class="row-grid"><button class="k" data-hdr="C" style="font-size:16px;">Compositeur : <span id="hdr-c-val">—</span></button></div>
+        <div class="row-grid"><button class="k" data-hdr="N" style="font-size:16px;">Commentaire : <span id="hdr-n-val">—</span></button></div>
+      </div>
+
+      <div class="tab-panel" data-panel="fichier">
+        <div class="row-grid"><button class="k" id="btn-new">📄</button></div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-open-file">📂</button>
+          <button class="k" id="btn-save-file">💾</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-saves">⭐</button>
+          <button class="k" id="btn-export" style="font-size:18px;">ABC</button>
+        </div>
+        <div class="row-grid"><button class="k" id="btn-export-mxl" style="font-size:18px;">MusicXML (.mxl)</button></div>
+        <div class="row-grid"><button class="k" id="btn-help" style="font-size:18px;">? Aide</button></div>
+      </div>
+    </div>
+
+    <!-- COLONNE DROITE : uniquement la partition -->
+    <div class="pc-right">
+      <div class="abc-card"><div class="score-wrap" id="score"></div></div>
+    </div>
+
+  </div>
+</div>
+<script>
+(function(){
+  const NOTES=[{label:'Do',sub:'C',n:'C'},{label:'Ré',sub:'D',n:'D'},{label:'Mi',sub:'E',n:'E'},{label:'Fa',sub:'F',n:'F'},{label:'Sol',sub:'G',n:'G'},{label:'La',sub:'A',n:'A'},{label:'Si',sub:'B',n:'B'}];
+  const DURATIONS=[{label:'𝅝',d:4},{label:'𝅗𝅥',d:2},{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
+  const SHARP_NOTES=['F','C','G','D','A','E','B'];
+  const FLAT_NOTES=['B','E','A','D','G','C','F'];
+  const ORNAMENTS=[{code:'T',label:'tr'},{code:'M',label:'~M'},{code:'P',label:'pralle'},{code:'H',label:'fermata'},{code:'L',label:'accent'},{code:'.',label:'staccato'},{code:'u',label:'up'},{code:'v',label:'down'},{code:'O',label:'coda'}];
+  // Boutons accord : ajoutent leur texte au champ
+  const CHORD_BTNS=['#','b','m','Maj','2','4','5','6','7','9','11','13','sus','dim','aug','add','/'];
+  const KEY_NAMES_MAJOR=['C','G','D','A','E','B','F♯','C♯'];
+  const KEY_NAMES_MAJOR_FLAT=['C','F','B♭','E♭','A♭','D♭','G♭','C♭'];
+
+  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:100,volume:60,fullscreen:false,viewmode:true,activeTab:'notes'};
+
+  const history={stack:[],pos:-1,max:100};
+  function snapshot(){return JSON.stringify(state)}
+  function pushHistory(){if(history.pos<history.stack.length-1)history.stack=history.stack.slice(0,history.pos+1);history.stack.push(snapshot());if(history.stack.length>history.max)history.stack.shift();history.pos=history.stack.length-1}
+  function loadFrom(snap){const o=JSON.parse(snap);Object.assign(state,o)}
+  function undo(){if(history.pos>0){history.pos--;loadFrom(history.stack[history.pos]);render()}}
+  function redo(){if(history.pos<history.stack.length-1){history.pos++;loadFrom(history.stack[history.pos]);render()}}
+
+  function parseMeter(meter){if(!meter)return{num:4,den:4};if(meter==='C')return{num:4,den:4};if(meter==='C|')return{num:2,den:2};const m=meter.match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);if(m)return{num:parseInt(m[1],10),den:parseInt(m[2],10)};return{num:4,den:4}}
+  function meterAt(idx){let cur=state.pieceMeter;for(let i=0;i<=idx;i++)if(state.timeChanges[i])cur=state.timeChanges[i];return cur}
+  function keyAt(idx){let cur=state.pieceKeySig;for(let i=0;i<=idx;i++)if(state.keyChanges[i]!==undefined)cur=state.keyChanges[i];return cur}
+  function clefAt(idx){let cur=state.pieceClef;for(let i=0;i<=idx;i++)if(state.clefChanges[i])cur=state.clefChanges[i];return cur}
+  function measureCapacity(meter){const{num,den}=parseMeter(meter);return num*(4/den)}
+  function effDur(t){
+    let d=t.dot?t.dur*1.5:t.dur;
+    if(t.tuplet){
+      // Pour un n-uplet en 3:2 (n=3,5,6,7) : n notes occupent l'espace de 2 — facteur 2/n
+      // Variante : pour 3-uplet → 2/3, 5-uplet → 2/5, 6-uplet → 2/6, 7-uplet → 2/7
+      const ratio=2; // 3:2
+      d=d*ratio/t.tuplet;
+    }
+    return d;
+  }
+  function beamGroupUnit(meter){const{num,den}=parseMeter(meter);if(den===8&&num%3===0&&num>=6)return 1.5;return 4/den}
+
+  function buildEmptyMeasure(meter){const{num,den}=parseMeter(meter);const beatDur=4/den;const slots=[];for(let i=0;i<num;i++)slots.push({type:'rest',dur:beatDur,dot:false});return slots}
+  function rebuildMeasures(){const count=Math.max(state.measures.length,9);state.measures=[];state.timeChanges={};state.keyChanges={};state.clefChanges={};state.repeats={};for(let i=0;i<count;i++)state.measures.push(buildEmptyMeasure(state.pieceMeter));state.sel={m:0,s:0}}
+
+  function splitDurationByBeat(offset,amount,beat){const eps=1e-6;const out=[];let cur=+offset.toFixed(6);let rem=+amount.toFixed(6);const distToBeat=((cur%beat)===0)?0:(beat-(cur%beat));if(distToBeat>eps&&rem>eps){const toFill=Math.min(distToBeat,rem);const subs=[4,2,1,0.5,0.25,0.125].filter(u=>u<=beat/2+eps);let used=0;for(const u of subs)while(toFill-used>=u-eps){out.push({dur:u,dot:false});used=+(used+u).toFixed(6)}cur=+(cur+used).toFixed(6);rem=+(rem-used).toFixed(6)}while(rem>=beat-eps){out.push({dur:(beat===1.5)?1:beat,dot:(beat===1.5)});rem=+(rem-beat).toFixed(6);cur=+(cur+beat).toFixed(6)}if(rem>eps){const subs=[4,2,1,0.5,0.25,0.125].filter(u=>u<=beat/2+eps);let leftover=rem;for(const u of subs)while(leftover>=u-eps){out.push({dur:u,dot:false});leftover=+(leftover-u).toFixed(6)}}return out}
+  function rebalanceMeasure(m,anchorIdx,oldEffDur){const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const cap=measureCapacity(meter);const meas=state.measures[m];const anchor=meas[anchorIdx];let newDur=effDur(anchor);let beforeUsed=0;for(let i=0;i<anchorIdx;i++)beforeUsed+=effDur(meas[i]);if(beforeUsed+newDur>cap+1e-6){const fits=cap-beforeUsed;const overflow=newDur-fits;anchor.tieToNext=true;const fitsPieces=splitDurationByBeat(beforeUsed,fits,beat);if(fitsPieces.length>0){anchor.dur=fitsPieces[0].dur;anchor.dot=fitsPieces[0].dot;const extras=fitsPieces.slice(1).map(p=>{const c=Object.assign({},anchor,{dur:p.dur,dot:p.dot});c.tieToNext=true;return c});state.measures[m]=meas.slice(0,anchorIdx+1).concat(extras)}const nextM=m+1;if(nextM>=state.measures.length)state.measures.push(buildEmptyMeasure(meterAt(m)));const contPieces=splitDurationByBeat(0,overflow,4/parseMeter(meterAt(nextM)).den);const contSlots=contPieces.map((p,i)=>{const c=Object.assign({},anchor,{dur:p.dur,dot:p.dot});delete c.tieToNext;if(i<contPieces.length-1)c.tieToNext=true;return c});_consumeFromHead(nextM,overflow,contSlots);return}const delta=+(newDur-oldEffDur).toFixed(6);const eps=1e-6;if(Math.abs(delta)<eps)return;if(delta<0){const freeAmount=-delta;const offsetAfterAnchor=beforeUsed+newDur;const pieces=splitDurationByBeat(offsetAfterAnchor,freeAmount,beat);const newSlots=pieces.map(p=>{const copy=Object.assign({},anchor,{dur:p.dur,dot:p.dot});delete copy.tieToNext;return copy});const tail=meas.slice(anchorIdx+1);state.measures[m]=meas.slice(0,anchorIdx+1).concat(newSlots,tail);truncateMeasureToCapacity(m,cap);return}let need=delta;let cursor=anchorIdx+1;while(need>eps&&cursor<meas.length){const slot=meas[cursor];const dur=effDur(slot);if(dur<=need+eps){need=+(need-dur).toFixed(6);meas.splice(cursor,1)}else{const remaining=+(dur-need).toFixed(6);let off=0;for(let i=0;i<cursor;i++)off+=effDur(meas[i]);const pieces=splitDurationByBeat(off+need,remaining,beat);const newCopies=pieces.map(p=>Object.assign({},slot,{dur:p.dur,dot:p.dot}));meas.splice(cursor,1,...newCopies);need=0}}truncateMeasureToCapacity(m,cap)}
+  function _consumeFromHead(m,amount,replacementSlots){const meter=meterAt(m);const beat=4/parseMeter(meter).den;const meas=state.measures[m];const eps=1e-6;let need=amount;let cursor=0;while(need>eps&&cursor<meas.length){const slot=meas[cursor];const dur=effDur(slot);if(dur<=need+eps){need=+(need-dur).toFixed(6);meas.splice(cursor,1)}else{const remaining=+(dur-need).toFixed(6);const off=need;const pieces=splitDurationByBeat(off,remaining,beat);const newCopies=pieces.map(p=>Object.assign({},slot,{dur:p.dur,dot:p.dot}));meas.splice(cursor,1,...newCopies);need=0}}state.measures[m]=replacementSlots.concat(state.measures[m]);truncateMeasureToCapacity(m,measureCapacity(meter))}
+  function truncateMeasureToCapacity(m,cap){const eps=1e-6;const meas=state.measures[m];let used=0;for(let i=0;i<meas.length;i++){const d=effDur(meas[i]);if(used+d>cap+eps){state.measures[m]=meas.slice(0,i);const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));state.measures[m]=state.measures[m].concat(tail);return}used+=d}if(used<cap-eps){const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));state.measures[m]=meas.concat(tail)}}
+
+  function unitMultiplier(){const m=state.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;const denom=parseInt(m[1],10);return denom/4}
+  function effDToAbc(d){const v=d*unitMultiplier();const e=1e-9;if(Math.abs(v-1)<e)return'';if(Math.abs(v-2)<e)return'2';if(Math.abs(v-3)<e)return'3';if(Math.abs(v-4)<e)return'4';if(Math.abs(v-6)<e)return'6';if(Math.abs(v-8)<e)return'8';if(Math.abs(v-0.5)<e)return'/2';if(Math.abs(v-0.25)<e)return'/4';if(Math.abs(v-0.125)<e)return'/8';if(Math.abs(v-1.5)<e)return'3/2';if(Math.abs(v-0.75)<e)return'3/4';if(Math.abs(v-0.375)<e)return'3/8';const denom=16;const numer=Math.round(v*denom);function gcd(a,b){return b?gcd(b,a%b):a}const g=gcd(numer,denom);const a=numer/g,b=denom/g;if(b===1)return String(a);if(a===1)return'/'+b;return a+'/'+b}
+  function nominalDur(t){return t.dot?t.dur*1.5:t.dur}
+  function slotStr(t){let s='';if(t.chord)s+='"'+t.chord+'"';if(t.orn&&t.orn.length)t.orn.forEach(o=>{if('TMPHLRuv'.includes(o))s+=o;else if(o==='.')s+='.';else s+='!'+o+'!'});if(t.type==='note'){s+=t.acc||'';let n=t.note;if(t.octave>=1)n=n.toLowerCase();s+=n;if(t.octave>=2)s+="'".repeat(t.octave-1);else if(t.octave<=-1)s+=",".repeat(-t.octave)}else s+='z';s+=effDToAbc(nominalDur(t));if(t.tieToNext)s+='-';return s}
+  function keyAbc(sig){if(sig===0)return'C';if(sig>0)return['C','G','D','A','E','B','F#','C#'][sig];return['C','F','Bb','Eb','Ab','Db','Gb','Cb'][-sig]}
+  function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';return''}
+  function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';return'Sol'}
+  function keyHumanLabel(sig){if(sig===0)return'C maj : 0';if(sig>0)return KEY_NAMES_MAJOR[sig]+' maj : '+sig+' ♯';return KEY_NAMES_MAJOR_FLAT[-sig]+' maj : '+Math.abs(sig)+' ♭'}
+  function cleanupAccidentals(){state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;if(!slot.acc)return;if(sig>0&&slot.acc==='^'&&SHARP_NOTES.slice(0,sig).includes(slot.note))delete slot.acc;else if(sig<0&&slot.acc==='_'&&FLAT_NOTES.slice(0,-sig).includes(slot.note))delete slot.acc})})}
+  function disarmKey(){state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;if(!slot.acc){if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))slot.acc='^';else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))slot.acc='_'}})});state.pieceKeySig=0;state.keyChanges={}}
+
+  const NOTE_NAMES=['C','C','D','D','E','F','F','G','G','A','A','B'];
+  const NOTE_ACCS=['','^','','^','','','^','','^','','^',''];
+  const NOTE_NAMES_FLAT=['C','D','D','E','E','F','G','G','A','A','B','B'];
+  const NOTE_ACCS_FLAT=['','_','','_','','','_','','_','','_',''];
+  function midiToNote(midi,preferFlats){const oct=Math.floor(midi/12)-5;const pc=((midi%12)+12)%12;const names=preferFlats?NOTE_NAMES_FLAT:NOTE_NAMES;const accs=preferFlats?NOTE_ACCS_FLAT:NOTE_ACCS;return{note:names[pc],octave:oct,acc:accs[pc]}}
+  function midiOfSlot(slot,sig){const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[slot.note];let midi=60+baseSemi+slot.octave*12;if(slot.acc==='^')midi+=1;else if(slot.acc==='_')midi-=1;else if(slot.acc==='='){}else{if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))midi+=1;else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))midi-=1}return midi}
+  function transposePiece(semitones){const preferFlats=state.pieceKeySig<0;state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;const oldMidi=midiOfSlot(slot,sig);const newMidi=oldMidi+semitones;const out=midiToNote(newMidi,preferFlats);slot.note=out.note;slot.octave=out.octave;slot.acc=out.acc})});cleanupAccidentals()}
+
+  function buildBarSeparator(prevMi,mi){const prevEnd=(prevMi>=0)&&state.repeats[prevMi]?.end;const thisStart=state.repeats[mi]?.start;if(prevEnd&&thisStart)return':|:';if(prevEnd)return':|';if(thisStart)return'|:';if(mi===0)return'';return'|'}
+  function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
+  function buildVoltaFor(mi){const r=state.repeats[mi];if(!r||!r.volta)return'';return'['+r.volta}
+
+  function buildAbcText(){let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});h+='M:'+state.pieceMeter+'\n';h+='L:'+state.pieceUnit+'\n';h+='Q:1/4='+state.tempo+'\n';h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';let body='';state.measures.forEach((m,mi)=>{body+=buildBarSeparator(mi-1,mi);body+=buildInlineFor(mi);body+=buildVoltaFor(mi);const groups=computeBeamGroups(m,meterAt(mi));const gOf={};groups.forEach((g,gi)=>{g.forEach((idx,k)=>{gOf[idx]={gi}})});let lastTid=null;m.forEach((t,si)=>{if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}if(!t.tuplet)lastTid=null;body+=slotStr(t);const isLast=(si===m.length-1);if(isLast)return;const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;if(!inSame)body+=' '})});const li=state.measures.length-1;if(state.repeats[li]?.end)body+=':|';else body+='|';return h+body}
+
+  function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1];if(c==='bass'||c==='F')clef='bass';else if(c==='treble-8'||c==='treble_8')clef='treble8';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:100,sel:{m:0,s:0},octave:0,volume:state.volume};let inBody=false,bodyText='';for(const line of cleaned){const t=line.trim();if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='M')ns.pieceMeter=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const qm=v.match(/=(\d+)/);if(qm)ns.tempo=parseInt(qm[1],10)}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}bodyText+=' '+t}if(!inBody)return null;parseAbcBody(bodyText,ns);return ns}
+  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,pendingOrn=[],pendingTuplet=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);const cc=ch.replace(/^[\^_<>@]/,'');if(cc)lastChord=cc;i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){const n=parseInt(body[i+1],10);let j=i+2,take=n;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);measures.forEach((meas,mi)=>{let used=0;for(const s of meas)used+=effDur(s);let lm=ns.pieceMeter;for(let k=0;k<=mi;k++)if(ns.timeChanges[k])lm=ns.timeChanges[k];const cap=measureCapacity(lm);if(used<cap-1e-6){const beat=4/parseMeter(lm).den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));meas.push(...tail)}else if(used>cap+1e-6){let a=0,ca=meas.length;for(let k=0;k<meas.length;k++){const d=effDur(meas[k]);if(a+d>cap+1e-6){ca=k;break}a+=d}meas.splice(ca)}});if(measures.length===0)measures.push(buildEmptyMeasure(ns.pieceMeter))}
+  function parseDurationSpec(s){if(s==='')return 1;if(s==='/')return 0.5;if(s==='//')return 0.25;if(s==='///')return 0.125;if(s.startsWith('/')){const n=parseInt(s.substring(1),10);return 1/(n||2)}if(s.includes('/')){const[n,d]=s.split('/');const a=parseInt(n,10)||1;const b=parseInt(d,10)||2;return a/b}return parseInt(s,10)||1}
+
+  function expandForPlayback(){const out=[];const N=state.measures.length;if(N===0)return out;let i=0,safety=0;while(i<N&&safety<2000){safety++;const r=state.repeats[i]||{};if(r.volta&&r.volta!==1){let j=i;while(j<N){const rj=state.repeats[j]||{};if(j>i&&rj.volta!==r.volta)break;j++}i=j;continue}out.push(i);if(r.end){let startIdx=0;for(let k=i;k>=0;k--){if(state.repeats[k]?.start){startIdx=k;break}}let k=startIdx,safety2=0;while(k<N&&safety2<2000){safety2++;const rk=state.repeats[k]||{};if(rk.volta===1){let j=k;while(j<N){const rj=state.repeats[j]||{};if(j>k&&rj.volta!==1)break;j++}k=j;continue}out.push(k);k++;if(out.length>2000)break}return out}i++}return out}
+
+  const SCORE_W=600,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=52;
+  function clefRefStep(c){return c==='bass'?-12:2}
+  function noteY(staffTop,step,c){const r=clefRefStep(c);const bl=staffTop+4*LINE_GAP;return bl-(step-r)*(LINE_GAP/2)}
+  function stepIndex(note,oct){const m={C:0,D:1,E:2,F:3,G:4,A:5,B:6};return m[note]+7*oct}
+  const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
+  function keySigAccidentals(sig,c){const out=[];if(sig>0){const m=c==='bass'?BSS:TSS;for(let i=0;i<sig;i++)out.push({sym:'♯',step:m[SHARP_NOTES[i]]})}else if(sig<0){const m=c==='bass'?BFS:TFS;for(let i=0;i<-sig;i++)out.push({sym:'♭',step:m[FLAT_NOTES[i]]})}return out}
+  function computeBeamGroups(meas,meter){const gu=beamGroupUnit(meter),eps=1e-6;const groups=[];let cg=null,offset=0;function flush(){if(cg&&cg.length>=2)groups.push(cg);cg=null}for(let i=0;i<meas.length;i++){const t=meas[i];const eD=effDur(t);const gi=Math.floor((offset+eps)/gu);const bm=(t.type==='note')&&(eD<=0.5+eps);const cr=(offset+eD)>(gi*gu+gu+eps);if(bm&&!cr){if(cg&&cg.startGroup===gi)cg.push(i);else{flush();cg=[i];cg.startGroup=gi}}else flush();offset=+(offset+eD).toFixed(6)}flush();return groups}
+  function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(t.acc==='^')svg+='<text x="'+(cx-9)+'" y="'+(y+3)+'" font-size="11" fill="'+color+'" font-family="serif">♯</text>';else if(t.acc==='_')svg+='<text x="'+(cx-9)+'" y="'+(y+3)+'" font-size="11" fill="'+color+'" font-family="serif">♭</text>';else if(t.acc==='=')svg+='<text x="'+(cx-9)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;if(eD<=0.125+1e-6)fc=3;else if(eD<=0.25+1e-6)fc=2;else if(eD<=0.5+1e-6)fc=1;svg+='<ellipse cx="'+cx+'" cy="'+y+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';let sy=y,sx=cx;if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?y-19:y+19;svg+='<line x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx-7)+' '+(fy-4)+' '+(sx-4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
+  function drawRest(t,cx,color,staffTop){let svg='';const y=staffTop+2*LINE_GAP;const eD=nominalDur(t);if(eD>=4)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+LINE_GAP)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=2)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+2*LINE_GAP-3.5)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=1)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄽</text>';else if(eD>=0.5)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄾</text>';else svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄿</text>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y}}
+
+  function renderScore(){
+    const selM=state.sel.m;
+    const linesShown=state.viewmode?6:3;
+    const mPP=MEASURES_PER_LINE*linesShown;
+    const page=Math.floor(selM/mPP);
+    const startM=page*mPP;
+    const usable=SCORE_W-LEFT_PAD-RIGHT_PAD;
+    const measureW=usable/MEASURES_PER_LINE;
+    const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
+    const scoreH=STAFF_TOP_Y+linesShown*STAFF_SPACING+10;
+    let svg='<svg viewBox="0 0 '+SCORE_W+' '+scoreH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">';
+    for(let line=0;line<linesShown;line++){
+      const staffTop=STAFF_TOP_Y+line*STAFF_SPACING;
+      const lsm=startM+line*MEASURES_PER_LINE;
+      if(state.measures[lsm]===undefined)continue;
+      // 5 lignes
+      for(let i=0;i<5;i++){
+        const y=staffTop+i*LINE_GAP;
+        svg+='<line x1="'+(LEFT_PAD-25)+'" y1="'+y+'" x2="'+(SCORE_W-RIGHT_PAD)+'" y2="'+y+'" stroke="'+ink+'" stroke-width="0.55" opacity="0.55"/>';
+      }
+      const hC=clefAt(lsm),hK=keyAt(lsm),hM=meterAt(lsm);
+      // Cles : sol et sol-8 remontees, fa descendue ; toutes centrees en x
+      if(hC==='bass'){
+        // Fa : descendue (texte plus bas dans la portee)
+        svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+      } else {
+        // Sol : remontee
+        svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
+        if(hC==='treble8'){
+          svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+        }
+      }
+      // Armure
+      let kx=LEFT_PAD-16;
+      keySigAccidentals(hK,hC).forEach(a=>{
+        const ky=noteY(staffTop,a.step,hC)+4;
+        svg+='<text x="'+kx+'" y="'+ky+'" font-size="12" font-family="serif" fill="'+ink+'">'+a.sym+'</text>';
+        kx+=6;
+      });
+      // Metrique (premiere ligne)
+      if(line===0){
+        const{num,den}=parseMeter(hM);
+        const mx=Math.max(kx+3,LEFT_PAD-10);
+        svg+='<text x="'+mx+'" y="'+(staffTop+1.7*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
+        svg+='<text x="'+mx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
+      }
+      // Barres de mesure
+      for(let i=0;i<=MEASURES_PER_LINE;i++){
+        const x=LEFT_PAD+i*measureW;
+        svg+='<line x1="'+x+'" y1="'+staffTop+'" x2="'+x+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="'+(i===0?1.1:0.7)+'" opacity="0.7"/>';
+      }
+      // Etat partage pour les liaisons traversant les mesures de la ligne
+      let pS=null;
+      const tP=[];
+      // Liaison "entrante" : si la derniere note avant lsm avait tieToNext, on retiendra la premiere note pour dessiner un demi-arc
+      let pendingIncomingTie=false;
+      if(lsm>0){
+        // Chercher la derniere note de la mesure precedente
+        const prevM=state.measures[lsm-1];
+        if(prevM){
+          for(let k=prevM.length-1;k>=0;k--){
+            const s=prevM[k];
+            if(s.type==='note'){if(s.tieToNext)pendingIncomingTie=true;break}
+          }
+        }
+      }
+      for(let i=0;i<MEASURES_PER_LINE;i++){
+        const mIdx=lsm+i;
+        if(state.measures[mIdx]===undefined)continue;
+        const xL=LEFT_PAD+i*measureW;
+        const xR=LEFT_PAD+(i+1)*measureW;
+        // Reprises et voltas
+        const r=state.repeats[mIdx];
+        if(r){
+          if(r.start){
+            svg+='<line x1="'+(xL+2)+'" y1="'+staffTop+'" x2="'+(xL+2)+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="2"/>';
+            svg+='<circle cx="'+(xL+6)+'" cy="'+(staffTop+1.5*LINE_GAP)+'" r="1.1" fill="'+ink+'"/>';
+            svg+='<circle cx="'+(xL+6)+'" cy="'+(staffTop+2.5*LINE_GAP)+'" r="1.1" fill="'+ink+'"/>';
+          }
+          if(r.end){
+            svg+='<circle cx="'+(xR-6)+'" cy="'+(staffTop+1.5*LINE_GAP)+'" r="1.1" fill="'+ink+'"/>';
+            svg+='<circle cx="'+(xR-6)+'" cy="'+(staffTop+2.5*LINE_GAP)+'" r="1.1" fill="'+ink+'"/>';
+            svg+='<line x1="'+(xR-2)+'" y1="'+staffTop+'" x2="'+(xR-2)+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="2"/>';
+          }
+          if(r.volta){
+            const yV=staffTop-11;
+            svg+='<line x1="'+(xL+2)+'" y1="'+yV+'" x2="'+(xR-2)+'" y2="'+yV+'" stroke="'+ink+'" stroke-width="0.8"/>';
+            svg+='<line x1="'+(xL+2)+'" y1="'+yV+'" x2="'+(xL+2)+'" y2="'+(yV+4)+'" stroke="'+ink+'" stroke-width="0.8"/>';
+            svg+='<text x="'+(xL+5)+'" y="'+(yV+6)+'" font-size="8" fill="'+ink+'" font-weight="bold">'+r.volta+'.</text>';
+          }
+        }
+        const m=state.measures[mIdx];
+        const lC=clefAt(mIdx),lM=meterAt(mIdx);
+        // Point 1 : afficher changements (cle/armure/rythme) AU DEBUT de la mesure qui change
+        // (pour les mesures qui ne sont pas en debut de ligne — la 1ere de ligne montre deja l'etat dans l'en-tete)
+        let changeOffset=0;
+        if(i>0){
+          const prevClef=clefAt(mIdx-1);
+          const prevKey=keyAt(mIdx-1);
+          const prevMeter=meterAt(mIdx-1);
+          const hasClefChange=lC!==prevClef;
+          const hasKeyChange=keyAt(mIdx)!==prevKey;
+          const hasMeterChange=lM!==prevMeter;
+          if(hasClefChange||hasKeyChange||hasMeterChange){
+            let cx=xL+3;
+            // Cle (en premier, juste apres la barre)
+            if(hasClefChange){
+              cx+=4;
+              if(lC==='bass'){
+                svg+='<text x="'+cx+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+              } else {
+                svg+='<text x="'+cx+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
+                if(lC==='treble8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+              }
+              cx+=8;
+            }
+            // Armure
+            if(hasKeyChange){
+              const accs=keySigAccidentals(keyAt(mIdx),lC);
+              accs.forEach(a=>{
+                const ky=noteY(staffTop,a.step,lC)+4;
+                svg+='<text x="'+cx+'" y="'+ky+'" font-size="12" font-family="serif" fill="'+ink+'">'+a.sym+'</text>';
+                cx+=6;
+              });
+              cx+=2;
+            }
+            // Rythme
+            if(hasMeterChange){
+              const{num,den}=parseMeter(lM);
+              cx+=4;
+              svg+='<text x="'+cx+'" y="'+(staffTop+1.7*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
+              svg+='<text x="'+cx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
+              cx+=8;
+            }
+            // Espace consomme depuis xL
+            changeOffset=cx-xL;
+          }
+        }
+        const x0=LEFT_PAD+i*measureW+10+changeOffset;
+        const sW=(measureW-14-changeOffset)/Math.max(m.length,1);
+        const bg=computeBeamGroups(m,lM);
+        const sTG={};
+        bg.forEach((g,gi)=>{g.forEach(si=>sTG[si]={gIdx:gi,group:g})});
+        const mS=clefRefStep(lC)+4;
+        const gSD=bg.map(g=>{
+          let s=0;
+          for(const idx of g){const t=m[idx];s+=stepIndex(t.note,t.octave)}
+          return(s/g.length)<mS?'up':'down';
+        });
+        const gBD=bg.map((g,gi)=>{
+          const su=gSD[gi]==='up';
+          let eY=su?Infinity:-Infinity;
+          const sX=[];
+          g.forEach(si=>{
+            const t=m[si];
+            const cx=x0+si*sW+sW/2;
+            const sx=su?cx+3.3:cx-3.3;
+            const hY=noteY(staffTop,stepIndex(t.note,t.octave),lC);
+            const nT=su?hY-19:hY+19;
+            if(su)eY=Math.min(eY,nT);else eY=Math.max(eY,nT);
+            sX.push({slotIdx:si,sx,headY:hY});
+          });
+          return{stemUp:su,beamY:eY,stems:sX};
+        });
+        m.forEach((t,si)=>{
+          const cx=x0+si*sW+sW/2;
+          const iS=(mIdx===selM&&si===state.sel.s);
+          const cl=iS?sel:ink;
+          if(t.chord)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+t.chord+'</text>';
+          if(t.orn&&t.orn.length){
+            const ot=t.orn.map(o=>{if(o==='T')return'tr';if(o==='M')return'∼';if(o==='H')return'𝄐';if(o==='.')return'·';if(o==='L')return'>';return o}).join(' ');
+            svg+='<text x="'+cx+'" y="'+(staffTop-12)+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+ot+'</text>';
+          }
+          if(t.type==='note'){
+            const gp=sTG[si];
+            if(gp){
+              const gi=gp.gIdx;
+              const su=gSD[gi]==='up';
+              const bY=gBD[gi].beamY;
+              const dr=drawNoteHead(t,cx,cl,lC,false,su,staffTop);
+              const sx=dr.stemX,hY=dr.headY;
+              svg+=dr.svg;
+              svg+='<line x1="'+sx+'" y1="'+hY+'" x2="'+sx+'" y2="'+bY+'" stroke="'+cl+'" stroke-width="0.8"/>';
+              if(iS)svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
+              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY});
+              if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in'});pendingIncomingTie=false}
+              pS={t,cx,y:dr.headY};
+            } else {
+              const st=stepIndex(t.note,t.octave);
+              const su=st<mS;
+              const dr=drawNoteHead(t,cx,cl,lC,true,su,staffTop);
+              svg+=dr.svg;
+              if(iS)svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
+              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY});
+              if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in'});pendingIncomingTie=false}
+              pS={t,cx,y:dr.headY};
+            }
+          } else {
+            const dr=drawRest(t,cx,cl,staffTop);
+            svg+=dr.svg;
+            if(iS)svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
+            // Silences cassent les liaisons
+            pS=null;
+          }
+          if(t.tuplet&&(si===0||!m[si-1]||!m[si-1].tuplet||m[si-1].tupletId!==t.tupletId)){
+            const gs=[];
+            for(let j=si;j<m.length&&m[j].tupletId===t.tupletId&&gs.length<t.tuplet;j++)gs.push(j);
+            if(gs.length>0){
+              const cF=x0+gs[0]*sW+sW/2;
+              const cL=x0+gs[gs.length-1]*sW+sW/2;
+              const cM=(cF+cL)/2;
+              // Crochet du n-uplet (au-dessus de la portee)
+              const yT=staffTop-6;
+              svg+='<line x1="'+cF+'" y1="'+yT+'" x2="'+cL+'" y2="'+yT+'" stroke="'+ink+'" stroke-width="0.7"/>';
+              svg+='<line x1="'+cF+'" y1="'+yT+'" x2="'+cF+'" y2="'+(yT+3)+'" stroke="'+ink+'" stroke-width="0.7"/>';
+              svg+='<line x1="'+cL+'" y1="'+yT+'" x2="'+cL+'" y2="'+(yT+3)+'" stroke="'+ink+'" stroke-width="0.7"/>';
+              svg+='<text x="'+cM+'" y="'+(yT-1)+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle" font-weight="bold">'+t.tuplet+'</text>';
+            }
+          }
+          if(si===0){
+            svg+='<text x="'+(LEFT_PAD+i*measureW+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
+          }
+          // Zone cliquable invisible pour selectionner ce slot
+          svg+='<rect x="'+(cx-sW/2)+'" y="'+(staffTop-12)+'" width="'+sW+'" height="'+(LINE_GAP*4+24)+'" fill="transparent" style="cursor:pointer" data-m="'+mIdx+'" data-s="'+si+'"/>';
+        });
+        // Beams pour cette mesure : niveau 1 complet, niveaux 2/3 partiels selon notes
+        bg.forEach((g,gi)=>{
+          const d=gBD[gi];const su=d.stemUp;const bY=d.beamY;const sts=d.stems;
+          const bT=2.5;
+          const dyO=su?bT+0.8:-(bT+0.8);
+          // Niveau de chaque note du groupe (1=croche, 2=double, 3=triple)
+          const lvls=g.map(idx=>{
+            const eD=effDur(m[idx]);
+            if(eD<=0.125+1e-6)return 3;
+            if(eD<=0.25+1e-6)return 2;
+            return 1;
+          });
+          // sX = position x de chaque hampe (ordre = ordre du groupe)
+          const xPos=sts.map(s=>s.sx);
+          const xS=xPos[0],xE=xPos[xPos.length-1];
+          // Barre principale (niveau 1) : toute la largeur du groupe
+          {
+            const yy=bY;
+            svg+='<rect x="'+xS+'" y="'+(yy-bT/2)+'" width="'+(xE-xS)+'" height="'+bT+'" fill="'+ink+'"/>';
+          }
+          // Niveaux 2 et 3 : segments entre notes consecutives de meme niveau, demi-barres pour les isolees
+          for(let lvl=2;lvl<=3;lvl++){
+            const yy=bY+(lvl-1)*dyO;
+            // 1) Segments connectes : entre i et i+1 si les deux ont niveau >= lvl
+            const connected=new Array(xPos.length).fill(false);
+            for(let i=0;i<xPos.length-1;i++){
+              if(lvls[i]>=lvl&&lvls[i+1]>=lvl){
+                svg+='<rect x="'+xPos[i]+'" y="'+(yy-bT/2)+'" width="'+(xPos[i+1]-xPos[i])+'" height="'+bT+'" fill="'+ink+'"/>';
+                connected[i]=true;connected[i+1]=true;
+              }
+            }
+            // 2) Demi-barres pour les notes de niveau >= lvl qui ne sont pas connectees
+            for(let i=0;i<xPos.length;i++){
+              if(lvls[i]>=lvl&&!connected[i]){
+                // Longueur de demi-barre : ~40% de la distance au voisin du meme groupe
+                let halfLen;
+                if(i===0){
+                  // Demi-barre vers la droite
+                  halfLen=Math.max(3,(xPos[1]-xPos[0])*0.4);
+                  svg+='<rect x="'+xPos[i]+'" y="'+(yy-bT/2)+'" width="'+halfLen+'" height="'+bT+'" fill="'+ink+'"/>';
+                } else {
+                  // Demi-barre vers la gauche
+                  halfLen=Math.max(3,(xPos[i]-xPos[i-1])*0.4);
+                  svg+='<rect x="'+(xPos[i]-halfLen)+'" y="'+(yy-bT/2)+'" width="'+halfLen+'" height="'+bT+'" fill="'+ink+'"/>';
+                }
+              }
+            }
+          }
+        });
+      }
+      // Liaison sortante : si la derniere note de la ligne a tieToNext
+      if(pS&&pS.t.tieToNext){
+        tP.push({fromCx:pS.cx,fromY:pS.y,toCx:SCORE_W-RIGHT_PAD+4,toY:pS.y,partial:'out'});
+      }
+      // Dessiner toutes les liaisons de la ligne (apres avoir parcouru toutes les mesures)
+      tP.forEach(tp=>{
+        const cx=(tp.fromCx+tp.toCx)/2;
+        const cy=((tp.fromY+tp.toY)/2)+6;
+        svg+='<path d="M '+(tp.fromCx+3)+' '+(tp.fromY+3)+' Q '+cx+' '+cy+' '+(tp.toCx-3)+' '+(tp.toY+3)+'" stroke="'+ink+'" stroke-width="0.9" fill="none"/>';
+      });
+    }
+    svg+='</svg>';
+    document.getElementById('score').innerHTML=svg;
+  }
+
+  function selectedSlot(){const m=state.measures[state.sel.m];return m?(m[state.sel.s]||null):null}
+  function renderState(){
+    document.getElementById('meas-pos').textContent=state.sel.m+1;
+    document.getElementById('slot-pos').textContent=state.sel.s+1;
+    document.getElementById('info-meter').textContent=meterAt(state.sel.m);
+    document.getElementById('info-key').textContent=keyHumanLabel(keyAt(state.sel.m));
+    document.getElementById('info-clef').textContent=clefHumanLabel(clefAt(state.sel.m));
+    document.getElementById('oct-val').textContent=state.octave>0?'+'+state.octave:state.octave;
+    const sl=selectedSlot();
+    document.querySelectorAll('[data-dur]').forEach(b=>{const aD=sl?sl.dur:1;b.classList.toggle('active',parseFloat(b.dataset.dur)===aD)});
+    document.querySelectorAll('[data-acc]').forEach(b=>{
+      let aA=(sl&&sl.type==='note')?(sl.acc||''):'';
+      // Si la note appartient à l'armure (sans alteration explicite), afficher le bouton actif
+      if(sl&&sl.type==='note'&&!aA){
+        const sig=keyAt(state.sel.m);
+        if(sig>0&&SHARP_NOTES.slice(0,sig).includes(sl.note))aA='^';
+        else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(sl.note))aA='_';
+      }
+      b.classList.toggle('active',aA===b.dataset.acc&&b.dataset.acc!=='')
+    });
+    const dB=document.getElementById('dot-btn');if(dB)dB.classList.toggle('active',!!(sl&&sl.dot));
+    document.getElementById('tempo-v').textContent=state.tempo;
+    document.getElementById('vol-v').textContent=state.volume;
+    document.getElementById('btn-play').textContent=audio.playing?'⏸':'▶';
+    document.getElementById('btn-undo').disabled=(history.pos<=0);
+    document.getElementById('btn-redo').disabled=(history.pos>=history.stack.length-1);
+    const um=document.getElementById('btn-undo-mes');if(um)um.disabled=(history.pos<=0);
+    const rm=document.getElementById('btn-redo-mes');if(rm)rm.disabled=(history.pos>=history.stack.length-1);
+    updatePasteButton();
+    // Point 8 : bouton n-uplet en bleu si le slot actif est dans un n-uplet
+    const sl0=selectedSlot();
+    const tb=document.getElementById('btn-tuplet');
+    if(tb)tb.classList.toggle('active', !!(sl0&&sl0.tuplet));
+    // Point 2 : bouton liaison en bleu si la note active a un tieToNext
+    const tieBtn=document.getElementById('btn-tie');
+    if(tieBtn)tieBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.tieToNext));
+    document.getElementById('btn-viewmode').textContent=state.viewmode?'✎':'👁';
+    document.getElementById('hdr-x-val').textContent=state.headers.X||'0';
+    document.getElementById('hdr-t-val').textContent=(state.headers.T||'—').split('\n')[0];
+    document.getElementById('hdr-c-val').textContent=(state.headers.C||'—').split('\n')[0];
+    document.getElementById('hdr-n-val').textContent=(state.headers.N||'—').split('\n')[0];
+  }
+  function render(){renderScore();renderState();notifyPanelMeasureChanged()}
+
+  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
+  function selectNext(){
+    let{m,s}=state.sel;
+    if(s+1<state.measures[m].length){state.sel={m,s:s+1};render();playSelectedSlot();return}
+    if(m+1<state.measures.length){state.sel={m:m+1,s:0};render();playSelectedSlot();return}
+    // À la toute fin : ajouter UNE seule mesure vide
+    state.measures.push(buildEmptyMeasure(meterAt(m)));
+    state.sel={m:state.measures.length-1,s:0};
+    pushHistory();render();playSelectedSlot();
+  }
+  function selectPrev(){let{m,s}=state.sel;if(s>0){state.sel={m,s:s-1};render();playSelectedSlot();return}if(m>0){state.sel={m:m-1,s:state.measures[m-1].length-1};render();playSelectedSlot();return}}
+  function jumpMeasure(delta){const cur=state.sel.m;if(delta>0&&cur===state.measures.length-1){state.measures.push(buildEmptyMeasure(meterAt(cur)));state.sel={m:state.measures.length-1,s:0};pushHistory();render();return}const t=cur+delta;if(t<0||t>=state.measures.length)return;state.sel={m:t,s:0};render()}
+  function jumpToStart(){state.sel={m:0,s:0};render()}
+  function jumpToEnd(){state.sel={m:state.measures.length-1,s:0};render()}
+
+  const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null};
+  function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.master.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/200;if(audio.ctx.state==='suspended')audio.ctx.resume()}
+  function midiOfNote(note,oct,acc,keySig){const bs={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[note];let midi=60+bs+oct*12;let alt=0;if(acc==='^')alt=1;else if(acc==='_')alt=-1;else if(acc==='=')alt=0;else{if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(note))alt=1;else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(note))alt=-1}return midi+alt}
+  function freqOfMidi(m){return 440*Math.pow(2,(m-69)/12)}
+  function previewNote(midi,durSec=0.25){ensureAudio();const t=audio.ctx.currentTime+0.005;const f=freqOfMidi(midi);const o=audio.ctx.createOscillator();const g=audio.ctx.createGain();o.type='triangle';o.frequency.value=f;const p=0.5,a=0.005;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(p,t+a);g.gain.setValueAtTime(p,t+Math.max(durSec-0.06,a));g.gain.linearRampToValueAtTime(0,t+durSec);o.connect(g);g.connect(audio.master);o.start(t);o.stop(t+durSec+0.03)}
+  function playSchedule(){
+    ensureAudio();stopPlayback(false);audio.playing=true;
+    document.getElementById('btn-play').textContent='⏸';
+    const st=audio.ctx.currentTime+0.05;let t=st;
+    const qD=60/state.tempo;
+    const order=expandForPlayback();
+    if(order.length===0){stopPlayback(true);return}
+    // Point 5 : demarrer a la mesure et au slot actifs
+    const startMeasure=state.sel.m,startSlot=state.sel.s;
+    let startIdxInOrder=order.indexOf(startMeasure);
+    if(startIdxInOrder<0)startIdxInOrder=0;
+    const events=[];
+    for(let oi=startIdxInOrder;oi<order.length;oi++){
+      const mi=order[oi];
+      const m=state.measures[mi];if(!m)continue;
+      const sig=keyAt(mi);
+      const firstSlot=(oi===startIdxInOrder&&mi===startMeasure)?startSlot:0;
+      for(let si=firstSlot;si<m.length;si++){
+        const slot=m[si];
+        const dur=effDur(slot)*qD;
+        if(slot.type==='note'){
+          const midi=midiOfNote(slot.note,slot.octave,slot.acc,sig);
+          events.push({midi,dur,measureIdx:mi,slotIdx:si,tieToNext:!!slot.tieToNext});
+        } else {
+          events.push({midi:null,dur,measureIdx:mi,slotIdx:si,tieToNext:false});
+        }
+      }
+    }
+    // Fusionner les notes liées de même hauteur (la durée des suivantes va sur l'ancre, dur=0 pour eux)
+    let i=0;
+    while(i<events.length){
+      const ev=events[i];
+      if(ev.midi!==null&&ev.tieToNext){
+        let j=i+1;
+        while(j<events.length&&events[j].midi===ev.midi){
+          ev.dur+=events[j].dur;
+          events[j].silent=true;
+          events[j].dur=0;
+          if(!events[j].tieToNext)break;
+          j++;
+        }
+      }
+      i++;
+    }
+    events.forEach(ev=>{
+      if(ev.midi!==null&&!ev.silent){
+        const o=audio.ctx.createOscillator();
+        const g=audio.ctx.createGain();
+        o.type='triangle';o.frequency.value=freqOfMidi(ev.midi);
+        const a=0.005,r=Math.min(0.05,ev.dur*0.3);
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.5,t+a);
+        g.gain.setValueAtTime(0.5,t+ev.dur-r);
+        g.gain.linearRampToValueAtTime(0,t+ev.dur);
+        o.connect(g);g.connect(audio.master);
+        o.start(t);o.stop(t+ev.dur+0.02);
+        audio.scheduled.push(o);
+      }
+      audio.scheduled.push({updateAt:t,measureIdx:ev.measureIdx,slotIdx:ev.slotIdx});
+      t+=ev.dur;
+    });
+    audio.stopAt=t;
+    function tick(){
+      if(!audio.playing)return;
+      const now=audio.ctx.currentTime;
+      let last=null;
+      for(const ev of audio.scheduled){
+        if(ev.updateAt!==undefined&&ev.updateAt<=now)last=ev;
+        if(ev.updateAt!==undefined&&ev.updateAt>now)break;
+      }
+      if(last&&(state.sel.m!==last.measureIdx||state.sel.s!==last.slotIdx)){
+        state.sel={m:last.measureIdx,s:last.slotIdx};renderScore();renderState();
+      }
+      if(now>=audio.stopAt){stopPlayback(true);return}
+      audio.raf=requestAnimationFrame(tick);
+    }
+    audio.raf=requestAnimationFrame(tick);
+  }
+  function stopPlayback(refresh){if(audio.raf){cancelAnimationFrame(audio.raf);audio.raf=null}audio.scheduled.forEach(ev=>{if(ev.stop)try{ev.stop()}catch(_){}});audio.scheduled=[];audio.playing=false;document.getElementById('btn-play').textContent='▶';if(refresh)render()}
+
+  function setNoteAtSelection(n){
+    const sl=selectedSlot();if(!sl)return;const dur=sl.dur,dot=sl.dot;
+    let acc=(sl.type==='note')?sl.acc:'';
+    // Si même note (nom+octave) a une altération explicite plus tôt dans la mesure, hériter
+    if(!acc){
+      const meas=state.measures[state.sel.m];
+      for(let i=state.sel.s-1;i>=0;i--){
+        const p=meas[i];
+        if(p.type==='note'&&p.note===n&&p.octave===state.octave&&p.acc){acc=p.acc;break}
+      }
+    }
+    // Point 7 : trouver la note précédente (toute mesure) et choisir l'octave la plus proche
+    const prev=findPreviousNote(state.sel.m,state.sel.s);
+    if(prev){
+      const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+      const prevMidi=60+baseSemi[prev.note]+prev.octave*12+(prev.acc==='^'?1:prev.acc==='_'?-1:0);
+      let best=state.octave,bestDist=Infinity;
+      for(let o=-2;o<=3;o++){
+        const m=60+baseSemi[n]+o*12;
+        const d=Math.abs(m-prevMidi);
+        if(d<bestDist){bestDist=d;best=o}
+      }
+      state.octave=best;
+    }
+    const hadTie=!!sl.tieToNext;
+    const newSlot={type:'note',note:n,octave:state.octave,dur,dot,acc};
+    if(hadTie)newSlot.tieToNext=true;
+    state.measures[state.sel.m][state.sel.s]=newSlot;
+    propagateTieReplacement(state.sel.m,state.sel.s,n,state.octave,acc);
+    pushHistory();
+    const midi=midiOfNote(n,state.octave,acc,keyAt(state.sel.m));previewNote(midi);
+    render();
+  }
+  function findPreviousNote(mi,si){
+    // Cherche en arrière dans la mesure courante puis dans les mesures précédentes
+    for(let i=si-1;i>=0;i--){
+      const s=state.measures[mi][i];
+      if(s.type==='note')return s;
+    }
+    for(let m=mi-1;m>=0;m--){
+      const meas=state.measures[m];
+      for(let i=meas.length-1;i>=0;i--){
+        const s=meas[i];
+        if(s.type==='note')return s;
+      }
+    }
+    return null;
+  }
+  function propagateTieReplacement(mi,si,note,octave,acc){
+    let curM=mi,curS=si;
+    while(true){
+      const meas=state.measures[curM];
+      if(!meas)break;
+      const cur=meas[curS];
+      if(!cur||!cur.tieToNext)break;
+      let nextM=curM,nextS=curS+1;
+      if(nextS>=meas.length){
+        nextM=curM+1;nextS=0;
+        if(nextM>=state.measures.length)break;
+      }
+      const next=state.measures[nextM][nextS];
+      if(!next||next.type!=='note')break;
+      next.note=note;next.octave=octave;next.acc=acc;
+      curM=nextM;curS=nextS;
+    }
+  }
+  function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;state.measures[state.sel.m][state.sel.s]={type:'rest',dur:sl.dur,dot:sl.dot};pushHistory();render()}
+  function setDurAtSelection(d){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dur=d;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const midi=midiOfNote(c.note,c.octave,c.acc,keyAt(state.sel.m));previewNote(midi,Math.min(0.4,effDur(c)*60/state.tempo))}render()}
+  function toggleDotAtSelection(){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dot=!sl.dot;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const midi=midiOfNote(c.note,c.octave,c.acc,keyAt(state.sel.m));previewNote(midi)}render()}
+  function toggleAccAtSelection(acc){const sl=selectedSlot();if(sl&&sl.type==='note'){sl.acc=(sl.acc===acc)?'':acc;pushHistory();const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi);render()}}
+  function changeOctave(d){state.octave=Math.max(-2,Math.min(3,state.octave+d));const sl=selectedSlot();if(sl&&sl.type==='note'){sl.octave=Math.max(-2,Math.min(3,sl.octave+d));const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi)}pushHistory();render()}
+
+  function setActiveTab(name){
+    const previous=state.activeTab;
+    state.activeTab=name;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
+    // Point 6 : classe pour decaler la zone play vers le bas
+    document.getElementById('app').classList.toggle('tab-play', name==='play');
+    // Point 7 : quand on quitte l'onglet play, couper le son et remettre la vue normale (oeil)
+    if(previous==='play'&&name!=='play'){
+      if(audio.playing)stopPlayback(true);
+      if(state.viewmode){state.viewmode=false;document.getElementById('app').classList.remove('viewmode');render()}
+    }
+  }
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setActiveTab(t.dataset.tab)));
+
+  const nR=document.getElementById('notes-row');
+  NOTES.forEach(n=>{const b=document.createElement('button');b.className='k note-btn';b.innerHTML='<span class="lbl">'+n.label+'</span><span class="sub">'+n.sub+'</span>';b.addEventListener('click',()=>setNoteAtSelection(n.n));nR.appendChild(b)});
+
+  const dR=document.getElementById('dur-row');
+  DURATIONS.forEach(d=>{const b=document.createElement('button');b.className='k symbol';b.dataset.dur=d.d;b.textContent=d.label;b.addEventListener('click',()=>setDurAtSelection(d.d));dR.appendChild(b)});
+
+  const aR=document.getElementById('alt-row');
+  [{label:'♯',acc:'^'},{label:'♭',acc:'_'},{label:'♮',acc:'='}].forEach(a=>{const b=document.createElement('button');b.className='k symbol';b.dataset.acc=a.acc;b.textContent=a.label;b.addEventListener('click',()=>toggleAccAtSelection(a.acc));aR.appendChild(b)});
+  const dotB=document.createElement('button');dotB.className='k symbol';dotB.id='dot-btn';dotB.textContent='♩·';dotB.addEventListener('click',toggleDotAtSelection);aR.appendChild(dotB);
+  const restB=document.createElement('button');restB.className='k symbol';restB.id='btn-rest';restB.textContent='𝄽';restB.addEventListener('click',setRestAtSelection);aR.appendChild(restB);
+
+  document.getElementById('oct-up').addEventListener('click',()=>changeOctave(+1));
+  document.getElementById('oct-down').addEventListener('click',()=>changeOctave(-1));
+  document.getElementById('cur-prev').addEventListener('click',selectPrev);
+  document.getElementById('cur-next').addEventListener('click',selectNext);
+  document.getElementById('meas-prev').addEventListener('click',()=>jumpMeasure(-1));
+  document.getElementById('meas-next').addEventListener('click',()=>jumpMeasure(+1));
+  document.getElementById('meas-start').addEventListener('click',jumpToStart);
+  document.getElementById('meas-end').addEventListener('click',jumpToEnd);
+  document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){state.measures[state.sel.m][state.sel.s]={type:'rest',dur:sl.dur,dot:sl.dot};pushHistory();render()}});
+  document.getElementById('btn-undo').addEventListener('click',undo);
+  document.getElementById('btn-redo').addEventListener('click',redo);
+  document.getElementById('btn-trans-up').addEventListener('click',()=>{transposePiece(+1);pushHistory();render()});
+  document.getElementById('btn-trans-down').addEventListener('click',()=>{transposePiece(-1);pushHistory();render()});
+  document.getElementById('btn-tie').addEventListener('click',()=>{const sl=selectedSlot();if(sl){sl.tieToNext=!sl.tieToNext;pushHistory();render()}});
+  document.getElementById('btn-disarm').addEventListener('click',()=>{disarmKey();pushHistory();render()});
+
+  document.getElementById('btn-tuplet').addEventListener('click',()=>{
+    const sl=selectedSlot();if(!sl)return;
+    const meas=state.measures[state.sel.m];
+    const idx=state.sel.s;
+    // Si dans un n-uplet : un clic sur le bouton (bleu) supprime le n-uplet
+    // et le remplace par des silences adaptes a la rythmique
+    if(sl.tuplet){
+      const tid=sl.tupletId;
+      let start=idx;while(start>0&&meas[start-1].tupletId===tid)start--;
+      let end=idx;while(end<meas.length-1&&meas[end+1].tupletId===tid)end++;
+      let space=0;
+      for(let i=start;i<=end;i++)space+=effDur(meas[i]);
+      const meter=meterAt(state.sel.m);
+      const{den}=parseMeter(meter);
+      const beat=4/den;
+      let offset=0;for(let i=0;i<start;i++)offset+=effDur(meas[i]);
+      const pieces=splitDurationByBeat(offset,space,beat);
+      const newSlots=pieces.map(p=>({type:'rest',dur:p.dur,dot:p.dot}));
+      meas.splice(start,end-start+1,...newSlots);
+      state.sel.s=Math.min(start,meas.length-1);
+      pushHistory();render();
+      return;
+    }
+    // Point 9 : refus du n-uplet imbrique - on verifie que la zone qu'on consommerait
+    // ne contient pas d'autre n-uplet en cours. On le verifie au moment du choix de chiffre.
+    let chosenDur=sl.dur;
+    if(chosenDur>=2)chosenDur=1;
+    const TUPLET_DURS=[{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
+    function controls(){
+      let h='<div class="stepper-label">Affichage sur 3:2</div>';
+      h+='<div class="row-grid row-4" id="tup-dur-row">';
+      TUPLET_DURS.forEach(d=>h+='<button class="k symbol" data-tdur="'+d.d+'">'+d.label+'</button>');
+      h+='</div>';
+      h+='<div class="stepper-label" style="margin-top:8px;">N-uplet</div>';
+      h+='<div class="row-grid row-4" id="tup-n-row">';
+      [3,5,6,7].forEach(n=>h+='<button class="k" data-tn="'+n+'">'+n+'</button>');
+      h+='</div>';
+      return h;
+    }
+    function refreshSel(){
+      document.querySelectorAll('[data-tdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.tdur)===chosenDur));
+    }
+    openPanel({title:'N-uplet',body:controls(),hideActions:true,extraButtons:['Annuler'],
+      onMount:()=>{
+        refreshSel();
+        document.querySelectorAll('[data-tdur]').forEach(b=>{
+          b.addEventListener('click',()=>{chosenDur=parseFloat(b.dataset.tdur);refreshSel()});
+        });
+        document.querySelectorAll('[data-tn]').forEach(b=>{
+          b.addEventListener('click',()=>{
+            const n=parseInt(b.dataset.tn,10);
+            // Point 9 : verifier que la zone qu'on va consommer ne mord pas sur un autre tuplet
+            const totalSpace=2*chosenDur;
+            const m=state.measures[state.sel.m];
+            const idxLocal=state.sel.s;
+            let consumed=0;
+            for(let i=idxLocal;i<m.length&&consumed<totalSpace-1e-6;i++){
+              if(m[i].tuplet&&i!==idxLocal){
+                alert('Impossible : un autre n-uplet se trouve dans la zone occupee.');
+                return;
+              }
+              consumed+=effDur(m[i]);
+            }
+            applyTuplet(n,chosenDur);
+            closePanel();
+          });
+        });
+      },
+      onExtra:(w)=>{if(w==='Annuler')closePanel()}
+    });
+  });
+
+  let nextTupletId=1;
+  function applyTuplet(n,unitDur){
+    // n-uplet de unitDur occupe l'espace de (n-1) notes de unitDur (règle 3:2 → 3 notes dans l'espace de 2)
+    // Plus généralement : selon ratio implicite ABC (n:2 pour n impair, n:3 pour 6, etc.) — on garde 3:2 simple
+    const ratio=2; // 3:2 → l'espace est de 2 unitDur
+    const totalSpace=ratio*unitDur;
+    const m=state.measures[state.sel.m];
+    const idx=state.sel.s;
+    const meter=meterAt(state.sel.m);
+    const{den}=parseMeter(meter);
+    const beat=4/den;
+    const cap=measureCapacity(meter);
+    // Calculer la position courante (offset)
+    let offset=0;for(let i=0;i<idx;i++)offset+=effDur(m[i]);
+    // Si l'espace disponible jusqu'à fin de mesure < totalSpace, on tronque (on garde le bouton désactivé sinon)
+    const available=cap-offset;
+    if(available<totalSpace-1e-6){alert('Pas assez de place dans la mesure pour ce n-uplet');return}
+    // Identifiant unique pour ce groupe de n-uplet
+    const tid=nextTupletId++;
+    const activeSlot=m[idx];
+    const isRest=(activeSlot.type==='rest');
+    const newSlots=[];
+    for(let i=0;i<n;i++){
+      if(i===0){
+        if(isRest){newSlots.push({type:'rest',dur:unitDur,dot:false,tuplet:n,tupletId:tid})}
+        else{
+          newSlots.push({type:'note',note:activeSlot.note,octave:activeSlot.octave,dur:unitDur,dot:false,acc:activeSlot.acc||'',tuplet:n,tupletId:tid});
+        }
+      } else {
+        newSlots.push({type:'rest',dur:unitDur,dot:false,tuplet:n,tupletId:tid});
+      }
+    }
+    // Consommer totalSpace à partir de idx (effacer/raccourcir les slots existants)
+    let consumed=0;
+    let cursor=idx;
+    const eps=1e-6;
+    while(consumed<totalSpace-eps&&cursor<m.length){
+      const s=m[cursor];
+      const d=effDur(s);
+      if(consumed+d<=totalSpace+eps){
+        consumed+=d;
+        m.splice(cursor,1);
+      } else {
+        // découper le slot en deux : ce qu'on consomme + ce qui reste
+        const remaining=d-(totalSpace-consumed);
+        // remplacer ce slot par un silence (ou la note tronquée) à la durée restante
+        const offsetAfter=offset+totalSpace;
+        const pieces=splitDurationByBeat(offsetAfter,remaining,beat);
+        const tail=pieces.map(p=>Object.assign({},s,{dur:p.dur,dot:p.dot}));
+        m.splice(cursor,1,...tail);
+        consumed=totalSpace;
+        break;
+      }
+    }
+    // Insérer les nouveaux slots à idx
+    m.splice(idx,0,...newSlots);
+    // Truncate/compléter la mesure
+    truncateMeasureToCapacity(state.sel.m,cap);
+    pushHistory();render();
+  }
+
+  // ⭐ −Mes : panneau dédié avec compteur
+  document.getElementById('meas-del').addEventListener('click',()=>{
+    let count=1;
+    function controls(){
+      return '<div class="mes-active">Mesure active : <b id="del-active-mes">'+(state.sel.m+1)+'</b></div>'+
+        '<div class="stepper-label">Combien de mesures à supprimer</div>'+
+        '<div class="stepper">'+
+          '<button class="k" id="cnt-d">−</button>'+
+          '<div class="val"><b id="cnt-v">'+count+'</b></div>'+
+          '<button class="k" id="cnt-u">+</button>'+
+        '</div>';
+    }
+    function rebindStepper(){
+      document.getElementById('cnt-u').addEventListener('click',()=>{
+        const maxCount=state.measures.length-state.sel.m;
+        if(count<maxCount){count++;document.getElementById('cnt-v').textContent=count}
+      });
+      document.getElementById('cnt-d').addEventListener('click',()=>{
+        if(count>1){count--;document.getElementById('cnt-v').textContent=count}
+      });
+    }
+    openPanel({
+      title:'Suppr mesure(s)',
+      body:controls(),
+      hideActions:true,
+      extraButtons:['Annuler','Supprimer'],
+      onMount:rebindStepper,
+      onMeasureChange:()=>{
+        const maxCount=state.measures.length-state.sel.m;
+        if(count>maxCount)count=maxCount;
+        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
+        rebindStepper();
+        // Re-bind extra buttons (they got rewritten)
+        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
+          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
+        });
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        if(state.measures.length<=count){count=state.measures.length-1}
+        if(count<=0){closePanel();return}
+        const m=state.sel.m;
+        state.measures.splice(m,count);
+        function sk(map,from,to){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);if(i<from)out[i]=map[k];else if(i>=to)out[i-count]=map[k]}return out}
+        state.timeChanges=sk(state.timeChanges,m,m+count);
+        state.keyChanges=sk(state.keyChanges,m,m+count);
+        state.clefChanges=sk(state.clefChanges,m,m+count);
+        state.repeats=sk(state.repeats,m,m+count);
+        if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
+        state.sel.s=0;
+        pushHistory();closePanel();render();
+      }
+    });
+  });
+
+  // ⭐ +Mes : sans textes explicatifs
+  document.getElementById('meas-add').addEventListener('click',()=>{
+    let count=1,side='right';
+    function controls(){
+      return '<div class="mes-active">Mesure active : <b id="add-active-mes">'+(state.sel.m+1)+'</b></div>'+
+        '<div class="row-grid row-3" id="side-pick">'+
+          '<button class="k" data-side="left">Gauche</button>'+
+          '<button class="k" data-side="right">Droite</button>'+
+          '<button class="k" data-side="end">Fin</button>'+
+        '</div>'+
+        '<div class="stepper">'+
+          '<button class="k" id="cnt-d">−</button>'+
+          '<div class="val"><b id="cnt-v">'+count+'</b></div>'+
+          '<button class="k" id="cnt-u">+</button>'+
+        '</div>';
+    }
+    function rebind(){
+      const rs=()=>document.querySelectorAll('#side-pick .k').forEach(b=>b.classList.toggle('active',b.dataset.side===side));
+      document.querySelectorAll('#side-pick .k').forEach(b=>b.addEventListener('click',()=>{side=b.dataset.side;rs()}));
+      rs();
+      document.getElementById('cnt-u').addEventListener('click',()=>{if(count<16){count++;document.getElementById('cnt-v').textContent=count}});
+      document.getElementById('cnt-d').addEventListener('click',()=>{if(count>1){count--;document.getElementById('cnt-v').textContent=count}});
+    }
+    openPanel({
+      title:'Ajouter mesure(s)',
+      body:controls(),
+      hideActions:true,
+      extraButtons:['Annuler','Ajouter'],
+      onMount:rebind,
+      onMeasureChange:()=>{
+        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
+        rebind();
+        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
+          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
+        });
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        function sk(map,th,inc){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);const sh=inc?(i>=th):(i>th);out[sh?i+count:i]=map[k]}return out}
+        let ia;
+        const lastMeter=meterAt(state.measures.length-1);
+        if(side==='end'){
+          ia=state.measures.length;
+          for(let k=0;k<count;k++)state.measures.push(buildEmptyMeasure(lastMeter));
+        } else {
+          ia=(side==='left')?state.sel.m:state.sel.m+1;
+          const meter=meterAt(state.sel.m);
+          for(let k=0;k<count;k++)state.measures.splice(ia,0,buildEmptyMeasure(meter));
+          const inc=(side==='left');
+          const th=state.sel.m;
+          state.timeChanges=sk(state.timeChanges,th,inc);
+          state.keyChanges=sk(state.keyChanges,th,inc);
+          state.clefChanges=sk(state.clefChanges,th,inc);
+          state.repeats=sk(state.repeats,th,inc);
+        }
+        if(side==='end')state.sel={m:state.measures.length-count,s:0};
+        else state.sel={m:(side==='right'?state.sel.m+1:state.sel.m),s:0};
+        pushHistory();closePanel();render();
+      }
+    });
+  });
+
+  function ensureRepeat(m){if(!state.repeats[m])state.repeats[m]={};return state.repeats[m]}
+  document.getElementById('btn-rep-start').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.start=!r.start;pushHistory();render()});
+  document.getElementById('btn-rep-end').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.end=!r.end;pushHistory();render()});
+  document.getElementById('btn-volta1').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===1)?0:1;pushHistory();render()});
+  document.getElementById('btn-volta2').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===2)?0:2;pushHistory();render()});
+
+  // Point 6+11 : annuler/refaire + copier/coller dans Mesure
+  document.getElementById('btn-undo-mes').addEventListener('click',undo);
+  document.getElementById('btn-redo-mes').addEventListener('click',redo);
+  let clipboardMes=null; // {measures:[...], repeats:{0:..},  timeChanges:{}, keyChanges:{}, clefChanges:{}}
+  function updatePasteButton(){
+    const b=document.getElementById('btn-paste-mes');
+    if(!b)return;
+    b.classList.toggle('active', !!(clipboardMes&&clipboardMes.measures&&clipboardMes.measures.length>0));
+  }
+  document.getElementById('btn-copy-mes').addEventListener('click',()=>{
+    let endM=state.sel.m;
+    function getStart(){return state.sel.m}
+    function controls(){
+      const startM=getStart();
+      if(endM<startM)endM=startM;
+      if(endM>=state.measures.length)endM=state.measures.length-1;
+      return '<div class="mes-active">Mesure active : <b>'+(startM+1)+'</b></div>'+
+        '<div class="stepper-label">Copier jusqu\'à la mesure</div>'+
+        '<div class="stepper">'+
+          '<button class="k" id="end-d">−</button>'+
+          '<div class="val"><b id="end-v">'+(endM+1)+'</b></div>'+
+          '<button class="k" id="end-u">+</button>'+
+        '</div>';
+    }
+    function rebind(){
+      document.getElementById('end-u').addEventListener('click',()=>{if(endM<state.measures.length-1){endM++;document.getElementById('end-v').textContent=endM+1}});
+      document.getElementById('end-d').addEventListener('click',()=>{if(endM>getStart()){endM--;document.getElementById('end-v').textContent=endM+1}});
+    }
+    openPanel({
+      title:'Copier mesures',body:controls(),hideActions:true,extraButtons:['Annuler','Copier'],
+      onMount:rebind,
+      onMeasureChange:()=>{
+        // Mesure active a changé via la navigation
+        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
+        rebind();
+        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
+          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
+        });
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        const startM=getStart();
+        // Cloner les mesures et les états associés
+        const copyMeas=[];const copyRepeats={};const copyTime={};const copyKey={};const copyClef={};
+        for(let i=startM;i<=endM;i++){
+          const off=i-startM;
+          copyMeas.push(JSON.parse(JSON.stringify(state.measures[i])));
+          if(state.repeats[i])copyRepeats[off]=JSON.parse(JSON.stringify(state.repeats[i]));
+          if(state.timeChanges[i])copyTime[off]=state.timeChanges[i];
+          if(state.keyChanges[i]!==undefined)copyKey[off]=state.keyChanges[i];
+          if(state.clefChanges[i])copyClef[off]=state.clefChanges[i];
+        }
+        clipboardMes={measures:copyMeas,repeats:copyRepeats,timeChanges:copyTime,keyChanges:copyKey,clefChanges:copyClef};
+        closePanel();
+        updatePasteButton();
+      }
+    });
+  });
+  document.getElementById('btn-paste-mes').addEventListener('click',()=>{
+    if(!clipboardMes||!clipboardMes.measures||clipboardMes.measures.length===0){
+      openPanel({title:'Coller',body:'<small>Rien à coller — utilisez d\'abord Copier.</small>',hideActions:true,extraButtons:['OK'],onExtra:()=>closePanel()});
+      return;
+    }
+    const startM=state.sel.m;
+    const n=clipboardMes.measures.length;
+    // Créer des mesures vides si besoin pour atteindre la longueur requise
+    while(state.measures.length<startM+n){state.measures.push(buildEmptyMeasure(meterAt(state.measures.length-1)))}
+    // Écraser les mesures depuis startM
+    for(let i=0;i<n;i++){
+      state.measures[startM+i]=JSON.parse(JSON.stringify(clipboardMes.measures[i]));
+    }
+    // Coller les changements
+    Object.keys(clipboardMes.repeats).forEach(off=>{state.repeats[startM+parseInt(off,10)]=JSON.parse(JSON.stringify(clipboardMes.repeats[off]))});
+    Object.keys(clipboardMes.timeChanges).forEach(off=>{state.timeChanges[startM+parseInt(off,10)]=clipboardMes.timeChanges[off]});
+    Object.keys(clipboardMes.keyChanges).forEach(off=>{state.keyChanges[startM+parseInt(off,10)]=clipboardMes.keyChanges[off]});
+    Object.keys(clipboardMes.clefChanges).forEach(off=>{state.clefChanges[startM+parseInt(off,10)]=clipboardMes.clefChanges[off]});
+    pushHistory();render();
+  });
+
+  document.getElementById('vol-u').addEventListener('click',()=>{state.volume=Math.min(100,state.volume+10);ensureAudio();render()});
+  document.getElementById('vol-d').addEventListener('click',()=>{state.volume=Math.max(0,state.volume-10);ensureAudio();render()});
+  document.getElementById('tempo-u').addEventListener('click',()=>{state.tempo=Math.min(240,state.tempo+5);render()});
+  document.getElementById('tempo-d').addEventListener('click',()=>{state.tempo=Math.max(30,state.tempo-5);render()});
+  document.getElementById('btn-play').addEventListener('click',()=>{if(audio.playing)stopPlayback(true);else playSchedule()});
+  document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
+  document.getElementById('btn-viewmode').addEventListener('click',()=>{state.viewmode=!state.viewmode;document.getElementById('app').classList.toggle('viewmode',state.viewmode);render()});
+  document.getElementById('btn-fs').addEventListener('click',()=>{state.fullscreen=!state.fullscreen;document.getElementById('app').classList.toggle('fullscreen',state.fullscreen)});
+
+  // ⭐ Accord : boutons ajoutent leur texte, ⌫ efface dernier char, pas de fondamentale
+  document.getElementById('btn-chord').addEventListener('click',()=>{
+    const sl=selectedSlot();
+    if(!sl||sl.type!=='note'){alert('Sélectionnez une note');return}
+    let freeText=sl.chord||'';
+    function controls(){
+      let h='<input class="chord-input" id="chord-free" type="text" value="'+freeText.replace(/"/g,'&quot;')+'"/>';
+      // Boutons de notes (Do, Ré, Mi...) qui ajoutent leur lettre ABC
+      h+='<div class="chord-pad" style="grid-template-columns:repeat(7,1fr);">';
+      NOTES.forEach(n=>h+='<button class="k note-btn" data-add="'+n.n+'" style="height:96px !important;"><span class="lbl" style="font-size:30px;">'+n.label+'</span><span class="sub" style="font-size:22px;">'+n.sub+'</span></button>');
+      h+='</div>';
+      h+='<div class="chord-pad">';
+      CHORD_BTNS.forEach(b=>h+='<button class="k" data-add="'+b+'">'+b+'</button>');
+      h+='<button class="k" data-add="__BS__">⌫</button>';
+      h+='</div>';
+      return h;
+    }
+    openPanel({title:'Accord',body:controls(),hideActions:true,extraButtons:['Annuler','Suppr','Appliquer'],actionsClass:'three',onMount:()=>{
+      const inp=document.getElementById('chord-free');
+      inp.addEventListener('input',(e)=>{freeText=e.target.value});
+      document.querySelectorAll('[data-add]').forEach(b=>{
+        b.addEventListener('click',()=>{
+          const add=b.dataset.add;
+          if(add==='__BS__'){freeText=freeText.slice(0,-1);}
+          else freeText+=add;
+          inp.value=freeText;
+        });
+      });
+    },onExtra:(w)=>{
+      if(w==='Annuler'){closePanel();return}
+      if(w==='Suppr'){delete sl.chord;pushHistory();closePanel();render();return}
+      const final=(freeText||'').trim();
+      if(final)sl.chord=final;
+      else delete sl.chord;
+      pushHistory();closePanel();render();
+    }});
+  });
+
+  document.getElementById('btn-orn').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note'){alert('Sélectionnez une note');return}sl.orn=sl.orn||[];function controls(){let h='<small>Cliquez pour activer/désactiver</small><div class="row-grid row-3">';ORNAMENTS.forEach(o=>h+='<button class="k" data-orn="'+o.code+'">'+o.label+'</button>');h+='</div><small>Actifs : <b id="orn-preview">'+(sl.orn.length?sl.orn.join(' '):'(aucun)')+'</b></small>';return h}function refresh(){document.querySelectorAll('[data-orn]').forEach(b=>b.classList.toggle('active',sl.orn.includes(b.dataset.orn)));document.getElementById('orn-preview').textContent=sl.orn.length?sl.orn.join(' '):'(aucun)'}openPanel({title:'Ornement',body:controls(),hideActions:true,extraButtons:['Tout enlever','Fermer'],onMount:()=>{document.querySelectorAll('[data-orn]').forEach(b=>b.addEventListener('click',()=>{const code=b.dataset.orn;const i=sl.orn.indexOf(code);if(i>=0)sl.orn.splice(i,1);else sl.orn.push(code);render();refresh()}));refresh()},onExtra:(w)=>{if(w==='Tout enlever'){sl.orn=[];pushHistory();render();refresh();return}pushHistory();closePanel()}})});
+
+  document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const fn=(state.headers.T||'morceau').replace(/[^a-zA-Z0-9_\-]/g,'_')+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
+  const fileInput=document.getElementById('file-input');
+  document.getElementById('btn-open-file').addEventListener('click',()=>fileInput.click());
+  fileInput.addEventListener('change',(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{const text=ev.target.result;const ns=parseAbcText(text);if(!ns){alert('Impossible de lire ce fichier ABC');fileInput.value='';return}Object.assign(state,ns);cleanupAccidentals();state.sel={m:0,s:0};pushHistory();render();fileInput.value=''};r.readAsText(f)});
+
+  const STORAGE_KEY='abc-editor-saves';
+  function getSaves(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(_){return[]}}
+  function setSaves(list){localStorage.setItem(STORAGE_KEY,JSON.stringify(list))}
+  function exportState(){return JSON.stringify({headers:state.headers,pieceMeter:state.pieceMeter,pieceUnit:state.pieceUnit,pieceKeySig:state.pieceKeySig,pieceClef:state.pieceClef,measures:state.measures,timeChanges:state.timeChanges,keyChanges:state.keyChanges,clefChanges:state.clefChanges,repeats:state.repeats,tempo:state.tempo})}
+  function importStateJson(json){try{const o=JSON.parse(json);Object.assign(state,o);state.sel={m:0,s:0};state.octave=0;pushHistory();render();return true}catch(e){return false}}
+
+  document.getElementById('btn-saves').addEventListener('click',()=>{const saves=getSaves();let lh='<div class="save-list">';if(saves.length===0)lh+='<div class="item" style="color:#888780;cursor:default;">Aucune sauvegarde</div>';else saves.forEach((s,i)=>lh+='<div class="item" data-idx="'+i+'"><span>'+s.name+'</span><span class="del" data-del="'+i+'">×</span></div>');lh+='</div>';lh+='<div class="row"><span class="field-label">Nom:</span><input id="sn" type="text" value="'+(state.headers.T||'Morceau').replace(/"/g,'&quot;')+'"/></div>';openPanel({title:'Mémoires',body:lh,hideActions:true,extraButtons:['Annuler','Enregistrer'],onMount:()=>{document.querySelectorAll('.save-list .item[data-idx]').forEach(el=>{el.addEventListener('click',(ev)=>{if(ev.target.dataset.del!==undefined){const idx=parseInt(ev.target.dataset.del,10);const saves=getSaves();saves.splice(idx,1);setSaves(saves);closePanel();return}const idx=parseInt(el.dataset.idx,10);const saves=getSaves();if(saves[idx]&&importStateJson(saves[idx].data))closePanel()})})},onExtra:(w)=>{if(w==='Annuler'){closePanel();return}const name=document.getElementById('sn').value.trim()||'Morceau';const saves=getSaves();const ex=saves.findIndex(s=>s.name===name);const e={name,data:exportState(),date:new Date().toISOString()};if(ex>=0)saves[ex]=e;else saves.push(e);setSaves(saves);closePanel()}})});
+
+  document.getElementById('btn-export').addEventListener('click',()=>{const abc=buildAbcText();openPanel({title:'Code ABC',body:'<textarea id="exp" readonly>'+abc.replace(/</g,'&lt;')+'</textarea>',hideActions:true,extraButtons:['Fermer','Copier'],onMount:()=>{document.getElementById('exp').select()},onExtra:(w)=>{if(w==='Copier'){const ta=document.getElementById('exp');ta.select();try{document.execCommand('copy')}catch(_){}}closePanel()}})});
+
+  // ============ Export MusicXML compresse (.mxl) ============
+  function escapeXml(s){return (s+'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]))}
+  function clefXml(clefName){
+    if(clefName==='bass')return '<clef><sign>F</sign><line>4</line></clef>';
+    if(clefName==='treble8')return '<clef><sign>G</sign><line>2</line><clef-octave-change>-1</clef-octave-change></clef>';
+    return '<clef><sign>G</sign><line>2</line></clef>';
+  }
+  function keyXml(sig){return '<key><fifths>'+sig+'</fifths><mode>major</mode></key>'}
+  function timeXml(meter){const{num,den}=parseMeter(meter);return '<time><beats>'+num+'</beats><beat-type>'+den+'</beat-type></time>'}
+  function pitchXml(slot){
+    const step=slot.note;
+    // MusicXML octave: middle C = 4 (notre octave=0 -> 4 ; +1 -> 5 ; -1 -> 3 ; ...)
+    // mais notre octave indique aussi le passage majuscule/minuscule en ABC
+    // En interne notre Do octave 0 = C4 en MusicXML
+    const oct=4+slot.octave;
+    let alter=0;
+    if(slot.acc==='^')alter=1;
+    else if(slot.acc==='_')alter=-1;
+    else if(slot.acc==='=')alter=0;
+    let s='<pitch><step>'+step+'</step>';
+    if(slot.acc==='^'||slot.acc==='_')s+='<alter>'+alter+'</alter>';
+    s+='<octave>'+oct+'</octave></pitch>';
+    return s;
+  }
+  function noteTypeXml(slot){
+    // duree visuelle (sans n-uplet)
+    const d=nominalDur(slot);
+    if(d>=4)return 'whole';
+    if(d>=2)return 'half';
+    if(d>=1)return 'quarter';
+    if(d>=0.5)return 'eighth';
+    if(d>=0.25)return '16th';
+    return '32nd';
+  }
+  function buildMusicXml(){
+    const DIV=480; // divisions par noire (multiple riche pour gerer les n-uplets)
+    let xml='<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n';
+    xml+='<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n';
+    xml+='<score-partwise version="3.1">\n';
+    // Work / identification
+    const title=(state.headers.T||'').split('\n')[0]||'Sans titre';
+    const composer=(state.headers.C||'').split('\n')[0]||'';
+    xml+='<work><work-title>'+escapeXml(title)+'</work-title></work>\n';
+    if(composer){
+      xml+='<identification><creator type="composer">'+escapeXml(composer)+'</creator></identification>\n';
+    }
+    xml+='<part-list><score-part id="P1"><part-name>Voix</part-name></score-part></part-list>\n';
+    xml+='<part id="P1">\n';
+    let prevClef=null,prevKey=null,prevMeter=null;
+    state.measures.forEach((meas,mi)=>{
+      xml+='<measure number="'+(mi+1)+'">\n';
+      const lC=clefAt(mi),lK=keyAt(mi),lM=meterAt(mi);
+      // Attributs : divisions au debut, puis clef/key/time si changement ou si mesure 0
+      const isFirst=(mi===0);
+      const hasClefChange=isFirst||lC!==prevClef;
+      const hasKeyChange=isFirst||lK!==prevKey;
+      const hasMeterChange=isFirst||lM!==prevMeter;
+      if(isFirst||hasClefChange||hasKeyChange||hasMeterChange){
+        xml+='<attributes>';
+        if(isFirst)xml+='<divisions>'+DIV+'</divisions>';
+        if(hasKeyChange)xml+=keyXml(lK);
+        if(hasMeterChange)xml+=timeXml(lM);
+        if(hasClefChange)xml+=clefXml(lC);
+        xml+='</attributes>\n';
+      }
+      // Reprises
+      const r=state.repeats[mi];
+      if(r){
+        if(r.start)xml+='<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>\n';
+        if(r.volta)xml+='<barline location="left"><ending number="'+r.volta+'" type="start"/></barline>\n';
+      }
+      // Notes
+      meas.forEach((slot,si)=>{
+        // Duree MusicXML = effDur (avec tuplet) * DIV
+        const dur=Math.max(1,Math.round(effDur(slot)*DIV));
+        xml+='<note>';
+        if(slot.type==='rest'){
+          xml+='<rest/>';
+        } else {
+          xml+=pitchXml(slot);
+        }
+        xml+='<duration>'+dur+'</duration>';
+        xml+='<type>'+noteTypeXml(slot)+'</type>';
+        if(slot.dot)xml+='<dot/>';
+        if(slot.acc==='^'||slot.acc==='_'||slot.acc==='='){
+          let accName='';
+          if(slot.acc==='^')accName='sharp';
+          else if(slot.acc==='_')accName='flat';
+          else accName='natural';
+          xml+='<accidental>'+accName+'</accidental>';
+        }
+        // n-uplet
+        if(slot.tuplet){
+          xml+='<time-modification><actual-notes>'+slot.tuplet+'</actual-notes><normal-notes>2</normal-notes></time-modification>';
+        }
+        // liaison (tie)
+        if(slot.tieToNext){
+          xml+='<tie type="start"/>';
+        }
+        // notations (tie + tuplet + ornaments)
+        let nota='';
+        if(slot.tieToNext)nota+='<tied type="start"/>';
+        if(slot.tuplet){
+          // start sur premier slot du groupe, stop sur dernier
+          const isFirst=(si===0||!meas[si-1]||meas[si-1].tupletId!==slot.tupletId);
+          const isLast=(si===meas.length-1||!meas[si+1]||meas[si+1].tupletId!==slot.tupletId);
+          if(isFirst)nota+='<tuplet type="start" bracket="yes"/>';
+          if(isLast)nota+='<tuplet type="stop"/>';
+        }
+        if(slot.orn&&slot.orn.length){
+          let orns='';
+          slot.orn.forEach(o=>{
+            if(o==='T')orns+='<trill-mark/>';
+            else if(o==='M')orns+='<turn/>';
+            else if(o==='H')nota+='<fermata/>';
+            else if(o==='.')nota+='<articulations><staccato/></articulations>';
+            else if(o==='L')nota+='<articulations><accent/></articulations>';
+          });
+          if(orns)nota+='<ornaments>'+orns+'</ornaments>';
+        }
+        if(slot.chord){
+          nota+='<harmony>'+escapeXml(slot.chord)+'</harmony>'; // pas un vrai harmony, juste un texte simple
+        }
+        if(nota)xml+='<notations>'+nota+'</notations>';
+        xml+='</note>\n';
+      });
+      // Fin de mesure : volta stop / reprise fin
+      if(r){
+        if(r.volta)xml+='<barline location="right"><ending number="'+r.volta+'" type="stop"/></barline>\n';
+        if(r.end)xml+='<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward"/></barline>\n';
+      }
+      xml+='</measure>\n';
+      prevClef=lC;prevKey=lK;prevMeter=lM;
+    });
+    xml+='</part>\n</score-partwise>\n';
+    return xml;
+  }
+  // ============ Encodeur ZIP minimal (stored, sans compression) ============
+  // Format ZIP : pour chaque fichier => Local File Header + data + ... + Central Directory + End Of CD
+  function crc32(bytes){
+    // Table CRC32 calculee a la volee
+    let c;
+    const table=crc32._t;
+    if(!table){
+      const t=new Uint32Array(256);
+      for(let n=0;n<256;n++){
+        c=n;
+        for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);
+        t[n]=c>>>0;
+      }
+      crc32._t=t;
+    }
+    let crc=0xFFFFFFFF;
+    for(let i=0;i<bytes.length;i++)crc=(crc>>>8)^crc32._t[(crc^bytes[i])&0xFF];
+    return (crc^0xFFFFFFFF)>>>0;
+  }
+  function strToUint8(s){
+    // UTF-8 encoding
+    return new TextEncoder().encode(s);
+  }
+  function makeZip(files){
+    // files: [{name, data: Uint8Array}]
+    const parts=[];
+    const central=[];
+    let offset=0;
+    const dosTime=0,dosDate=0; // ignore date
+    files.forEach(f=>{
+      const nameBytes=strToUint8(f.name);
+      const crc=crc32(f.data);
+      const size=f.data.length;
+      // Local File Header
+      const lfh=new Uint8Array(30+nameBytes.length);
+      const dv=new DataView(lfh.buffer);
+      dv.setUint32(0,0x04034b50,true);  // signature
+      dv.setUint16(4,20,true);          // version needed
+      dv.setUint16(6,0,true);           // flags
+      dv.setUint16(8,0,true);           // method 0 = stored
+      dv.setUint16(10,dosTime,true);
+      dv.setUint16(12,dosDate,true);
+      dv.setUint32(14,crc,true);
+      dv.setUint32(18,size,true);       // compressed size
+      dv.setUint32(22,size,true);       // uncompressed size
+      dv.setUint16(26,nameBytes.length,true);
+      dv.setUint16(28,0,true);          // extra
+      lfh.set(nameBytes,30);
+      parts.push(lfh);
+      parts.push(f.data);
+      // Central Directory record
+      const cdr=new Uint8Array(46+nameBytes.length);
+      const dv2=new DataView(cdr.buffer);
+      dv2.setUint32(0,0x02014b50,true);
+      dv2.setUint16(4,20,true);          // version made
+      dv2.setUint16(6,20,true);          // version needed
+      dv2.setUint16(8,0,true);
+      dv2.setUint16(10,0,true);          // method
+      dv2.setUint16(12,dosTime,true);
+      dv2.setUint16(14,dosDate,true);
+      dv2.setUint32(16,crc,true);
+      dv2.setUint32(20,size,true);
+      dv2.setUint32(24,size,true);
+      dv2.setUint16(28,nameBytes.length,true);
+      dv2.setUint16(30,0,true);          // extra
+      dv2.setUint16(32,0,true);          // comment
+      dv2.setUint16(34,0,true);          // disk
+      dv2.setUint16(36,0,true);          // internal attrs
+      dv2.setUint32(38,0,true);          // external attrs
+      dv2.setUint32(42,offset,true);
+      cdr.set(nameBytes,46);
+      central.push(cdr);
+      offset+=lfh.length+size;
+    });
+    const cdStart=offset;
+    let cdSize=0;
+    central.forEach(c=>{parts.push(c);cdSize+=c.length;offset+=c.length});
+    // End Of Central Directory
+    const eocd=new Uint8Array(22);
+    const dv3=new DataView(eocd.buffer);
+    dv3.setUint32(0,0x06054b50,true);
+    dv3.setUint16(4,0,true);
+    dv3.setUint16(6,0,true);
+    dv3.setUint16(8,files.length,true);
+    dv3.setUint16(10,files.length,true);
+    dv3.setUint32(12,cdSize,true);
+    dv3.setUint32(16,cdStart,true);
+    dv3.setUint16(20,0,true);
+    parts.push(eocd);
+    // Concatener
+    let total=0;parts.forEach(p=>total+=p.length);
+    const out=new Uint8Array(total);
+    let pos=0;parts.forEach(p=>{out.set(p,pos);pos+=p.length});
+    return out;
+  }
+  document.getElementById('btn-export-mxl').addEventListener('click',()=>{
+    try{
+      const xml=buildMusicXml();
+      const containerXml='<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="score.xml" media-type="application/vnd.recordare.musicxml"/></rootfiles></container>\n';
+      // Note : pour un .mxl strict, "mimetype" doit etre stocke en premier et non compresse.
+      // Comme on n'utilise que stored partout, c'est OK.
+      const files=[
+        {name:'mimetype',data:strToUint8('application/vnd.recordare.musicxml')},
+        {name:'META-INF/container.xml',data:strToUint8(containerXml)},
+        {name:'score.xml',data:strToUint8(xml)}
+      ];
+      const zipBytes=makeZip(files);
+      const blob=new Blob([zipBytes],{type:'application/vnd.recordare.musicxml'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      const fn=(state.headers.T||'morceau').replace(/[^a-zA-Z0-9_\-]/g,'_')+'.mxl';
+      a.href=url;a.download=fn;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }catch(e){
+      alert('Erreur export MusicXML : '+e.message);
+    }
+  });
+
+  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';rebuildMeasures();pushHistory();render()}closePanel()}})});
+
+  // Point 9 : Bouton Aide
+  document.getElementById('btn-help').addEventListener('click',()=>{
+    const helpText='<div style="font-size:24px;line-height:1.4;font-weight:600;text-align:left;">'
+      +'<b style="color:#0c447c;">Onglet Notes</b><br>'
+      +'• 7 boutons Do…Si pour saisir une note<br>'
+      +'• Durées : ronde, blanche, noire, croche, double, triple<br>'
+      +'• Altérations ♯ ♭ ♮ et point pointé<br>'
+      +'• ⌒ liaison, ⌫ remplace par silence<br>'
+      +'• 3:2 ouvre le panneau n-uplet<br>'
+      +'• Cm bouton accord avec notes Do…Si + #/b/m/Maj…<br>'
+      +'• ~T ornements (trille, fermata, staccato, etc.)<br>'
+      +'• Transp. ↓↑ transpose tout le morceau<br>'
+      +'• ↶ ↷ annuler/refaire<br><br>'
+      +'<b style="color:#0c447c;">Onglet Mesure</b><br>'
+      +'• −Mes / +Mes ajouter ou supprimer des mesures<br>'
+      +'• Rythme, Armure, Clé s\'appliquent dès la mesure active<br>'
+      +'• 𝄆 𝄇 reprises, |1 |2 voltas<br>'
+      +'• 📋 copier mesures de la mesure active à N<br>'
+      +'• 📥 coller à partir de la mesure active<br>'
+      +'• ↶ ↷ annuler/refaire<br><br>'
+      +'<b style="color:#0c447c;">Onglet Play</b><br>'
+      +'• ▶ jouer, ■ stop, 👁 vue large<br>'
+      +'• Vol et ♩ tempo ajustables<br>'
+      +'• ⛶ plein écran<br>'
+      +'• Les liaisons de notes identiques sont jouées comme une seule note<br><br>'
+      +'<b style="color:#0c447c;">Onglet Titre</b><br>'
+      +'• X numéro<br>'
+      +'• Titre, Compositeur, Commentaire multi-lignes<br>'
+      +'• ↵ Nouvelle ligne génère plusieurs T:/C:/N: dans le ABC<br><br>'
+      +'<b style="color:#0c447c;">Onglet Fichier</b><br>'
+      +'• 📄 nouveau, 📂 ouvrir .abc, 💾 enregistrer .abc<br>'
+      +'• ⭐ mémoires locales, ABC voir le code généré<br>'
+      +'• MusicXML (.mxl) : export au format MusicXML compressé<br><br>'
+      +'<b style="color:#0c447c;">Limites</b><br>'
+      +'• Une seule voix (monophonique)<br>'
+      +'• Accord (texte) sur la note, pas plusieurs notes simultanées<br>'
+      +'• N-uplets de ♩ ♪ ♬ en 3 5 6 7 pour le temps de 2<br>'
+      +'• 7 dièses ou 7 bémols max à l\'armure<br>'
+      +'</div>';
+    openPanel({title:'Aide',body:helpText,hideActions:true,extraButtons:['Fermer'],onExtra:()=>closePanel()});
+  });
+
+  const panel=document.getElementById('panel');
+  const panelTitle=document.getElementById('panel-title');
+  const panelMes=document.getElementById('panel-mes');
+  const panelBody=document.getElementById('panel-body');
+  const panelOk=document.getElementById('panel-ok');
+  const panelCancel=document.getElementById('panel-cancel');
+  let cOnOk=null,cOnExtra=null,cOnMeasureChange=null,cShowMes=false;
+
+  function openPanel({title,body,onMount,onOk,hideActions,extraButtons,onExtra,actionsClass,showMes,onMeasureChange}){
+    panelTitle.textContent=title;
+    cShowMes=!!showMes;
+    panelMes.textContent=cShowMes?('Mes '+(state.sel.m+1)):'';
+    let eH='';
+    if(extraButtons&&extraButtons.length){
+      let cls='actions';
+      if(actionsClass)cls+=' '+actionsClass;
+      else if(extraButtons.length===3)cls+=' three';
+      else if(extraButtons.length===4)cls+=' four';
+      eH='<div class="'+cls+'" style="margin-top:10px;">'+extraButtons.map((b,i)=>'<button class="k '+(i===extraButtons.length-1?'primary':'')+'" data-extra="'+b.replace(/"/g,'&quot;')+'">'+b+'</button>').join('')+'</div>';
+    }
+    panelBody.innerHTML=body+eH;
+    cOnOk=onOk||null;cOnExtra=onExtra||null;cOnMeasureChange=onMeasureChange||null;
+    panelOk.style.display=(hideActions||extraButtons)?'none':'';
+    panelCancel.style.display=(hideActions||extraButtons)?'none':'';
+    panel.classList.add('open');
+    if(onMount)setTimeout(onMount,50);
+    if(extraButtons)setTimeout(()=>{panelBody.querySelectorAll('[data-extra]').forEach(b=>{b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)})})},50);
+  }
+  function closePanel(){panel.classList.remove('open');cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false}
+  function notifyPanelMeasureChanged(){
+    if(!panel.classList.contains('open'))return;
+    if(cShowMes)panelMes.textContent='Mes '+(state.sel.m+1);
+    if(cOnMeasureChange)cOnMeasureChange();
+  }
+  panelOk.addEventListener('click',()=>{if(cOnOk)cOnOk();closePanel();render()});
+  panelCancel.addEventListener('click',closePanel);
+
+  // ⭐ Headers : Titre/X simple input, ST/C/N multilignes avec bouton ↵
+  function headerPromptSimple(key,title){return ()=>openPanel({title:title,body:'<div class="row"><input id="hi" type="text" value="'+((state.headers[key]||'')+'').replace(/"/g,'&quot;')+'"/></div>',onMount:()=>document.getElementById('hi').focus(),onOk:()=>{let v=document.getElementById('hi').value.trim();if(key==='X'&&!v)v='0';state.headers[key]=v;pushHistory()}})}
+  function headerPromptMulti(key,title){return ()=>{
+    openPanel({
+      title:title,
+      body:'<textarea id="hi">'+((state.headers[key]||'')+'').replace(/</g,'&lt;')+'</textarea>'+
+        '<div class="row-grid" style="margin-top:8px;"><button class="k" id="newline-btn" style="font-size:36px;">↵ Nouvelle ligne</button></div>',
+      onMount:()=>{
+        const ta=document.getElementById('hi');
+        ta.focus();
+        document.getElementById('newline-btn').addEventListener('click',()=>{
+          const pos=ta.selectionStart;
+          const v=ta.value;
+          ta.value=v.substring(0,pos)+'\n'+v.substring(pos);
+          ta.selectionStart=ta.selectionEnd=pos+1;
+          ta.focus();
+        });
+      },
+      onOk:()=>{state.headers[key]=document.getElementById('hi').value.trim();pushHistory()}
+    });
+  }}
+  document.querySelector('[data-hdr="X"]').addEventListener('click',headerPromptSimple('X','X: Numéro'));
+  document.querySelector('[data-hdr="T"]').addEventListener('click',headerPromptMulti('T','Titre'));
+  document.querySelector('[data-hdr="C"]').addEventListener('click',headerPromptMulti('C','Compositeur'));
+  document.querySelector('[data-hdr="N"]').addEventListener('click',headerPromptMulti('N','Commentaire'));
+
+  // ⭐ Rythme : applique à partir de la mesure active uniquement
+  document.querySelector('[data-hdr="M"]').addEventListener('click',()=>{
+    function getCurrent(){const cur=meterAt(state.sel.m);const{num,den}=parseMeter(cur);return{n:num,d:den,uD:parseInt(state.pieceUnit.split('/')[1],10)}}
+    let st=getCurrent();
+    const dV=[1,2,4,8,16];
+    const uDs=[1,2,4,8,16,32];
+    function controls(){
+      return '<div class="mes-active">Mesure active : <b>'+(state.sel.m+1)+'</b></div>'+
+        '<div class="stepper-label">Numérateur</div><div class="stepper"><button class="k" id="num-d">−</button><div class="val"><b id="num-v">'+st.n+'</b></div><button class="k" id="num-u">+</button></div>'+
+        '<div class="stepper-label">Dénominateur</div><div class="stepper"><button class="k" id="den-d">−</button><div class="val"><b id="den-v">'+st.d+'</b></div><button class="k" id="den-u">+</button></div>'+
+        '<div class="stepper-label">Unité L:1/x</div><div class="stepper"><button class="k" id="L-d">−</button><div class="val"><b id="L-v">'+st.uD+'</b></div><button class="k" id="L-u">+</button></div>';
+    }
+    function rebind(){
+      document.getElementById('num-u').addEventListener('click',()=>{st.n=Math.min(16,st.n+1);document.getElementById('num-v').textContent=st.n});
+      document.getElementById('num-d').addEventListener('click',()=>{st.n=Math.max(1,st.n-1);document.getElementById('num-v').textContent=st.n});
+      document.getElementById('den-u').addEventListener('click',()=>{const i=dV.indexOf(st.d);if(i<dV.length-1){st.d=dV[i+1];document.getElementById('den-v').textContent=st.d}});
+      document.getElementById('den-d').addEventListener('click',()=>{const i=dV.indexOf(st.d);if(i>0){st.d=dV[i-1];document.getElementById('den-v').textContent=st.d}});
+      document.getElementById('L-u').addEventListener('click',()=>{const i=uDs.indexOf(st.uD);if(i<uDs.length-1){st.uD=uDs[i+1];document.getElementById('L-v').textContent=st.uD}});
+      document.getElementById('L-d').addEventListener('click',()=>{const i=uDs.indexOf(st.uD);if(i>0){st.uD=uDs[i-1];document.getElementById('L-v').textContent=st.uD}});
+    }
+    openPanel({
+      title:'Rythme',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      onMount:rebind,
+      onMeasureChange:()=>{
+        st=getCurrent();
+        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
+        rebind();
+        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
+          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
+        });
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        if(state.sel.m===0){
+          state.pieceMeter=st.n+'/'+st.d;
+          state.pieceUnit='1/'+st.uD;
+          delete state.timeChanges[0];
+          rebuildMeasures();
+        } else {
+          state.pieceUnit='1/'+st.uD;
+          state.timeChanges[state.sel.m]=st.n+'/'+st.d;
+          for(let i=state.sel.m;i<state.measures.length;i++){
+            if(i>state.sel.m&&state.timeChanges[i])break;
+            state.measures[i]=buildEmptyMeasure(meterAt(i));
+          }
+          state.sel={m:state.sel.m,s:0};
+        }
+        cleanupAccidentals();pushHistory();closePanel();render();
+      }
+    });
+  });
+
+  // ⭐ Armure : applique à partir de la mesure active
+  document.querySelector('[data-hdr="K"]').addEventListener('click',()=>{
+    let sig=keyAt(state.sel.m);
+    function controls(){return '<div class="mes-active">Mesure active : <b>'+(state.sel.m+1)+'</b></div>'+
+      '<div class="stepper-label">Armure</div><div class="stepper"><button class="k" id="sig-d">♭</button><div class="val"><b id="sig-v">'+keyHumanLabel(sig)+'</b></div><button class="k" id="sig-u">♯</button></div>'}
+    function rebind(){
+      document.getElementById('sig-u').addEventListener('click',()=>{sig=Math.min(7,sig+1);document.getElementById('sig-v').textContent=keyHumanLabel(sig)});
+      document.getElementById('sig-d').addEventListener('click',()=>{sig=Math.max(-7,sig-1);document.getElementById('sig-v').textContent=keyHumanLabel(sig)});
+    }
+    openPanel({
+      title:'Armure',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      onMount:rebind,
+      onMeasureChange:()=>{
+        sig=keyAt(state.sel.m);
+        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
+        rebind();
+        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
+          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
+        });
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        if(state.sel.m===0){state.pieceKeySig=sig;delete state.keyChanges[0]}
+        else state.keyChanges[state.sel.m]=sig;
+        cleanupAccidentals();pushHistory();closePanel();render();
+      }
+    });
+  });
+
+  // ⭐ Clé : applique à partir de la mesure active
+  document.querySelector('[data-hdr="CLEF"]').addEventListener('click',()=>{
+    let pick=clefAt(state.sel.m);
+    function controls(){return '<div class="mes-active">Mesure active : <b>'+(state.sel.m+1)+'</b></div>'+
+      '<div class="row-grid row-3" id="clef-pick"><button class="k clef-small" data-clef="treble">𝄞</button><button class="k" data-clef="treble8" style="font-size:28px;">Sol-8</button><button class="k clef-small" data-clef="bass">𝄢</button></div>'}
+    function rebind(){
+      const rf=()=>document.querySelectorAll('#clef-pick .k').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));
+      rf();
+      document.querySelectorAll('#clef-pick .k').forEach(b=>b.addEventListener('click',()=>{pick=b.dataset.clef;rf()}));
+    }
+    openPanel({
+      title:'Clé',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      onMount:rebind,
+      onMeasureChange:()=>{
+        pick=clefAt(state.sel.m);
+        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
+        rebind();
+        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
+          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
+        });
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        if(state.sel.m===0){state.pieceClef=pick;delete state.clefChanges[0]}
+        else state.clefChanges[state.sel.m]=pick;
+        cleanupAccidentals();pushHistory();closePanel();render();
+      }
+    });
+  });
+
+  function updateBadge(){document.getElementById('ww-tag').textContent=window.innerWidth||0;document.getElementById('wh-tag').textContent=window.innerHeight||0}
+  window.addEventListener('resize',updateBadge);updateBadge();
+
+  // Clic sur la partition : selectionner le slot/mesure cliques
+  document.getElementById('score').addEventListener('click',(e)=>{
+    const t=e.target;
+    if(!t||t.dataset.m===undefined||t.dataset.s===undefined)return;
+    const m=parseInt(t.dataset.m,10);
+    const s=parseInt(t.dataset.s,10);
+    if(isNaN(m)||isNaN(s))return;
+    if(state.measures[m]&&state.measures[m][s]){
+      state.sel={m,s};
+      render();
+    }
+  });
+
+  rebuildMeasures();pushHistory();render();
+})();
+</script>
