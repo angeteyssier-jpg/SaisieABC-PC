@@ -17,9 +17,14 @@
     background: #ebe9e0; padding: 4px 10px; border-radius: 6px; margin-bottom: 4px; }
   .ver-badge b { color: #1a1a1a; font-weight: 700; }
 
+  .dim-info { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 6px;
+    padding: 4px 8px; font-size: 13px; color: #5f5e5a;
+    display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+  .dim-info b { color: #185fa5; font-weight: 700; }
+
   .abc-card { background: #ffffff; border: 1px solid #d8d6ce; border-radius: 6px; padding: 6px; height: 100%; }
-  /* Partition occupe toute la hauteur de la fenêtre (badge + marges déduits) */
-  .score-wrap { width: 100%; height: calc(100vh - 60px); min-height: 600px; }
+  /* Partition : hauteur réduite (~60%) */
+  .score-wrap { width: 100%; height: calc(60vh - 36px); min-height: 360px; }
   .score-wrap svg { width: 100%; height: 100%; display: block; }
 
   .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 10px;
@@ -162,7 +167,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.08 PC</b></span>
+    <span>Éditeur ABC <b>v0.18 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -235,6 +240,15 @@
           <button class="k" id="btn-undo">↶</button>
           <button class="k" id="btn-redo">↷</button>
         </div>
+        <div class="control-row">
+          <button class="k" id="size-d">−</button>
+          <div class="label">Taille <b id="size-v">100</b></div>
+          <button class="k" id="size-u">+</button>
+        </div>
+        <div class="dim-info">
+          <span>Zone : <b id="dim-w">0</b>×<b id="dim-h">0</b></span>
+          <span>SVG affiché : <b id="svg-h">0</b>px</span>
+        </div>
       </div>
 
       <div class="tab-panel" data-panel="mesure">
@@ -280,8 +294,12 @@
         </div>
         <div class="control-row">
           <button class="k" id="tempo-d">−</button>
-          <div class="label">♩ <b id="tempo-v">100</b></div>
+          <div class="label">♩ <b id="tempo-v">60</b>  ♩. <b id="tempo-v-dot">40</b></div>
           <button class="k" id="tempo-u">+</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="tempo-mode-q" style="font-size:14px;">♩ noire</button>
+          <button class="k" id="tempo-mode-qd" style="font-size:14px;">♩. pointée</button>
         </div>
         <div class="row-grid"><button class="k" id="btn-fs">⛶</button></div>
       </div>
@@ -327,7 +345,7 @@
   const KEY_NAMES_MAJOR=['C','G','D','A','E','B','F♯','C♯'];
   const KEY_NAMES_MAJOR_FLAT=['C','F','B♭','E♭','A♭','D♭','G♭','C♭'];
 
-  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:100,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false};
+  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80};
 
   const history={stack:[],pos:-1,max:100};
   function snapshot(){return JSON.stringify(state)}
@@ -369,7 +387,61 @@
   function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';return''}
   function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';return'Sol'}
   function keyHumanLabel(sig){if(sig===0)return'C maj : 0';if(sig>0)return KEY_NAMES_MAJOR[sig]+' maj : '+sig+' ♯';return KEY_NAMES_MAJOR_FLAT[-sig]+' maj : '+Math.abs(sig)+' ♭'}
-  function cleanupAccidentals(){state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;if(!slot.acc)return;if(sig>0&&slot.acc==='^'&&SHARP_NOTES.slice(0,sig).includes(slot.note))delete slot.acc;else if(sig<0&&slot.acc==='_'&&FLAT_NOTES.slice(0,-sig).includes(slot.note))delete slot.acc})})}
+  function cleanupAccidentals(){
+    state.measures.forEach((meas,mi)=>{
+      const sig=keyAt(mi);
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        if(!slot.acc)return;
+        // ^ redondant en armure diese
+        if(sig>0&&slot.acc==='^'&&SHARP_NOTES.slice(0,sig).includes(slot.note)){delete slot.acc;return}
+        // _ redondant en armure bemol
+        if(sig<0&&slot.acc==='_'&&FLAT_NOTES.slice(0,-sig).includes(slot.note)){delete slot.acc;return}
+        // = redondant : la note n'est pas alteree par l'armure
+        if(slot.acc==='='){
+          const altByKey=(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))||(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note));
+          if(!altByKey){
+            // Verifier qu'il n'y a pas une alteration anterieure dans la mesure sur meme note+octave
+            let priorAcc=null;
+            for(let k=si-1;k>=0;k--){
+              const p=meas[k];
+              if(p.type==='note'&&p.note===slot.note&&p.octave===slot.octave&&p.acc){priorAcc=p.acc;break}
+            }
+            if(!priorAcc||priorAcc===''||priorAcc==='=')delete slot.acc;
+          }
+        }
+      })
+    })
+  }
+  // Geler les alterations effectives a partir d'un index de mesure (utilise avant un changement d'armure)
+  // newSigAtStart : nouvelle armure qui s'appliquera a partir de startMi (pour poser un becarre si necessaire)
+  function freezeAccidentalsFrom(startMi,newSigAtStart){
+    for(let mi=startMi;mi<state.measures.length;mi++){
+      const meas=state.measures[mi];const sig=keyAt(mi);
+      // Si une armure changeait deja a une mesure ulterieure, elle restera. Sinon on utilise newSig.
+      let effSig=sig;
+      if(mi===startMi)effSig=sig;
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        // Alteration effective dans l'ancienne armure
+        const oldEff=effectiveAcc(meas,si,sig);
+        // Determiner la future armure pour cette mesure (apres changement)
+        let futSig=newSigAtStart;
+        // Si une autre armure change avant cette mesure, on ne devrait pas surecrire
+        // Simplification : on prend newSigAtStart pour toutes les mesures >= startMi
+        // (les keyChanges entre temps seront gerees ailleurs)
+        // Alteration que donnerait la nouvelle armure pour cette note (sans acc explicite)
+        let futKeyAcc='';
+        if(futSig>0&&SHARP_NOTES.slice(0,futSig).includes(slot.note))futKeyAcc='^';
+        else if(futSig<0&&FLAT_NOTES.slice(0,-futSig).includes(slot.note))futKeyAcc='_';
+        // On veut que la note conserve oldEff
+        // Si oldEff === futKeyAcc : laisser sans acc (la nouvelle armure le donnera)
+        // Sinon : poser un acc explicite (oldEff ou '=' si oldEff est vide)
+        if(oldEff===futKeyAcc)slot.acc='';
+        else slot.acc=oldEff||'=';
+      });
+    }
+  }
   function disarmKey(){state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;if(!slot.acc){if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))slot.acc='^';else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))slot.acc='_'}})});state.pieceKeySig=0;state.keyChanges={}}
 
   const NOTE_NAMES=['C','C','D','D','E','F','F','G','G','A','A','B'];
@@ -386,22 +458,75 @@
   function accToDrawFor(meas,slotIdx,keySig){const t=meas[slotIdx];if(!t||t.type!=='note')return '';// Note sans acc explicite : rien à dessiner (elle hérite simplement)
   if(!t.acc)return '';// Note avec acc explicite : afficher si différent du contexte
   let priorAcc=null;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type==='note'&&s.note===t.note&&s.octave===t.octave&&s.acc){priorAcc=s.acc;break}}let keyAcc='';if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))keyAcc='^';else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))keyAcc='_';const ctx=(priorAcc!==null)?priorAcc:keyAcc;if(t.acc===ctx)return '';return t.acc}
-  function transposePiece(semitones){const preferFlats=state.pieceKeySig<0;state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;const oldMidi=midiOfSlot(slot,sig);const newMidi=oldMidi+semitones;const out=midiToNote(newMidi,preferFlats);slot.note=out.note;slot.octave=out.octave;slot.acc=out.acc})});cleanupAccidentals()}
+  function transposePiece(semitones){
+    // Logique propre : on ne lit pas l'armure pendant la transposition.
+    // 1. Figer les alterations effectives (armure + heritage) en alterations explicites sur chaque slot
+    // 2. Transposer chaque note en se basant uniquement sur slot.acc (sans relire l'armure)
+    // 3. midiToNote produit des noms enharmoniques valides (jamais Cb/B#/E#/Fb)
+    // 4. Ajuster slot.acc pour que l'armure courante (inchangee) produise la bonne hauteur MIDI
+    // 5. cleanupAccidentals retire les acc redondants
+    let preferFlats;
+    if(state.pieceKeySig<0)preferFlats=true;
+    else if(state.pieceKeySig>0)preferFlats=false;
+    else preferFlats=(semitones<0);
+    // Etape 1 : figer toutes les alterations effectives
+    state.measures.forEach((meas,mi)=>{
+      const sig=keyAt(mi);
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        const eff=effectiveAcc(meas,si,sig);
+        slot.acc=eff||'';
+      });
+    });
+    // Etape 2-3 : transposer chaque note (en lisant uniquement slot.acc, plus l'armure)
+    const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+    state.measures.forEach((meas)=>{
+      meas.forEach((slot)=>{
+        if(slot.type!=='note')return;
+        let oldMidi=60+baseSemi[slot.note]+slot.octave*12;
+        if(slot.acc==='^')oldMidi+=1;else if(slot.acc==='_')oldMidi-=1;
+        const newMidi=oldMidi+semitones;
+        const out=midiToNote(newMidi,preferFlats);
+        slot.note=out.note;slot.octave=out.octave;slot.acc=out.acc;
+      });
+    });
+    // Etape 4 : ajuster slot.acc en fonction de l'armure (qui reste inchangee)
+    // Le slot.acc actuel produit par midiToNote ignore l'armure ; on doit poser un acc explicite
+    // si l'armure transformerait sinon la note en autre chose (^, _, ou =)
+    state.measures.forEach((meas,mi)=>{
+      const sig=keyAt(mi);
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        // Alteration que poserait l'armure pour cette note (sans acc explicite)
+        let keyAcc='';
+        if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))keyAcc='^';
+        else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))keyAcc='_';
+        const curAcc=slot.acc||'';
+        // Si l'armure ferait la meme chose que notre acc actuel : on peut tout enlever
+        if(curAcc===keyAcc)slot.acc='';
+        // Sinon, si on n'a pas d'acc mais l'armure en ajouterait un : poser un becarre explicite
+        else if(curAcc===''&&keyAcc!=='')slot.acc='=';
+        // Sinon laisser tel quel (acc explicite different de l'armure)
+      });
+    });
+    // Etape 5 : nettoyage standard (au cas ou)
+    cleanupAccidentals();
+  }
 
   function buildBarSeparator(prevMi,mi){const prevEnd=(prevMi>=0)&&state.repeats[prevMi]?.end;const thisStart=state.repeats[mi]?.start;if(prevEnd&&thisStart)return':|:';if(prevEnd)return':|';if(thisStart)return'|:';if(mi===0)return'';return'|'}
   function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
   function buildVoltaFor(mi){const r=state.repeats[mi];if(!r||!r.volta)return'';return'['+r.volta}
 
-  function buildAbcText(){let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});h+='M:'+state.pieceMeter+'\n';h+='L:'+state.pieceUnit+'\n';h+='Q:1/4='+state.tempo+'\n';h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';let body='';state.measures.forEach((m,mi)=>{body+=buildBarSeparator(mi-1,mi);body+=buildInlineFor(mi);body+=buildVoltaFor(mi);const groups=computeBeamGroups(m,meterAt(mi));const gOf={};groups.forEach((g,gi)=>{g.forEach((idx,k)=>{gOf[idx]={gi}})});let lastTid=null;m.forEach((t,si)=>{if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}if(!t.tuplet)lastTid=null;body+=slotStr(t);const isLast=(si===m.length-1);if(isLast)return;const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;if(!inSame)body+=' '})});const li=state.measures.length-1;if(state.repeats[li]?.end)body+=':|';else body+='|';return h+body}
+  function buildAbcText(){let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});h+='M:'+state.pieceMeter+'\n';h+='L:'+state.pieceUnit+'\n';if(state.tempoDotted){h+='Q:3/8='+Math.round(state.tempo*2/3)+'\n'}else{h+='Q:1/4='+state.tempo+'\n'}h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';let body='';state.measures.forEach((m,mi)=>{body+=buildBarSeparator(mi-1,mi);body+=buildInlineFor(mi);body+=buildVoltaFor(mi);const groups=computeBeamGroups(m,meterAt(mi));const gOf={};groups.forEach((g,gi)=>{g.forEach((idx,k)=>{gOf[idx]={gi}})});let lastTid=null;m.forEach((t,si)=>{if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}if(!t.tuplet)lastTid=null;body+=slotStr(t);const isLast=(si===m.length-1);if(isLast)return;const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;if(!inSame)body+=' '})});const li=state.measures.length-1;if(state.repeats[li]?.end)body+=':|';else body+='|';return h+body}
 
   function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1];if(c==='bass'||c==='F')clef='bass';else if(c==='treble-8'||c==='treble_8')clef='treble8';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
-  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:100,sel:{m:0,s:0},octave:0,volume:state.volume};let inBody=false,bodyText='';for(const line of cleaned){const t=line.trim();if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='M')ns.pieceMeter=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const qm=v.match(/=(\d+)/);if(qm)ns.tempo=parseInt(qm[1],10)}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}bodyText+=' '+t}if(!inBody)return null;parseAbcBody(bodyText,ns);return ns}
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume};let inBody=false,bodyText='';for(const line of cleaned){const t=line.trim();if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='M')ns.pieceMeter=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);if(num===3&&den===8){ns.tempo=Math.round(bpm*3/2);ns.tempoDotted=true}else{ns.tempo=bpm;ns.tempoDotted=false}}else{const qm2=v.match(/=(\d+)/);if(qm2)ns.tempo=parseInt(qm2[1],10)}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}bodyText+=' '+t}if(!inBody)return null;parseAbcBody(bodyText,ns);return ns}
   function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,pendingOrn=[],pendingTuplet=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);const cc=ch.replace(/^[\^_<>@]/,'');if(cc)lastChord=cc;i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){const n=parseInt(body[i+1],10);let j=i+2,take=n;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);measures.forEach((meas,mi)=>{let used=0;for(const s of meas)used+=effDur(s);let lm=ns.pieceMeter;for(let k=0;k<=mi;k++)if(ns.timeChanges[k])lm=ns.timeChanges[k];const cap=measureCapacity(lm);if(used<cap-1e-6){const beat=4/parseMeter(lm).den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));meas.push(...tail)}else if(used>cap+1e-6){let a=0,ca=meas.length;for(let k=0;k<meas.length;k++){const d=effDur(meas[k]);if(a+d>cap+1e-6){ca=k;break}a+=d}meas.splice(ca)}});if(measures.length===0)measures.push(buildEmptyMeasure(ns.pieceMeter))}
   function parseDurationSpec(s){if(s==='')return 1;if(s==='/')return 0.5;if(s==='//')return 0.25;if(s==='///')return 0.125;if(s.startsWith('/')){const n=parseInt(s.substring(1),10);return 1/(n||2)}if(s.includes('/')){const[n,d]=s.split('/');const a=parseInt(n,10)||1;const b=parseInt(d,10)||2;return a/b}return parseInt(s,10)||1}
 
   function expandForPlayback(){const out=[];const N=state.measures.length;if(N===0)return out;let i=0,pass=1,safety=0;const done={};while(i<N&&safety<5000){safety++;const r=state.repeats[i]||{};if(r.volta!==undefined&&r.volta!==pass){let j=i+1;while(j<N){const rj=state.repeats[j]||{};if(rj.volta!==undefined&&rj.volta!==r.volta)break;if(rj.end){j++;break}j++}i=j;continue}out.push(i);if(r.end){let startIdx=0;for(let k=i;k>=0;k--){if(state.repeats[k]?.start){startIdx=k;break}}const key=startIdx+':'+i;if(!done[key]){done[key]=true;i=startIdx;pass=2;continue}pass=1}i++;if(out.length>5000)break}return out}
 
-  const SCORE_W=600,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=52;
+  const SCORE_W=800,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=52;
   function clefRefStep(c){return c==='bass'?-12:2}
   function noteY(staffTop,step,c){const r=clefRefStep(c);const bl=staffTop+4*LINE_GAP;return bl-(step-r)*(LINE_GAP/2)}
   function stepIndex(note,oct){const m={C:0,D:1,E:2,F:3,G:4,A:5,B:6};return m[note]+7*oct}
@@ -413,10 +538,26 @@
 
   function renderScore(){
     const selM=state.sel.m;
-    const linesShown=state.viewmode?6:3;
-    const mPP=MEASURES_PER_LINE*linesShown;
+    // === Calcul dynamique des dimensions selon le conteneur et la taille choisie ===
+    const sw=document.getElementById('score');
+    const cw=sw?sw.clientWidth:600;
+    const ch=sw?sw.clientHeight:400;
+    // Echelle de base : 1 unite SVG = 1.8 px a 100%. La taille est ajustee par scoreScale.
+    const pxPerUnit=1.8*(state.scoreScale||100)/100;
+    const viewW=Math.max(200,cw/pxPerUnit);
+    const viewH=Math.max(100,ch/pxPerUnit);
+    // Nb max de mesures par ligne (100 unites/mesure de reference)
+    const MEASURES_PER_LINE=Math.max(1,Math.floor((viewW-LEFT_PAD-RIGHT_PAD)/100));
+    // Nb max de lignes (selon hauteur disponible)
+    const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SPACING));
+    const mPP=MEASURES_PER_LINE*linesMax;
     const page=Math.floor(selM/mPP);
     const startM=page*mPP;
+    const N=state.measures.length;
+    const measuresInPage=Math.max(0,Math.min(mPP,N-startM));
+    const linesShown=Math.max(1,Math.min(linesMax,Math.ceil(measuresInPage/MEASURES_PER_LINE)));
+    // SCORE_W effectif : on utilise toute la largeur viewW
+    const SCORE_W=viewW;
     const usable=SCORE_W-LEFT_PAD-RIGHT_PAD;
     const measureW=usable/MEASURES_PER_LINE;
     const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
@@ -712,6 +853,8 @@
     document.getElementById('oct-val').textContent=state.octave>0?'+'+state.octave:state.octave;
     const sl=selectedSlot();
     document.querySelectorAll('[data-dur]').forEach(b=>{const aD=sl?sl.dur:1;b.classList.toggle('active',parseFloat(b.dataset.dur)===aD)});
+    // Bleuter le bouton note correspondant a la note active
+    document.querySelectorAll('[data-note]').forEach(b=>{const aN=(sl&&sl.type==='note')?sl.note:null;b.classList.toggle('active',b.dataset.note===aN)});
     document.querySelectorAll('[data-acc]').forEach(b=>{
       let aA=(sl&&sl.type==='note')?(sl.acc||''):'';
       // Si la note appartient à l'armure (sans alteration explicite), afficher le bouton actif
@@ -724,7 +867,11 @@
     });
     const dB=document.getElementById('dot-btn');if(dB)dB.classList.toggle('active',!!(sl&&sl.dot));
     document.getElementById('tempo-v').textContent=state.tempo;
+    document.getElementById('tempo-v-dot').textContent=Math.round(state.tempo*2/3);
+    document.getElementById('tempo-mode-q').classList.toggle('active',!state.tempoDotted);
+    document.getElementById('tempo-mode-qd').classList.toggle('active',!!state.tempoDotted);
     document.getElementById('vol-v').textContent=state.volume;
+    document.getElementById('size-v').textContent=state.scoreScale||100;
     document.getElementById('btn-play').textContent=audio.playing?'⏸':'▶';
     document.getElementById('btn-loop').classList.toggle('active',!!state.loop);
     document.getElementById('btn-undo').disabled=(history.pos<=0);
@@ -745,7 +892,7 @@
     document.getElementById('hdr-c-val').textContent=(state.headers.C||'—').split('\n')[0];
     document.getElementById('hdr-n-val').textContent=(state.headers.N||'—').split('\n')[0];
   }
-  function render(){renderScore();renderState();notifyPanelMeasureChanged()}
+  function render(){renderScore();renderState();notifyPanelMeasureChanged();if(typeof updateBadge==='function')updateBadge()}
 
   function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(sl.note,sl.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
   function selectNext(){
@@ -861,15 +1008,9 @@
 
   function setNoteAtSelection(n){
     const sl=selectedSlot();if(!sl)return;const dur=sl.dur,dot=sl.dot;
-    let acc=(sl.type==='note')?sl.acc:'';
-    // Si même note (nom+octave) a une altération explicite plus tôt dans la mesure, hériter
-    if(!acc){
-      const meas=state.measures[state.sel.m];
-      for(let i=state.sel.s-1;i>=0;i--){
-        const p=meas[i];
-        if(p.type==='note'&&p.note===n&&p.octave===state.octave&&p.acc){acc=p.acc;break}
-      }
-    }
+    // Conserver l'alteration seulement si on garde la meme note (nom)
+    let acc='';
+    if(sl.type==='note'&&sl.note===n)acc=sl.acc||'';
     // Point 7 : trouver la note précédente (toute mesure) et choisir l'octave la plus proche
     const prev=findPreviousNote(state.sel.m,state.sel.s);
     if(prev){
@@ -947,7 +1088,7 @@
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setActiveTab(t.dataset.tab)));
 
   const nR=document.getElementById('notes-row');
-  NOTES.forEach(n=>{const b=document.createElement('button');b.className='k note-btn';b.innerHTML='<span class="lbl">'+n.label+'</span><span class="sub">'+n.sub+'</span>';b.addEventListener('click',()=>setNoteAtSelection(n.n));nR.appendChild(b)});
+  NOTES.forEach(n=>{const b=document.createElement('button');b.className='k note-btn';b.dataset.note=n.n;b.innerHTML='<span class="lbl">'+n.label+'</span><span class="sub">'+n.sub+'</span>';b.addEventListener('click',()=>setNoteAtSelection(n.n));nR.appendChild(b)});
 
   const dR=document.getElementById('dur-row');
   DURATIONS.forEach(d=>{const b=document.createElement('button');b.className='k symbol';b.dataset.dur=d.d;b.textContent=d.label;b.addEventListener('click',()=>setDurAtSelection(d.d));dR.appendChild(b)});
@@ -1310,8 +1451,12 @@
 
   document.getElementById('vol-u').addEventListener('click',()=>{state.volume=Math.min(100,state.volume+10);ensureAudio();render()});
   document.getElementById('vol-d').addEventListener('click',()=>{state.volume=Math.max(0,state.volume-10);ensureAudio();render()});
-  document.getElementById('tempo-u').addEventListener('click',()=>{state.tempo=Math.min(240,state.tempo+5);render()});
-  document.getElementById('tempo-d').addEventListener('click',()=>{state.tempo=Math.max(30,state.tempo-5);render()});
+  document.getElementById('tempo-u').addEventListener('click',()=>{state.tempo=Math.min(300,state.tempo+5);if(audio.playing){stopPlayback(false);playSchedule()}else render()});
+  document.getElementById('tempo-d').addEventListener('click',()=>{state.tempo=Math.max(30,state.tempo-5);if(audio.playing){stopPlayback(false);playSchedule()}else render()});
+  document.getElementById('tempo-mode-q').addEventListener('click',()=>{state.tempoDotted=false;render()});
+  document.getElementById('tempo-mode-qd').addEventListener('click',()=>{state.tempoDotted=true;render()});
+  document.getElementById('size-u').addEventListener('click',()=>{state.scoreScale=Math.min(250,(state.scoreScale||100)+10);render()});
+  document.getElementById('size-d').addEventListener('click',()=>{state.scoreScale=Math.max(40,(state.scoreScale||100)-10);render()});
   document.getElementById('btn-play').addEventListener('click',()=>{if(audio.playing)stopPlayback(true);else playSchedule()});
   document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
   document.getElementById('btn-loop').addEventListener('click',()=>{state.loop=!state.loop;document.getElementById('btn-loop').classList.toggle('active',state.loop)});
@@ -1382,18 +1527,16 @@
   }
   function keyXml(sig){return '<key><fifths>'+sig+'</fifths><mode>major</mode></key>'}
   function timeXml(meter){const{num,den}=parseMeter(meter);return '<time><beats>'+num+'</beats><beat-type>'+den+'</beat-type></time>'}
-  function pitchXml(slot){
+  function pitchXml(slot,effAcc){
     const step=slot.note;
-    // MusicXML octave: middle C = 4 (notre octave=0 -> 4 ; +1 -> 5 ; -1 -> 3 ; ...)
-    // mais notre octave indique aussi le passage majuscule/minuscule en ABC
-    // En interne notre Do octave 0 = C4 en MusicXML
     const oct=4+slot.octave;
+    // effAcc: altération effective (en tenant compte armure + heritage de mesure)
     let alter=0;
-    if(slot.acc==='^')alter=1;
-    else if(slot.acc==='_')alter=-1;
-    else if(slot.acc==='=')alter=0;
+    if(effAcc==='^')alter=1;
+    else if(effAcc==='_')alter=-1;
+    else if(effAcc==='=')alter=0;
     let s='<pitch><step>'+step+'</step>';
-    if(slot.acc==='^'||slot.acc==='_')s+='<alter>'+alter+'</alter>';
+    if(alter!==0)s+='<alter>'+alter+'</alter>';
     s+='<octave>'+oct+'</octave></pitch>';
     return s;
   }
@@ -1438,6 +1581,13 @@
         if(hasClefChange)xml+=clefXml(lC);
         xml+='</attributes>\n';
       }
+      // Tempo sur la premiere mesure
+      if(isFirst){
+        const bpmTempo=state.tempoDotted?Math.round(state.tempo*2/3):state.tempo;
+        const beatUnit=state.tempoDotted?'eighth':'quarter';
+        const dot=state.tempoDotted?'<beat-unit-dot/>':'';
+        xml+='<direction placement="above"><direction-type><metronome><beat-unit>'+beatUnit+'</beat-unit>'+dot+'<per-minute>'+bpmTempo+'</per-minute></metronome></direction-type><sound tempo="'+state.tempo+'"/></direction>\n';
+      }
       // Reprises
       const r=state.repeats[mi];
       if(r){
@@ -1452,17 +1602,19 @@
         if(slot.type==='rest'){
           xml+='<rest/>';
         } else {
-          xml+=pitchXml(slot);
+          // Alteration effective (heritage + armure)
+          const effAcc=effectiveAcc(meas,si,lK);
+          xml+=pitchXml(slot,effAcc);
         }
         xml+='<duration>'+dur+'</duration>';
         xml+='<type>'+noteTypeXml(slot)+'</type>';
         if(slot.dot)xml+='<dot/>';
-        if(slot.acc==='^'||slot.acc==='_'||slot.acc==='='){
-          let accName='';
-          if(slot.acc==='^')accName='sharp';
-          else if(slot.acc==='_')accName='flat';
-          else accName='natural';
-          xml+='<accidental>'+accName+'</accidental>';
+        // <accidental> : a afficher selon les regles de notation (cf accToDrawFor)
+        if(slot.type==='note'){
+          const accDraw=accToDrawFor(meas,si,lK);
+          if(accDraw==='^')xml+='<accidental>sharp</accidental>';
+          else if(accDraw==='_')xml+='<accidental>flat</accidental>';
+          else if(accDraw==='=')xml+='<accidental>natural</accidental>';
         }
         // n-uplet
         if(slot.tuplet){
@@ -1810,6 +1962,9 @@
       },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
+        // Preserver les hauteurs MIDI en gelant les alterations avant changement
+        const startMi=state.sel.m;
+        freezeAccidentalsFrom(startMi,sig);
         if(state.sel.m===0){state.pieceKeySig=sig;delete state.keyChanges[0]}
         else state.keyChanges[state.sel.m]=sig;
         cleanupAccidentals();pushHistory();closePanel();render();
@@ -1847,7 +2002,22 @@
     });
   });
 
-  function updateBadge(){document.getElementById('ww-tag').textContent=window.innerWidth||0;document.getElementById('wh-tag').textContent=window.innerHeight||0}
+  function updateBadge(){
+    document.getElementById('ww-tag').textContent=window.innerWidth||0;
+    document.getElementById('wh-tag').textContent=window.innerHeight||0;
+    const sw=document.getElementById('score');
+    if(sw){
+      const r=sw.getBoundingClientRect();
+      document.getElementById('dim-w').textContent=Math.round(r.width);
+      document.getElementById('dim-h').textContent=Math.round(r.height);
+      // Calculer la capacite theorique a la taille courante
+      const pxPerUnit=1.8*(state.scoreScale||100)/100;
+      const viewW=r.width/pxPerUnit,viewH=r.height/pxPerUnit;
+      const mPL=Math.max(1,Math.floor((viewW-50-6)/100));
+      const lMax=Math.max(1,Math.floor((viewH-22-10)/52));
+      document.getElementById('svg-h').textContent=mPL+' mes/ligne \u00d7 '+lMax+' lignes = '+(mPL*lMax)+' mes/page';
+    }
+  }
   window.addEventListener('resize',updateBadge);updateBadge();
 
   // Clic sur la partition : selectionner le slot/mesure cliques
