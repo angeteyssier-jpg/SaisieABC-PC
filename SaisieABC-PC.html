@@ -162,7 +162,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.06 PC</b></span>
+    <span>Éditeur ABC <b>v0.07 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -267,9 +267,10 @@
       </div>
 
       <div class="tab-panel" data-panel="play">
-        <div class="row-grid row-3">
+        <div class="row-grid row-4">
           <button class="k" id="btn-play">▶</button>
           <button class="k" id="btn-stop">■</button>
+          <button class="k" id="btn-loop">⟲</button>
           <button class="k" id="btn-viewmode">👁</button>
         </div>
         <div class="control-row">
@@ -326,7 +327,7 @@
   const KEY_NAMES_MAJOR=['C','G','D','A','E','B','F♯','C♯'];
   const KEY_NAMES_MAJOR_FLAT=['C','F','B♭','E♭','A♭','D♭','G♭','C♭'];
 
-  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:100,volume:60,fullscreen:false,viewmode:true,activeTab:'notes'};
+  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:100,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false};
 
   const history={stack:[],pos:-1,max:100};
   function snapshot(){return JSON.stringify(state)}
@@ -377,6 +378,8 @@
   const NOTE_ACCS_FLAT=['','_','','_','','','_','','_','','_',''];
   function midiToNote(midi,preferFlats){const oct=Math.floor(midi/12)-5;const pc=((midi%12)+12)%12;const names=preferFlats?NOTE_NAMES_FLAT:NOTE_NAMES;const accs=preferFlats?NOTE_ACCS_FLAT:NOTE_ACCS;return{note:names[pc],octave:oct,acc:accs[pc]}}
   function midiOfSlot(slot,sig){const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[slot.note];let midi=60+baseSemi+slot.octave*12;if(slot.acc==='^')midi+=1;else if(slot.acc==='_')midi-=1;else if(slot.acc==='='){}else{if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))midi+=1;else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))midi-=1}return midi}
+  // Altération effective d'un slot en tenant compte de l'héritage dans la mesure
+  function effectiveAcc(meas,slotIdx,keySig){const t=meas[slotIdx];if(!t||t.type!=='note')return '';if(t.acc)return t.acc;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type==='note'&&s.note===t.note&&s.octave===t.octave&&s.acc)return s.acc}if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))return '^';if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))return '_';return ''}
   function transposePiece(semitones){const preferFlats=state.pieceKeySig<0;state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;const oldMidi=midiOfSlot(slot,sig);const newMidi=oldMidi+semitones;const out=midiToNote(newMidi,preferFlats);slot.note=out.note;slot.octave=out.octave;slot.acc=out.acc})});cleanupAccidentals()}
 
   function buildBarSeparator(prevMi,mi){const prevEnd=(prevMi>=0)&&state.repeats[prevMi]?.end;const thisStart=state.repeats[mi]?.start;if(prevEnd&&thisStart)return':|:';if(prevEnd)return':|';if(thisStart)return'|:';if(mi===0)return'';return'|'}
@@ -717,6 +720,7 @@
     document.getElementById('tempo-v').textContent=state.tempo;
     document.getElementById('vol-v').textContent=state.volume;
     document.getElementById('btn-play').textContent=audio.playing?'⏸':'▶';
+    document.getElementById('btn-loop').classList.toggle('active',!!state.loop);
     document.getElementById('btn-undo').disabled=(history.pos<=0);
     document.getElementById('btn-redo').disabled=(history.pos>=history.stack.length-1);
     const um=document.getElementById('btn-undo-mes');if(um)um.disabled=(history.pos<=0);
@@ -737,7 +741,7 @@
   }
   function render(){renderScore();renderState();notifyPanelMeasureChanged()}
 
-  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
+  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(sl.note,sl.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
   function selectNext(){
     let{m,s}=state.sel;
     if(s+1<state.measures[m].length){state.sel={m,s:s+1};render();playSelectedSlot();return}
@@ -752,7 +756,7 @@
   function jumpToStart(){state.sel={m:0,s:0};render()}
   function jumpToEnd(){state.sel={m:state.measures.length-1,s:0};render()}
 
-  const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null};
+  const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null};
   function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.master.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/200;if(audio.ctx.state==='suspended')audio.ctx.resume()}
   function midiOfNote(note,oct,acc,keySig){const bs={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[note];let midi=60+bs+oct*12;let alt=0;if(acc==='^')alt=1;else if(acc==='_')alt=-1;else if(acc==='=')alt=0;else{if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(note))alt=1;else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(note))alt=-1}return midi+alt}
   function freqOfMidi(m){return 440*Math.pow(2,(m-69)/12)}
@@ -766,6 +770,8 @@
     if(order.length===0){stopPlayback(true);return}
     // Point 5 : demarrer a la mesure et au slot actifs
     const startMeasure=state.sel.m,startSlot=state.sel.s;
+    // Memoriser le point de depart pour la boucle (premiere lecture seulement)
+    if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlot};
     let startIdxInOrder=order.indexOf(startMeasure);
     if(startIdxInOrder<0)startIdxInOrder=0;
     const events=[];
@@ -778,7 +784,7 @@
         const slot=m[si];
         const dur=effDur(slot)*qD;
         if(slot.type==='note'){
-          const midi=midiOfNote(slot.note,slot.octave,slot.acc,sig);
+          const midi=midiOfNote(slot.note,slot.octave,effectiveAcc(m,si,sig),sig);
           events.push({midi,dur,measureIdx:mi,slotIdx:si,tieToNext:!!slot.tieToNext});
         } else {
           events.push({midi:null,dur,measureIdx:mi,slotIdx:si,tieToNext:false});
@@ -830,12 +836,22 @@
       if(last&&(state.sel.m!==last.measureIdx||state.sel.s!==last.slotIdx)){
         state.sel={m:last.measureIdx,s:last.slotIdx};renderScore();renderState();
       }
-      if(now>=audio.stopAt){stopPlayback(true);return}
+      if(now>=audio.stopAt){
+        if(state.loop&&audio.loopFrom){
+          // Reboucler : restaurer le point de depart et relancer
+          state.sel={m:audio.loopFrom.m,s:audio.loopFrom.s};
+          // Stop sans reset de loopFrom (refresh=false)
+          stopPlayback(false);
+          playSchedule();
+          return;
+        }
+        stopPlayback(true);return
+      }
       audio.raf=requestAnimationFrame(tick);
     }
     audio.raf=requestAnimationFrame(tick);
   }
-  function stopPlayback(refresh){if(audio.raf){cancelAnimationFrame(audio.raf);audio.raf=null}audio.scheduled.forEach(ev=>{if(ev.stop)try{ev.stop()}catch(_){}});audio.scheduled=[];audio.playing=false;document.getElementById('btn-play').textContent='▶';if(refresh)render()}
+  function stopPlayback(refresh){if(audio.raf){cancelAnimationFrame(audio.raf);audio.raf=null}audio.scheduled.forEach(ev=>{if(ev.stop)try{ev.stop()}catch(_){}});audio.scheduled=[];audio.playing=false;document.getElementById('btn-play').textContent='▶';if(refresh){audio.loopFrom=null;render()}}
 
   function setNoteAtSelection(n){
     const sl=selectedSlot();if(!sl)return;const dur=sl.dur,dot=sl.dot;
@@ -904,8 +920,8 @@
     }
   }
   function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;state.measures[state.sel.m][state.sel.s]={type:'rest',dur:sl.dur,dot:sl.dot};pushHistory();render()}
-  function setDurAtSelection(d){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dur=d;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const midi=midiOfNote(c.note,c.octave,c.acc,keyAt(state.sel.m));previewNote(midi,Math.min(0.4,effDur(c)*60/state.tempo))}render()}
-  function toggleDotAtSelection(){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dot=!sl.dot;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const midi=midiOfNote(c.note,c.octave,c.acc,keyAt(state.sel.m));previewNote(midi)}render()}
+  function setDurAtSelection(d){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dur=d;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(c)*60/state.tempo))}render()}
+  function toggleDotAtSelection(){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dot=!sl.dot;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi)}render()}
   function toggleAccAtSelection(acc){const sl=selectedSlot();if(sl&&sl.type==='note'){sl.acc=(sl.acc===acc)?'':acc;pushHistory();const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi);render()}}
   function changeOctave(d){state.octave=Math.max(-2,Math.min(3,state.octave+d));const sl=selectedSlot();if(sl&&sl.type==='note'){sl.octave=Math.max(-2,Math.min(3,sl.octave+d));const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi)}pushHistory();render()}
 
@@ -1292,6 +1308,7 @@
   document.getElementById('tempo-d').addEventListener('click',()=>{state.tempo=Math.max(30,state.tempo-5);render()});
   document.getElementById('btn-play').addEventListener('click',()=>{if(audio.playing)stopPlayback(true);else playSchedule()});
   document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
+  document.getElementById('btn-loop').addEventListener('click',()=>{state.loop=!state.loop;document.getElementById('btn-loop').classList.toggle('active',state.loop)});
   document.getElementById('btn-viewmode').addEventListener('click',()=>{state.viewmode=!state.viewmode;document.getElementById('app').classList.toggle('viewmode',state.viewmode);render()});
   document.getElementById('btn-fs').addEventListener('click',()=>{state.fullscreen=!state.fullscreen;document.getElementById('app').classList.toggle('fullscreen',state.fullscreen)});
 
