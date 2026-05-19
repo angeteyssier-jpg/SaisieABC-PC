@@ -124,6 +124,8 @@
     gap: 10px; margin-bottom: 10px; }
   .panel .title { font-size: 26px; color: #0c447c; font-weight: 700; }
   .panel .title-mes { font-size: 22px; color: #185fa5; font-weight: 700; }
+  .panel-nav { display: flex; align-items: center; gap: 8px; }
+  .panel-nav .k { min-width: 36px; }
   .panel .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .panel input, .panel textarea { flex: 1; min-height: 44px; font-family: inherit;
     font-size: 20px; padding: 8px 12px; border: 2px solid #b4b2a9;
@@ -167,7 +169,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.18 PC</b></span>
+    <span>Éditeur ABC <b>v0.26 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -176,7 +178,11 @@
   <div class="panel" id="panel">
     <div class="title-row">
       <div class="title" id="panel-title">Édition</div>
-      <div class="title-mes" id="panel-mes"></div>
+      <div class="panel-nav" id="panel-nav" style="display:none;">
+        <button class="k" id="panel-nav-prev" style="height:36px;padding:0 10px;font-size:18px;width:auto;">−</button>
+        <div class="title-mes" id="panel-mes"></div>
+        <button class="k" id="panel-nav-next" style="height:36px;padding:0 10px;font-size:18px;width:auto;">+</button>
+      </div>
     </div>
     <div id="panel-body"></div>
     <div class="actions">
@@ -442,7 +448,28 @@
       });
     }
   }
-  function disarmKey(){state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach(slot=>{if(slot.type!=='note')return;if(!slot.acc){if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))slot.acc='^';else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))slot.acc='_'}})});state.pieceKeySig=0;state.keyChanges={}}
+  function disarmKey(){
+    // Geler les alterations effectives (armure + heritage de mesure) avant de modifier
+    const frozen=state.measures.map((meas,mi)=>{
+      const sig=keyAt(mi);
+      return meas.map((slot,si)=>{
+        if(slot.type!=='note')return null;
+        return effectiveAcc(meas,si,sig);
+      });
+    });
+    // Appliquer les alterations figees
+    state.measures.forEach((meas,mi)=>{
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        const eff=frozen[mi][si];
+        slot.acc=eff||'';
+      });
+    });
+    // Reset armure
+    state.pieceKeySig=0;state.keyChanges={};
+    // Nettoyer les acc redondants (en Do majeur, tout `=` superflu disparait)
+    cleanupAccidentals();
+  }
 
   const NOTE_NAMES=['C','C','D','D','E','F','F','G','G','A','A','B'];
   const NOTE_ACCS=['','^','','^','','','^','','^','','^',''];
@@ -490,23 +517,40 @@
         slot.note=out.note;slot.octave=out.octave;slot.acc=out.acc;
       });
     });
-    // Etape 4 : ajuster slot.acc en fonction de l'armure (qui reste inchangee)
-    // Le slot.acc actuel produit par midiToNote ignore l'armure ; on doit poser un acc explicite
-    // si l'armure transformerait sinon la note en autre chose (^, _, ou =)
+    // Etape 4 : ajuster slot.acc pour que chaque note conserve sa hauteur MIDI
+    // en presence de l'armure ET de l'heritage d'alterations dans la mesure.
+    // Apres l'etape 2-3, slot.acc represente l'alteration absolue voulue (^/_/'' selon midiToNote).
+    // On doit la traduire en alteration explicite a afficher, en tenant compte du contexte de mesure.
     state.measures.forEach((meas,mi)=>{
       const sig=keyAt(mi);
+      // Calculer l'alteration de l'armure pour chaque nom de note
+      const keyAccForNote=(name)=>{
+        if(sig>0&&SHARP_NOTES.slice(0,sig).includes(name))return '^';
+        if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(name))return '_';
+        return '';
+      };
+      // Memoire : derniere alteration effective par (note,octave) dans la mesure
+      const memo={};
       meas.forEach((slot,si)=>{
         if(slot.type!=='note')return;
-        // Alteration que poserait l'armure pour cette note (sans acc explicite)
-        let keyAcc='';
-        if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))keyAcc='^';
-        else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))keyAcc='_';
-        const curAcc=slot.acc||'';
-        // Si l'armure ferait la meme chose que notre acc actuel : on peut tout enlever
-        if(curAcc===keyAcc)slot.acc='';
-        // Sinon, si on n'a pas d'acc mais l'armure en ajouterait un : poser un becarre explicite
-        else if(curAcc===''&&keyAcc!=='')slot.acc='=';
-        // Sinon laisser tel quel (acc explicite different de l'armure)
+        const key=slot.note+'_'+slot.octave;
+        // Alteration absolue voulue (issue de midiToNote a l'etape precedente)
+        const wantAcc=slot.acc||'';
+        // Contexte herite : si une note (memetom+memeoctave) a deja ete vue dans la mesure, c'est sa derniere alteration ; sinon, l'armure
+        const ctx=(memo[key]!==undefined)?memo[key]:keyAccForNote(slot.note);
+        // Alteration a afficher
+        if(wantAcc===ctx){
+          // Deja produit par le contexte : rien a afficher
+          slot.acc='';
+        } else if(wantAcc===''&&ctx!==''){
+          // Vouloir naturel alors que le contexte donne diese/bemol : poser becarre explicite
+          slot.acc='=';
+        } else {
+          // Vouloir une alteration explicite differente du contexte
+          slot.acc=wantAcc;
+        }
+        // Mettre a jour la memoire : alteration effective a partir de maintenant pour (note,octave)
+        memo[key]=wantAcc;
       });
     });
     // Etape 5 : nettoyage standard (au cas ou)
@@ -533,7 +577,7 @@
   const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
   function keySigAccidentals(sig,c){const out=[];if(sig>0){const m=c==='bass'?BSS:TSS;for(let i=0;i<sig;i++)out.push({sym:'♯',step:m[SHARP_NOTES[i]]})}else if(sig<0){const m=c==='bass'?BFS:TFS;for(let i=0;i<-sig;i++)out.push({sym:'♭',step:m[FLAT_NOTES[i]]})}return out}
   function computeBeamGroups(meas,meter){const gu=beamGroupUnit(meter),eps=1e-6;const groups=[];let cg=null,offset=0;function flush(){if(cg&&cg.length>=2)groups.push(cg);cg=null}for(let i=0;i<meas.length;i++){const t=meas[i];const eD=effDur(t);const gi=Math.floor((offset+eps)/gu);const bm=(t.type==='note')&&(t.dur<=0.5+eps);const cr=(offset+eD)>(gi*gu+gu+eps);if(bm&&!cr){if(cg&&cg.startGroup===gi)cg.push(i);else{flush();cg=[i];cg.startGroup=gi}}else flush();offset=+(offset+eD).toFixed(6)}flush();return groups}
-  function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(accToDraw===undefined)?t.acc:accToDraw;if(aD==='^')svg+='<text x="'+(cx-9)+'" y="'+(y+3)+'" font-size="11" fill="'+color+'" font-family="serif">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-9)+'" y="'+(y+3)+'" font-size="11" fill="'+color+'" font-family="serif">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-9)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+='<ellipse cx="'+cx+'" cy="'+y+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';let sy=y,sx=cx;if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?y-19:y+19;svg+='<line x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx-7)+' '+(fy-4)+' '+(sx-4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
+  function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(accToDraw===undefined)?t.acc:accToDraw;if(aD==='^')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+='<ellipse cx="'+cx+'" cy="'+y+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';let sy=y,sx=cx;if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?y-19:y+19;svg+='<line x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx-7)+' '+(fy-4)+' '+(sx-4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
   function drawRest(t,cx,color,staffTop){let svg='';const y=staffTop+2*LINE_GAP;const eD=nominalDur(t);if(eD>=4)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+LINE_GAP)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=2)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+2*LINE_GAP-3.5)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=1)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄽</text>';else if(eD>=0.5)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄾</text>';else svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄿</text>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y}}
 
   function renderScore(){
@@ -542,43 +586,97 @@
     const sw=document.getElementById('score');
     const cw=sw?sw.clientWidth:600;
     const ch=sw?sw.clientHeight:400;
-    // Echelle de base : 1 unite SVG = 1.8 px a 100%. La taille est ajustee par scoreScale.
     const pxPerUnit=1.8*(state.scoreScale||100)/100;
     const viewW=Math.max(200,cw/pxPerUnit);
     const viewH=Math.max(100,ch/pxPerUnit);
-    // Nb max de mesures par ligne (100 unites/mesure de reference)
-    const MEASURES_PER_LINE=Math.max(1,Math.floor((viewW-LEFT_PAD-RIGHT_PAD)/100));
     // Nb max de lignes (selon hauteur disponible)
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SPACING));
-    const mPP=MEASURES_PER_LINE*linesMax;
-    const page=Math.floor(selM/mPP);
-    const startM=page*mPP;
-    const N=state.measures.length;
-    const measuresInPage=Math.max(0,Math.min(mPP,N-startM));
-    const linesShown=Math.max(1,Math.min(linesMax,Math.ceil(measuresInPage/MEASURES_PER_LINE)));
-    // SCORE_W effectif : on utilise toute la largeur viewW
     const SCORE_W=viewW;
-    const usable=SCORE_W-LEFT_PAD-RIGHT_PAD;
-    const measureW=usable/MEASURES_PER_LINE;
+    const usableLineW=SCORE_W-LEFT_PAD-RIGHT_PAD;
+    const N=state.measures.length;
+    // === Calcul du cout d'une mesure (largeur ideale en unites SVG) ===
+    function measureCost(mIdx){
+      const meas=state.measures[mIdx];
+      if(!meas||meas.length===0)return 30;
+      const sig=keyAt(mIdx);
+      let nAlt=0;
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        const accD=accToDrawFor(meas,si,sig);
+        if(accD)nAlt++;
+      });
+      // Cout brut : 10 par slot + 4 par alteration. Marge fixe de 10 pour les bords de la mesure
+      let cost=10*meas.length+4*nAlt+10;
+      // Reprises
+      const r=state.repeats[mIdx];
+      if(r){
+        if(r.start)cost+=6;
+        if(r.end)cost+=8;
+      }
+      // Changements clef/armure/rythme inline (par rapport a la mesure precedente)
+      if(mIdx>0){
+        if(clefAt(mIdx)!==clefAt(mIdx-1))cost+=14;
+        if(keyAt(mIdx)!==keyAt(mIdx-1))cost+=Math.abs(keyAt(mIdx))*7+5;
+        if(meterAt(mIdx)!==meterAt(mIdx-1))cost+=14;
+      }
+      return cost;
+    }
+    // Cout supplementaire pour la 1ere mesure d'une ligne (clef + armure + metrique eventuelle)
+    function lineHeaderCost(mIdx,isFirstLineOfDoc){
+      const hK=keyAt(mIdx);
+      const nAccs=keySigAccidentals(hK,clefAt(mIdx)).length;
+      let cost=20;
+      cost+=nAccs*6;
+      if(isFirstLineOfDoc)cost+=12;
+      return cost;
+    }
+    // === Regroupement glouton des mesures en lignes ===
+    const allLines=[];
+    let cur={mIdxs:[],totalCost:0};
+    let isFirstLineOfDoc=true;
+    for(let mi=0;mi<N;mi++){
+      const c=measureCost(mi);
+      const headerCost=cur.mIdxs.length===0?lineHeaderCost(mi,isFirstLineOfDoc):0;
+      if(cur.mIdxs.length>0&&cur.totalCost+c+headerCost>usableLineW){
+        // Cette mesure ne rentre plus, on finalise la ligne courante
+        allLines.push(cur);
+        cur={mIdxs:[],totalCost:0};
+        isFirstLineOfDoc=false;
+      }
+      cur.mIdxs.push(mi);
+      const headerC=cur.mIdxs.length===1?lineHeaderCost(mi,isFirstLineOfDoc):0;
+      cur.totalCost+=c+headerC;
+    }
+    if(cur.mIdxs.length>0)allLines.push(cur);
+    if(allLines.length===0)allLines.push({mIdxs:[],totalCost:0});
+    // === Trouver la page contenant selM ===
+    let lineOfSel=0;
+    for(let li=0;li<allLines.length;li++){
+      if(allLines[li].mIdxs.includes(selM)){lineOfSel=li;break}
+    }
+    const pageStart=Math.floor(lineOfSel/linesMax)*linesMax;
+    const pageEnd=Math.min(allLines.length,pageStart+linesMax);
+    const pageLines=allLines.slice(pageStart,pageEnd);
+    const linesShown=Math.max(1,pageLines.length);
     const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
     const scoreH=STAFF_TOP_Y+linesShown*STAFF_SPACING+10;
     let svg='<svg viewBox="0 0 '+SCORE_W+' '+scoreH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">';
     for(let line=0;line<linesShown;line++){
+      const lineData=pageLines[line];
+      if(!lineData||lineData.mIdxs.length===0)continue;
       const staffTop=STAFF_TOP_Y+line*STAFF_SPACING;
-      const lsm=startM+line*MEASURES_PER_LINE;
-      if(state.measures[lsm]===undefined)continue;
-      // 5 lignes
+      const lsm=lineData.mIdxs[0];
+      const isFirstDocLine=(pageStart===0&&line===0);
+      // 5 lignes de portee
       for(let i=0;i<5;i++){
         const y=staffTop+i*LINE_GAP;
         svg+='<line x1="'+(LEFT_PAD-25)+'" y1="'+y+'" x2="'+(SCORE_W-RIGHT_PAD)+'" y2="'+y+'" stroke="'+ink+'" stroke-width="0.55" opacity="0.55"/>';
       }
       const hC=clefAt(lsm),hK=keyAt(lsm),hM=meterAt(lsm);
-      // Cles : sol et sol-8 remontees, fa descendue ; toutes centrees en x
+      // Cle
       if(hC==='bass'){
-        // Fa : descendue (texte plus bas dans la portee)
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
       } else {
-        // Sol : remontee
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
         if(hC==='treble8'){
           svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
@@ -591,25 +689,37 @@
         svg+='<text x="'+kx+'" y="'+ky+'" font-size="12" font-family="serif" fill="'+ink+'">'+a.sym+'</text>';
         kx+=6;
       });
-      // Metrique (premiere ligne)
-      if(line===0){
+      // Metrique (uniquement sur la premiere ligne du document)
+      if(isFirstDocLine){
         const{num,den}=parseMeter(hM);
         const mx=Math.max(kx+3,LEFT_PAD-10);
         svg+='<text x="'+mx+'" y="'+(staffTop+1.7*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
         svg+='<text x="'+mx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
       }
-      // Barres de mesure
-      for(let i=0;i<=MEASURES_PER_LINE;i++){
-        const x=LEFT_PAD+i*measureW;
+      // === Calculer la largeur reelle de chaque mesure de la ligne (echelle par rapport au cout) ===
+      const measureCosts=lineData.mIdxs.map(mi=>measureCost(mi));
+      const headerC=lineHeaderCost(lsm,isFirstDocLine);
+      const availableForMeasures=usableLineW-headerC+20; // recuperer la marge fixe deja comptee dans header
+      const sumCosts=measureCosts.reduce((a,b)=>a+b,0)||1;
+      const lineScale=availableForMeasures/sumCosts;
+      // Positions cumulatives de chaque mesure (xL,xR)
+      const measureBounds=[];
+      let curX=LEFT_PAD+headerC-20; // commence apres l'header (le 20 etait deja dans le cost de base)
+      for(let i=0;i<lineData.mIdxs.length;i++){
+        const w=measureCosts[i]*lineScale;
+        measureBounds.push({xL:curX,xR:curX+w,measureW:w});
+        curX+=w;
+      }
+      // Dessiner les barres de mesure
+      for(let i=0;i<=lineData.mIdxs.length;i++){
+        const x=(i===0)?measureBounds[0].xL:measureBounds[i-1].xR;
         svg+='<line x1="'+x+'" y1="'+staffTop+'" x2="'+x+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="'+(i===0?1.1:0.7)+'" opacity="0.7"/>';
       }
       // Etat partage pour les liaisons traversant les mesures de la ligne
       let pS=null;
       const tP=[];
-      // Liaison "entrante" : si la derniere note avant lsm avait tieToNext, on retiendra la premiere note pour dessiner un demi-arc
       let pendingIncomingTie=false;
       if(lsm>0){
-        // Chercher la derniere note de la mesure precedente
         const prevM=state.measures[lsm-1];
         if(prevM){
           for(let k=prevM.length-1;k>=0;k--){
@@ -618,11 +728,12 @@
           }
         }
       }
-      for(let i=0;i<MEASURES_PER_LINE;i++){
-        const mIdx=lsm+i;
+      for(let i=0;i<lineData.mIdxs.length;i++){
+        const mIdx=lineData.mIdxs[i];
         if(state.measures[mIdx]===undefined)continue;
-        const xL=LEFT_PAD+i*measureW;
-        const xR=LEFT_PAD+(i+1)*measureW;
+        const xL=measureBounds[i].xL;
+        const xR=measureBounds[i].xR;
+        const measureW=measureBounds[i].measureW;
         // Reprises et voltas
         const r=state.repeats[mIdx];
         if(r){
@@ -645,9 +756,12 @@
         }
         const m=state.measures[mIdx];
         const lC=clefAt(mIdx),lM=meterAt(mIdx);
-        // Point 1 : afficher changements (cle/armure/rythme) AU DEBUT de la mesure qui change
-        // (pour les mesures qui ne sont pas en debut de ligne — la 1ere de ligne montre deja l'etat dans l'en-tete)
         let changeOffset=0;
+        let rightInset=0;
+        // Reprise gauche : prendre en compte la place des points/barre epaisse
+        if(r&&r.start)changeOffset=Math.max(changeOffset,6);
+        // Reprise droite : reduire l'espace utile a droite
+        if(r&&r.end)rightInset=8;
         if(i>0){
           const prevClef=clefAt(mIdx-1);
           const prevKey=keyAt(mIdx-1);
@@ -656,42 +770,65 @@
           const hasKeyChange=keyAt(mIdx)!==prevKey;
           const hasMeterChange=lM!==prevMeter;
           if(hasClefChange||hasKeyChange||hasMeterChange){
-            let cx=xL+3;
+            let cx=xL+3+changeOffset;
             // Cle (en premier, juste apres la barre)
             if(hasClefChange){
-              cx+=4;
+              cx+=6;
               if(lC==='bass'){
                 svg+='<text x="'+cx+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
               } else {
                 svg+='<text x="'+cx+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
                 if(lC==='treble8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
               }
-              cx+=8;
+              cx+=10;
             }
             // Armure
             if(hasKeyChange){
+              if(hasClefChange)cx+=2;
               const accs=keySigAccidentals(keyAt(mIdx),lC);
               accs.forEach(a=>{
                 const ky=noteY(staffTop,a.step,lC)+4;
                 svg+='<text x="'+cx+'" y="'+ky+'" font-size="12" font-family="serif" fill="'+ink+'">'+a.sym+'</text>';
-                cx+=6;
+                cx+=7;
               });
-              cx+=2;
+              cx+=3;
             }
             // Rythme
             if(hasMeterChange){
+              if(hasClefChange||hasKeyChange)cx+=3;
               const{num,den}=parseMeter(lM);
-              cx+=4;
+              cx+=5;
               svg+='<text x="'+cx+'" y="'+(staffTop+1.7*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
               svg+='<text x="'+cx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
-              cx+=8;
+              cx+=9;
             }
+            // Marge supplementaire avant la premiere note
+            cx+=4;
             // Espace consomme depuis xL
             changeOffset=cx-xL;
           }
         }
-        const x0=LEFT_PAD+i*measureW+10+changeOffset;
-        const sW=(measureW-14-changeOffset)/Math.max(m.length,1);
+        const x0=xL+6+changeOffset;
+        const usableW=measureW-10-changeOffset-rightInset;
+        // Largeur ideale par slot : 10 unites pour une note normale, 14 unites si elle a une alteration
+        const slotWidth=m.map((slot,si)=>{
+          if(slot.type!=='note')return 10;
+          const accD=accToDrawFor(m,si,keyAt(mIdx));
+          return accD?14:10;
+        });
+        const sumW=slotWidth.reduce((a,b)=>a+b,0)||1;
+        // Mise a l'echelle : compresse ou dilate pour remplir exactement usableW
+        const scale=usableW/sumW;
+        // Position cumulative : centre de chaque slot au milieu de sa largeur (apres scale)
+        const cxBySlot=new Array(m.length);
+        let cum=0;
+        for(let si=0;si<m.length;si++){
+          const w=slotWidth[si]*scale;
+          cxBySlot[si]=x0+cum+w/2;
+          cum+=w;
+        }
+        // sW de reference (utilise pour les boites de selection)
+        const sW=usableW/Math.max(m.length,1);
         const bg=computeBeamGroups(m,lM);
         const sTG={};
         bg.forEach((g,gi)=>{g.forEach(si=>sTG[si]={gIdx:gi,group:g})});
@@ -707,7 +844,7 @@
           const sX=[];
           g.forEach(si=>{
             const t=m[si];
-            const cx=x0+si*sW+sW/2;
+            const cx=cxBySlot[si];
             const sx=su?cx+3.3:cx-3.3;
             const hY=noteY(staffTop,stepIndex(t.note,t.octave),lC);
             const nT=su?hY-19:hY+19;
@@ -717,7 +854,7 @@
           return{stemUp:su,beamY:eY,stems:sX};
         });
         m.forEach((t,si)=>{
-          const cx=x0+si*sW+sW/2;
+          const cx=cxBySlot[si];
           const iS=(mIdx===selM&&si===state.sel.s);
           const cl=iS?sel:ink;
           if(t.chord)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+t.chord+'</text>';
@@ -772,7 +909,7 @@
             }
           }
           if(si===0){
-            svg+='<text x="'+(LEFT_PAD+i*measureW+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
+            svg+='<text x="'+(xL+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
           }
           // Zone cliquable invisible pour selectionner ce slot
           svg+='<rect x="'+(cx-sW/2)+'" y="'+(staffTop-12)+'" width="'+sW+'" height="'+(LINE_GAP*4+24)+'" fill="transparent" style="cursor:pointer" data-m="'+mIdx+'" data-s="'+si+'"/>';
@@ -1273,6 +1410,7 @@
       body:controls(),
       hideActions:true,
       extraButtons:['Annuler','Supprimer'],
+      showMes:true,
       onMount:rebindStepper,
       onMeasureChange:()=>{
         const maxCount=state.measures.length-state.sel.m;
@@ -1330,6 +1468,7 @@
       body:controls(),
       hideActions:true,
       extraButtons:['Annuler','Ajouter'],
+      showMes:true,
       onMount:rebind,
       onMeasureChange:()=>{
         document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
@@ -1400,6 +1539,7 @@
     }
     openPanel({
       title:'Copier mesures',body:controls(),hideActions:true,extraButtons:['Annuler','Copier'],
+      showMes:true,
       onMount:rebind,
       onMeasureChange:()=>{
         // Mesure active a changé via la navigation
@@ -1837,6 +1977,7 @@
     panelTitle.textContent=title;
     cShowMes=!!showMes;
     panelMes.textContent=cShowMes?('Mes '+(state.sel.m+1)):'';
+    document.getElementById('panel-nav').style.display=cShowMes?'flex':'none';
     let eH='';
     if(extraButtons&&extraButtons.length){
       let cls='actions';
@@ -1861,6 +2002,13 @@
   }
   panelOk.addEventListener('click',()=>{if(cOnOk)cOnOk();closePanel();render()});
   panelCancel.addEventListener('click',closePanel);
+  // Stepper de navigation entre mesures dans le panel
+  document.getElementById('panel-nav-prev').addEventListener('click',()=>{
+    if(state.sel.m>0){state.sel.m--;state.sel.s=0;render()}
+  });
+  document.getElementById('panel-nav-next').addEventListener('click',()=>{
+    if(state.sel.m<state.measures.length-1){state.sel.m++;state.sel.s=0;render()}
+  });
 
   // ⭐ Headers : Titre/X simple input, ST/C/N multilignes avec bouton ↵
   function headerPromptSimple(key,title){return ()=>openPanel({title:title,body:'<div class="row"><input id="hi" type="text" value="'+((state.headers[key]||'')+'').replace(/"/g,'&quot;')+'"/></div>',onMount:()=>document.getElementById('hi').focus(),onOk:()=>{let v=document.getElementById('hi').value.trim();if(key==='X'&&!v)v='0';state.headers[key]=v;pushHistory()}})}
@@ -1910,6 +2058,7 @@
     }
     openPanel({
       title:'Rythme',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      showMes:true,
       onMount:rebind,
       onMeasureChange:()=>{
         st=getCurrent();
@@ -1951,6 +2100,7 @@
     }
     openPanel({
       title:'Armure',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      showMes:true,
       onMount:rebind,
       onMeasureChange:()=>{
         sig=keyAt(state.sel.m);
@@ -1984,6 +2134,7 @@
     }
     openPanel({
       title:'Clé',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      showMes:true,
       onMount:rebind,
       onMeasureChange:()=>{
         pick=clefAt(state.sel.m);
