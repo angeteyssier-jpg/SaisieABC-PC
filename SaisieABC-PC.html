@@ -169,7 +169,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.33 PC</b></span>
+    <span>Éditeur ABC <b>v0.35 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -262,17 +262,17 @@
           <button class="k" id="meas-del">− Mes</button>
           <button class="k" id="meas-add">+ Mes</button>
         </div>
-        <div class="row-grid"><button class="k" data-hdr="M">Rythme</button></div>
-        <div class="row-grid"><button class="k" data-hdr="K">Armure</button></div>
-        <div class="row-grid"><button class="k" data-hdr="CLEF">Clé</button></div>
+        <div class="row-grid row-3">
+          <button class="k" data-hdr="M">Rythme</button>
+          <button class="k" data-hdr="K">Armure</button>
+          <button class="k" data-hdr="CLEF">Clé</button>
+        </div>
         <div class="row-grid">
           <button class="k" id="btn-disarm" style="font-size:16px;">Armure → C majeur</button>
         </div>
-        <div class="row-grid row-2">
+        <div class="row-grid row-4">
           <button class="k" id="btn-rep-start">𝄆</button>
           <button class="k" id="btn-rep-end">𝄇</button>
-        </div>
-        <div class="row-grid row-2">
           <button class="k" id="btn-volta1">|1</button>
           <button class="k" id="btn-volta2">|2</button>
         </div>
@@ -819,10 +819,12 @@
         const scale=usableW/sumW;
         // Position cumulative : centre de chaque slot au milieu de sa largeur (apres scale)
         const cxBySlot=new Array(m.length);
+        const wBySlot=new Array(m.length);
         let cum=0;
         for(let si=0;si<m.length;si++){
           const w=slotWidth[si]*scale;
           cxBySlot[si]=x0+cum+w/2;
+          wBySlot[si]=w;
           cum+=w;
         }
         // sW de reference (utilise pour les boites de selection)
@@ -853,6 +855,8 @@
         });
         m.forEach((t,si)=>{
           const cx=cxBySlot[si];
+          // Rectangle cliquable invisible sur toute la zone du slot (selection par clic)
+          svg+='<rect x="'+(cx-wBySlot[si]/2)+'" y="'+staffTop+'" width="'+wBySlot[si]+'" height="'+(4*LINE_GAP+20)+'" fill="transparent" pointer-events="all" data-m="'+mIdx+'" data-s="'+si+'" style="cursor:pointer"/>';
           const iS=(mIdx===selM&&si===state.sel.s);
           const cl=iS?sel:ink;
           if(t.chord)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+t.chord+'</text>';
@@ -2201,6 +2205,21 @@
       document.getElementById('svg-h').textContent=mPL+' mes/ligne \u00d7 '+lMax+' lignes = '+(mPL*lMax)+' mes/page';
     }
   }
+  // Sélection d'une note/silence par clic sur la portée
+  document.getElementById('score').addEventListener('click',(e)=>{
+    const t=e.target;
+    if(!t||t.tagName!=='rect')return;
+    const m=t.getAttribute('data-m');
+    const s=t.getAttribute('data-s');
+    if(m===null||s===null)return;
+    const mi=parseInt(m,10),si=parseInt(s,10);
+    if(isNaN(mi)||isNaN(si))return;
+    if(mi<0||mi>=state.measures.length)return;
+    if(si<0||si>=state.measures[mi].length)return;
+    state.sel={m:mi,s:si};
+    render();
+  });
+
   window.addEventListener('resize',updateBadge);updateBadge();
 
   // Clic sur la partition : selectionner le slot/mesure cliques
