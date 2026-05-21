@@ -111,14 +111,14 @@
   /* Panel d'édition : overlay centré (positionné en absolute par-dessus le layout) */
   .panel { background: #e6f1fb; border: 2px solid #378add; border-radius: 12px;
     padding: 12px; display: none;
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 90%; max-width: 700px;
-    max-height: 90vh; overflow-y: auto;
-    z-index: 10000; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+    position: fixed; top: 200px; left: 10px;
+    width: 440px;
+    max-height: calc(100vh - 210px); overflow-y: auto;
+    z-index: 10000; box-shadow: 0 6px 24px rgba(0,0,0,0.2); }
   .panel.open { display: block; }
-  /* Backdrop affiché automatiquement quand le panel est ouvert (via :has) */
+  /* Backdrop discret : juste pour intercepter les clics hors panel sans masquer la partition */
   .panel-backdrop { display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.35); z-index: 9999; }
+    background: transparent; z-index: 9999; pointer-events: none; }
   .abc-app:has(.panel.open) .panel-backdrop { display: block; }
   .panel .title-row { display: flex; align-items: center; justify-content: space-between;
     gap: 10px; margin-bottom: 10px; }
@@ -169,7 +169,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.26 PC</b></span>
+    <span>Éditeur ABC <b>v0.30 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -399,6 +399,20 @@
       meas.forEach((slot,si)=>{
         if(slot.type!=='note')return;
         if(!slot.acc)return;
+        // Chercher l'alteration explicite anterieure dans la mesure sur meme note+octave
+        let priorAcc=null;
+        for(let k=si-1;k>=0;k--){
+          const p=meas[k];
+          if(p.type==='note'&&p.note===slot.note&&p.octave===slot.octave&&p.acc){priorAcc=p.acc;break}
+        }
+        // Si une alteration anterieure existe, le contexte est cette alteration (pas l'armure)
+        // Le slot courant doit garder son acc si different de ce contexte.
+        if(priorAcc!==null){
+          if(slot.acc===priorAcc)delete slot.acc;
+          // Sinon : on garde l'acc explicite pour annuler/changer le contexte
+          return;
+        }
+        // Pas d'alteration anterieure : comparer a l'armure
         // ^ redondant en armure diese
         if(sig>0&&slot.acc==='^'&&SHARP_NOTES.slice(0,sig).includes(slot.note)){delete slot.acc;return}
         // _ redondant en armure bemol
@@ -406,15 +420,7 @@
         // = redondant : la note n'est pas alteree par l'armure
         if(slot.acc==='='){
           const altByKey=(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))||(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note));
-          if(!altByKey){
-            // Verifier qu'il n'y a pas une alteration anterieure dans la mesure sur meme note+octave
-            let priorAcc=null;
-            for(let k=si-1;k>=0;k--){
-              const p=meas[k];
-              if(p.type==='note'&&p.note===slot.note&&p.octave===slot.octave&&p.acc){priorAcc=p.acc;break}
-            }
-            if(!priorAcc||priorAcc===''||priorAcc==='=')delete slot.acc;
-          }
+          if(!altByKey)delete slot.acc;
         }
       })
     })
@@ -486,16 +492,8 @@
   if(!t.acc)return '';// Note avec acc explicite : afficher si différent du contexte
   let priorAcc=null;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type==='note'&&s.note===t.note&&s.octave===t.octave&&s.acc){priorAcc=s.acc;break}}let keyAcc='';if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))keyAcc='^';else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))keyAcc='_';const ctx=(priorAcc!==null)?priorAcc:keyAcc;if(t.acc===ctx)return '';return t.acc}
   function transposePiece(semitones){
-    // Logique propre : on ne lit pas l'armure pendant la transposition.
-    // 1. Figer les alterations effectives (armure + heritage) en alterations explicites sur chaque slot
-    // 2. Transposer chaque note en se basant uniquement sur slot.acc (sans relire l'armure)
-    // 3. midiToNote produit des noms enharmoniques valides (jamais Cb/B#/E#/Fb)
-    // 4. Ajuster slot.acc pour que l'armure courante (inchangee) produise la bonne hauteur MIDI
-    // 5. cleanupAccidentals retire les acc redondants
-    let preferFlats;
-    if(state.pieceKeySig<0)preferFlats=true;
-    else if(state.pieceKeySig>0)preferFlats=false;
-    else preferFlats=(semitones<0);
+    // Choix simple : monter -> dieses, descendre -> bemols (ignore l'armure)
+    const preferFlats=(semitones<0);
     // Etape 1 : figer toutes les alterations effectives
     state.measures.forEach((meas,mi)=>{
       const sig=keyAt(mi);
@@ -1023,6 +1021,16 @@
     // Point 2 : bouton liaison en bleu si la note active a un tieToNext
     const tieBtn=document.getElementById('btn-tie');
     if(tieBtn)tieBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.tieToNext));
+    // Boutons reprises et voltas en bleu selon l'etat de la mesure active
+    const rA=state.repeats[state.sel.m];
+    const repS=document.getElementById('btn-rep-start');
+    if(repS)repS.classList.toggle('active', !!(rA&&rA.start));
+    const repE=document.getElementById('btn-rep-end');
+    if(repE)repE.classList.toggle('active', !!(rA&&rA.end));
+    const v1=document.getElementById('btn-volta1');
+    if(v1)v1.classList.toggle('active', !!(rA&&rA.volta===1));
+    const v2=document.getElementById('btn-volta2');
+    if(v2)v2.classList.toggle('active', !!(rA&&rA.volta===2));
     document.getElementById('btn-viewmode').textContent=state.viewmode?'✎':'👁';
     document.getElementById('hdr-x-val').textContent=state.headers.X||'0';
     document.getElementById('hdr-t-val').textContent=(state.headers.T||'—').split('\n')[0];
@@ -1054,16 +1062,15 @@
   function playSchedule(){
     ensureAudio();stopPlayback(false);audio.playing=true;
     document.getElementById('btn-play').textContent='⏸';
-    const st=audio.ctx.currentTime+0.05;let t=st;
+    const st=audio.ctx.currentTime+0.05;
     const qD=60/state.tempo;
     const order=expandForPlayback();
     if(order.length===0){stopPlayback(true);return}
-    // Point 5 : demarrer a la mesure et au slot actifs
     const startMeasure=state.sel.m,startSlot=state.sel.s;
-    // Memoriser le point de depart pour la boucle (premiere lecture seulement)
     if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlot};
     let startIdxInOrder=order.indexOf(startMeasure);
     if(startIdxInOrder<0)startIdxInOrder=0;
+    // Construire la liste complete des events (sans creer les oscillateurs)
     const events=[];
     for(let oi=startIdxInOrder;oi<order.length;oi++){
       const mi=order[oi];
@@ -1081,7 +1088,7 @@
         }
       }
     }
-    // Fusionner les notes liées de même hauteur (la durée des suivantes va sur l'ancre, dur=0 pour eux)
+    // Fusionner les notes liees de meme hauteur
     let i=0;
     while(i<events.length){
       const ev=events[i];
@@ -1097,27 +1104,51 @@
       }
       i++;
     }
-    events.forEach(ev=>{
-      if(ev.midi!==null&&!ev.silent){
-        const o=audio.ctx.createOscillator();
-        const g=audio.ctx.createGain();
-        o.type='triangle';o.frequency.value=freqOfMidi(ev.midi);
-        const a=0.005,r=Math.min(0.05,ev.dur*0.3);
-        g.gain.setValueAtTime(0,t);
-        g.gain.linearRampToValueAtTime(0.5,t+a);
-        g.gain.setValueAtTime(0.5,t+ev.dur-r);
-        g.gain.linearRampToValueAtTime(0,t+ev.dur);
-        o.connect(g);g.connect(audio.master);
-        o.start(t);o.stop(t+ev.dur+0.02);
-        audio.scheduled.push(o);
+    // Pre-calculer le temps absolu de chaque event
+    let acc=st;
+    events.forEach(ev=>{ev.startAt=acc;acc+=ev.dur});
+    audio.stopAt=acc;
+    audio.events=events;
+    audio.eventIdx=0;
+    // Planifier la fenetre initiale (environ 3s d'avance)
+    const SCHEDULE_AHEAD=3.0;
+    function scheduleAhead(){
+      const now=audio.ctx.currentTime;
+      const horizon=now+SCHEDULE_AHEAD;
+      while(audio.eventIdx<audio.events.length){
+        const ev=audio.events[audio.eventIdx];
+        if(ev.startAt>horizon)break;
+        if(ev.midi!==null&&!ev.silent&&ev.dur>0){
+          const o=audio.ctx.createOscillator();
+          const g=audio.ctx.createGain();
+          o.type='triangle';o.frequency.value=freqOfMidi(ev.midi);
+          const a=0.005,r=Math.min(0.05,ev.dur*0.3);
+          g.gain.setValueAtTime(0,ev.startAt);
+          g.gain.linearRampToValueAtTime(0.5,ev.startAt+a);
+          g.gain.setValueAtTime(0.5,ev.startAt+ev.dur-r);
+          g.gain.linearRampToValueAtTime(0,ev.startAt+ev.dur);
+          o.connect(g);g.connect(audio.master);
+          o.start(ev.startAt);o.stop(ev.startAt+ev.dur+0.02);
+          audio.scheduled.push(o);
+        }
+        // Marqueur de progression
+        audio.scheduled.push({updateAt:ev.startAt,measureIdx:ev.measureIdx,slotIdx:ev.slotIdx});
+        audio.eventIdx++;
       }
-      audio.scheduled.push({updateAt:t,measureIdx:ev.measureIdx,slotIdx:ev.slotIdx});
-      t+=ev.dur;
-    });
-    audio.stopAt=t;
+    }
+    scheduleAhead();
     function tick(){
       if(!audio.playing)return;
       const now=audio.ctx.currentTime;
+      // Planifier les events a venir si on approche du dernier planifie
+      scheduleAhead();
+      // Nettoyer les oscillateurs deja joues (pour ne pas accumuler la memoire)
+      audio.scheduled=audio.scheduled.filter(ev=>{
+        if(ev.stop)return ev.startTimeAbs===undefined||ev.startTimeAbs+0.5>now;
+        // garder marqueurs updateAt encore utiles
+        return ev.updateAt===undefined||ev.updateAt>now-1;
+      });
+      // Trouver le dernier marqueur passe pour mettre a jour la selection
       let last=null;
       for(const ev of audio.scheduled){
         if(ev.updateAt!==undefined&&ev.updateAt<=now)last=ev;
@@ -1128,9 +1159,7 @@
       }
       if(now>=audio.stopAt){
         if(state.loop&&audio.loopFrom){
-          // Reboucler : restaurer le point de depart et relancer
           state.sel={m:audio.loopFrom.m,s:audio.loopFrom.s};
-          // Stop sans reset de loopFrom (refresh=false)
           stopPlayback(false);
           playSchedule();
           return;
@@ -1164,6 +1193,8 @@
     const hadTie=!!sl.tieToNext;
     const newSlot={type:'note',note:n,octave:state.octave,dur,dot,acc};
     if(hadTie)newSlot.tieToNext=true;
+    // Conserver l'appartenance au triolet
+    if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}
     state.measures[state.sel.m][state.sel.s]=newSlot;
     propagateTieReplacement(state.sel.m,state.sel.s,n,state.octave,acc);
     pushHistory();
@@ -1203,7 +1234,7 @@
       curM=nextM;curS=nextS;
     }
   }
-  function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;state.measures[state.sel.m][state.sel.s]={type:'rest',dur:sl.dur,dot:sl.dot};pushHistory();render()}
+  function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}
   function setDurAtSelection(d){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dur=d;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(c)*60/state.tempo))}render()}
   function toggleDotAtSelection(){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dot=!sl.dot;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi)}render()}
   function toggleAccAtSelection(acc){const sl=selectedSlot();if(sl&&sl.type==='note'){sl.acc=(sl.acc===acc)?'':acc;pushHistory();const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi);render()}}
@@ -1243,7 +1274,7 @@
   document.getElementById('meas-next').addEventListener('click',()=>jumpMeasure(+1));
   document.getElementById('meas-start').addEventListener('click',jumpToStart);
   document.getElementById('meas-end').addEventListener('click',jumpToEnd);
-  document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){state.measures[state.sel.m][state.sel.s]={type:'rest',dur:sl.dur,dot:sl.dot};pushHistory();render()}});
+  document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}});
   document.getElementById('btn-undo').addEventListener('click',undo);
   document.getElementById('btn-redo').addEventListener('click',redo);
   document.getElementById('btn-trans-up').addEventListener('click',()=>{transposePiece(+1);pushHistory();render()});
@@ -1460,7 +1491,7 @@
       const rs=()=>document.querySelectorAll('#side-pick .k').forEach(b=>b.classList.toggle('active',b.dataset.side===side));
       document.querySelectorAll('#side-pick .k').forEach(b=>b.addEventListener('click',()=>{side=b.dataset.side;rs()}));
       rs();
-      document.getElementById('cnt-u').addEventListener('click',()=>{if(count<16){count++;document.getElementById('cnt-v').textContent=count}});
+      document.getElementById('cnt-u').addEventListener('click',()=>{if(count<200){count++;document.getElementById('cnt-v').textContent=count}});
       document.getElementById('cnt-d').addEventListener('click',()=>{if(count>1){count--;document.getElementById('cnt-v').textContent=count}});
     }
     openPanel({
