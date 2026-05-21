@@ -169,7 +169,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.36 PC</b></span>
+    <span>Éditeur ABC <b>v0.37 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -1575,7 +1575,8 @@
     return null;
   }
   document.getElementById('btn-swing-dot').addEventListener('click',()=>{
-    const p=pairForSwing();if(!p)return;
+    const p=pairForSwing();
+    if(!p){alert('♪♪→♪.𝅘𝅥𝅯 : selectionnez la 1ere de 2 notes consecutives de meme duree (hors n-uplet), ou une note pointee + double.');return}
     const m=state.measures[state.sel.m];
     if(p.kind==='equal'){
       m[p.idx]={...p.a,dur:p.a.dur,dot:true};
@@ -1587,7 +1588,8 @@
     pushHistory();render();
   });
   document.getElementById('btn-swing-triplet').addEventListener('click',()=>{
-    const p=pairForTriplet();if(!p)return;
+    const p=pairForTriplet();
+    if(!p){alert('♪♪→♩♪³ : selectionnez la 1ere de 2 notes consecutives de meme duree, ou la 1ere d un triolet noire+croche.');return}
     const m=state.measures[state.sel.m];
     if(p.kind==='equal'){
       const tid=nextTupletId++;
@@ -1623,13 +1625,19 @@
       if(!sl.tuplet&&!sl.dot){
         const head={...sl,dur:want};
         const tail={...sl,dur:e-want,dot:false};
-        if(sl.type==='note')tail.tieToNext=true;
+        if(sl.type==='note'){
+          head.tieToNext=true;
+          if(!sl.tieToNext)delete tail.tieToNext;
+        }
         return[head,tail];
       }
       if(sl.dot&&!sl.tuplet){
         const head={...sl,dur:want,dot:false};
         const tail={...sl,dur:e-want,dot:false};
-        if(sl.type==='note')tail.tieToNext=true;
+        if(sl.type==='note'){
+          head.tieToNext=true;
+          if(!sl.tieToNext)delete tail.tieToNext;
+        }
         return[head,tail];
       }
       return[sl,null];
@@ -1664,15 +1672,49 @@
     }
     return result;
   }
-  function shiftPiece(direction){
+  function chooseShiftDuration(direction){
+    const sl=selectedSlot();
+    const defDur=sl?(sl.dot?sl.dur*1.5:sl.dur):1;
+    const DURS=[{label:'𝅝',d:4},{label:'𝅗𝅥',d:2},{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
+    let chosen=defDur,chosenDot=false;
+    function body(){
+      let h='<div style="font-size:14px;margin-bottom:8px;">Decaler vers la '+(direction>0?'droite':'gauche')+' de :</div>';
+      h+='<div class="row-grid row-6" style="margin-bottom:8px;">';
+      DURS.forEach(d=>h+='<button class="k symbol" data-shdur="'+d.d+'">'+d.label+'</button>');
+      h+='</div>';
+      h+='<div class="row-grid row-2">';
+      h+='<button class="k" id="shift-dot-tgl">Pointee : <b id="shift-dot-v">non</b></button>';
+      h+='</div>';
+      return h;
+    }
+    function refreshSel(){
+      document.querySelectorAll('[data-shdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.shdur)===chosen));
+      const dv=document.getElementById('shift-dot-v');if(dv)dv.textContent=chosenDot?'oui':'non';
+    }
+    openPanel({title:'Decalage',body:body(),hideActions:true,extraButtons:['Annuler','Appliquer'],
+      onMount:()=>{
+        refreshSel();
+        document.querySelectorAll('[data-shdur]').forEach(b=>{
+          b.addEventListener('click',()=>{chosen=parseFloat(b.dataset.shdur);refreshSel()});
+        });
+        const tgl=document.getElementById('shift-dot-tgl');
+        if(tgl)tgl.addEventListener('click',()=>{chosenDot=!chosenDot;refreshSel()});
+      },
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        if(w==='Appliquer'){closePanel();shiftPiece(direction,chosen,chosenDot)}
+      }
+    });
+  }
+  function shiftPiece(direction,shiftDur,shiftDot){
     const sl=selectedSlot();if(!sl)return;
     if(sl.tuplet){alert('Decalage impossible sur une note dans un n-uplet');return}
-    const dur=sl.dot?sl.dur*1.5:sl.dur;
+    const dur=shiftDot?shiftDur*1.5:shiftDur;
     const{slots,absSel,caps}=flattenSlots();
     if(absSel<0)return;
     let newFlat;
     if(direction>0){
-      const silence={type:'rest',dur:sl.dur,dot:!!sl.dot};
+      const silence={type:'rest',dur:shiftDur,dot:!!shiftDot};
       newFlat=[...slots.slice(0,absSel).map(x=>x.slot),silence,...slots.slice(absSel).map(x=>x.slot)];
       let totalDur=0;for(const s of newFlat)totalDur+=effDur(s);
       let capSum=caps.reduce((a,b)=>a+b,0);
@@ -1715,8 +1757,8 @@
     }
     pushHistory();render();
   }
-  document.getElementById('btn-shift-left').addEventListener('click',()=>shiftPiece(-1));
-  document.getElementById('btn-shift-right').addEventListener('click',()=>shiftPiece(+1));
+  document.getElementById('btn-shift-left').addEventListener('click',()=>chooseShiftDuration(-1));
+  document.getElementById('btn-shift-right').addEventListener('click',()=>chooseShiftDuration(+1));
 
   // Point 6+11 : annuler/refaire + copier/coller dans Mesure
   document.getElementById('btn-undo-mes').addEventListener('click',undo);
