@@ -8,7 +8,7 @@
   .abc-app.fullscreen { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; border-radius: 0; z-index: 9999; overflow-y: auto; }
 
   /* === LAYOUT PC : 2 colonnes === */
-  .pc-layout { display: grid; grid-template-columns: 460px 1fr; gap: 10px; align-items: stretch; }
+  .pc-layout { display: grid; grid-template-columns: 340px 1fr; gap: 10px; align-items: stretch; }
   .pc-left { display: flex; flex-direction: column; gap: 6px; }
   .pc-right { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
@@ -169,7 +169,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.45 PC</b></span>
+    <span>Éditeur ABC <b>v0.53 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -236,12 +236,7 @@
         <div class="row-grid row-3">
           <button class="k" id="btn-tuplet">3:2</button>
           <button class="k" id="btn-chord">Cm</button>
-          <button class="k" id="btn-orn">~T</button>
-        </div>
-        <div class="transpose-row">
-          <div class="label">Transp.</div>
-          <button class="k" id="btn-trans-down">↓</button>
-          <button class="k" id="btn-trans-up">↑</button>
+          <button class="k" id="btn-orn">~ tr</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-undo">↶</button>
@@ -259,22 +254,11 @@
           <button class="k" data-hdr="K">Armure</button>
           <button class="k" data-hdr="CLEF">Clé</button>
         </div>
-        <div class="row-grid">
-          <button class="k" id="btn-disarm" style="font-size:16px;">Armure → C majeur</button>
-        </div>
         <div class="row-grid row-4">
           <button class="k" id="btn-rep-start">𝄆</button>
           <button class="k" id="btn-rep-end">𝄇</button>
           <button class="k" id="btn-volta1">|1</button>
           <button class="k" id="btn-volta2">|2</button>
-        </div>
-        <div class="row-grid row-2">
-          <button class="k" id="btn-swing-dot" style="font-size:14px;">2♪→♪.𝅘𝅥𝅯</button>
-          <button class="k" id="btn-swing-triplet" style="font-size:14px;">2♪→♩♪³</button>
-        </div>
-        <div class="row-grid row-2">
-          <button class="k" id="btn-swing-undot" style="font-size:14px;">♪.𝅘𝅥𝅯→2♪</button>
-          <button class="k" id="btn-swing-untriplet" style="font-size:14px;">♩♪³→2♪</button>
         </div>
         <div class="row-grid">
           <button class="k" id="btn-shift">⇦ Décaler ⇨</button>
@@ -343,6 +327,22 @@
           <div class="label">Taille <b id="size-v">100</b></div>
           <button class="k" id="size-u">+</button>
         </div>
+        <div class="transpose-row">
+          <div class="label">Transp.</div>
+          <button class="k" id="btn-trans-down">↓</button>
+          <button class="k" id="btn-trans-up">↑</button>
+        </div>
+        <div class="row-grid">
+          <button class="k" id="btn-disarm" style="font-size:16px;">Armure → C majeur</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-swing-dot" style="font-size:14px;">2♪→♪.𝅘𝅥𝅯</button>
+          <button class="k" id="btn-swing-triplet" style="font-size:14px;">2♪→♩♪³</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-swing-undot" style="font-size:14px;">♪.𝅘𝅥𝅯→2♪</button>
+          <button class="k" id="btn-swing-untriplet" style="font-size:14px;">♩♪³→2♪</button>
+        </div>
         <div class="dim-info">
           <span>Zone : <b id="dim-w">0</b>×<b id="dim-h">0</b></span>
           <span>SVG affiché : <b id="svg-h">0</b>px</span>
@@ -363,7 +363,7 @@
   const DURATIONS=[{label:'𝅝',d:4},{label:'𝅗𝅥',d:2},{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
   const SHARP_NOTES=['F','C','G','D','A','E','B'];
   const FLAT_NOTES=['B','E','A','D','G','C','F'];
-  const ORNAMENTS=[{code:'T',label:'tr'},{code:'M',label:'~M'},{code:'P',label:'pralle'},{code:'H',label:'fermata'},{code:'L',label:'accent'},{code:'.',label:'staccato'},{code:'u',label:'up'},{code:'v',label:'down'},{code:'O',label:'coda'}];
+  const ORNAMENTS=[{code:'T',label:'tr'},{code:'M',label:'∼ (gruppetto)'},{code:'P',label:'∿ pincé'},{code:'H',label:'𝄐 point d\'orgue'},{code:'L',label:'> accent'},{code:'.',label:'• staccato'},{code:'u',label:'⋁ levé'},{code:'v',label:'⊓ tiré'},{code:'O',label:'⊕ coda'}];
   // Boutons accord : ajoutent leur texte au champ
   const CHORD_BTNS=['#','b','m','Maj','2','4','5','6','7','9','11','13','sus','dim','aug','add','/'];
   const KEY_NAMES_MAJOR=['C','G','D','A','E','B','F♯','C♯'];
@@ -895,7 +895,7 @@
           const cl=iS?sel:ink;
           if(t.chord)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+t.chord+'</text>';
           if(t.orn&&t.orn.length){
-            const ot=t.orn.map(o=>{if(o==='T')return'tr';if(o==='M')return'∼';if(o==='H')return'𝄐';if(o==='.')return'·';if(o==='L')return'>';return o}).join(' ');
+            const ot=t.orn.map(o=>{if(o==='T')return'tr';if(o==='M')return'∼';if(o==='P')return'∿';if(o==='H')return'𝄐';if(o==='.')return'·';if(o==='L')return'>';if(o==='u')return'⋁';if(o==='v')return'⊓';if(o==='O')return'⊕';return o}).join(' ');
             svg+='<text x="'+cx+'" y="'+(staffTop-12)+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+ot+'</text>';
           }
           if(t.type==='note'){
@@ -1093,7 +1093,7 @@
   function jumpToEnd(){state.sel={m:state.measures.length-1,s:0};render()}
 
   const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null};
-  function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.master.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/200;if(audio.ctx.state==='suspended')audio.ctx.resume()}
+  function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.comp=audio.ctx.createDynamicsCompressor();audio.comp.threshold.value=-10;audio.comp.knee.value=20;audio.comp.ratio.value=8;audio.comp.attack.value=0.003;audio.comp.release.value=0.25;audio.master.connect(audio.comp);audio.comp.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/100;if(audio.ctx.state==='suspended')audio.ctx.resume()}
   function midiOfNote(note,oct,acc,keySig){const bs={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[note];let midi=60+bs+oct*12;let alt=0;if(acc==='^')alt=1;else if(acc==='_')alt=-1;else if(acc==='=')alt=0;else{if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(note))alt=1;else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(note))alt=-1}return midi+alt}
   function freqOfMidi(m){return 440*Math.pow(2,(m-69)/12)}
   function previewNote(midi,durSec=0.25){ensureAudio();const t=audio.ctx.currentTime+0.005;const f=freqOfMidi(midi);const o=audio.ctx.createOscillator();const g=audio.ctx.createGain();o.type='triangle';o.frequency.value=f;const p=0.5,a=0.005;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(p,t+a);g.gain.setValueAtTime(p,t+Math.max(durSec-0.06,a));g.gain.linearRampToValueAtTime(0,t+durSec);o.connect(g);g.connect(audio.master);o.start(t);o.stop(t+durSec+0.03)}
@@ -1187,10 +1187,12 @@
         return ev.updateAt===undefined||ev.updateAt>now-1;
       });
       // Trouver le dernier marqueur passe pour mettre a jour la selection
+      // On anticipe legerement (lookahead) pour que la note passe en rouge JUSTE AVANT d'etre jouee
+      const LOOKAHEAD=0.12;
       let last=null;
       for(const ev of audio.scheduled){
-        if(ev.updateAt!==undefined&&ev.updateAt<=now)last=ev;
-        if(ev.updateAt!==undefined&&ev.updateAt>now)break;
+        if(ev.updateAt!==undefined&&ev.updateAt<=now+LOOKAHEAD)last=ev;
+        if(ev.updateAt!==undefined&&ev.updateAt>now+LOOKAHEAD)break;
       }
       if(last&&(state.sel.m!==last.measureIdx||state.sel.s!==last.slotIdx)){
         state.sel={m:last.measureIdx,s:last.slotIdx};renderScore();renderState();
@@ -1798,43 +1800,47 @@
   let newMeterGlobalTmp='4/4'; // utilise par rebuildRangeWithCap pour le beat des silences
   function applyMeterChangeFromSel(newMeter,newUnit){
     const startM=state.sel.m;
-    // Determiner la fin de la plage : prochaine frontiere (changement signature/armure/cle/reprise) apres startM
+    // Materialiser les alterations implicites avant re-barrage (sinon une note qui change de mesure perd son alteration)
+    materializeAccidentals();
+    // Frontiere de fin : seulement le prochain CHANGEMENT DE RYTHMIQUE (signature)
     let endM=state.measures.length-1;
     for(let i=startM+1;i<state.measures.length;i++){
-      const hasBoundary=(state.timeChanges[i]!==undefined)||(state.keyChanges[i]!==undefined)||(state.clefChanges[i]!==undefined)||(state.repeats[i]&&(state.repeats[i].start||state.repeats[i].end||state.repeats[i].volta!==undefined));
-      if(hasBoundary){endM=i-1;break}
+      if(state.timeChanges[i]!==undefined){endM=i-1;break}
     }
+    // Memoriser l'armure/cle de la 1ere mesure de la plage (a conserver)
+    const keyAtStart=state.keyChanges[startM];
+    const clefAtStart=state.clefChanges[startM];
     // Aplatir les slots de la plage [startM..endM]
     const flat=[];
     for(let i=startM;i<=endM;i++){for(const s of state.measures[i])flat.push(s)}
-    // Nouvelle capacite
     newMeterGlobalTmp=newMeter;
     const newCap=measureCapacity(newMeter);
     const rebuilt=rebuildRangeWithCap(flat,newCap);
-    // Remplacer la plage par les nouvelles mesures
     const before=state.measures.slice(0,startM);
     const after=state.measures.slice(endM+1);
     const oldCount=endM-startM+1;
     const newCount=rebuilt.length;
     const delta=newCount-oldCount;
     state.measures=[...before,...rebuilt,...after];
-    // Decaler les changements (timeChanges/keyChanges/clefChanges/repeats) situes APRES la plage
-    if(delta!==0){
-      const shiftMap=(obj)=>{
-        const out={};
-        Object.keys(obj).forEach(k=>{
-          const idx=parseInt(k,10);
-          if(idx>endM)out[idx+delta]=obj[k];
-          else out[idx]=obj[k];
-        });
-        return out;
-      };
-      state.timeChanges=shiftMap(state.timeChanges);
-      state.keyChanges=shiftMap(state.keyChanges);
-      state.clefChanges=shiftMap(state.clefChanges);
-      state.repeats=shiftMap(state.repeats);
-    }
-    // Appliquer le changement de signature inline a startM (sauf si startM==0 -> signature globale)
+    // Re-barrage : supprimer reprises/voltas de la plage. Pour armure/cle : garder seulement
+    // celles de la 1ere mesure (startM), supprimer celles a l'interieur. Decaler ce qui est apres.
+    const shiftMapDropInside=(obj,keepStart)=>{
+      const out={};
+      Object.keys(obj).forEach(k=>{
+        const idx=parseInt(k,10);
+        if(idx<startM)out[idx]=obj[k];
+        else if(idx>endM)out[idx+delta]=obj[k];
+        // dans [startM..endM] : supprime (la valeur de startM sera reposee si keepStart)
+      });
+      return out;
+    };
+    state.keyChanges=shiftMapDropInside(state.keyChanges);
+    state.clefChanges=shiftMapDropInside(state.clefChanges);
+    state.repeats=shiftMapDropInside(state.repeats);
+    state.timeChanges=shiftMapDropInside(state.timeChanges);
+    // Reposer armure/cle sur la 1ere mesure de la plage (si elles existaient)
+    if(keyAtStart!==undefined&&startM>0)state.keyChanges[startM]=keyAtStart;
+    if(clefAtStart!==undefined&&startM>0)state.clefChanges[startM]=clefAtStart;
     if(startM===0){
       state.pieceMeter=newMeter;
       delete state.timeChanges[0];
