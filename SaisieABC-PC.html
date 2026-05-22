@@ -23,8 +23,8 @@
   .dim-info b { color: #185fa5; font-weight: 700; }
 
   .abc-card { background: #ffffff; border: 1px solid #d8d6ce; border-radius: 6px; padding: 6px; height: 100%; }
-  /* Partition : hauteur réduite (~60%) */
-  .score-wrap { width: 100%; height: calc(60vh - 36px); min-height: 360px; }
+  /* Partition : utilise toute la hauteur de la fenetre (moins le badge version et les marges) */
+  .score-wrap { width: 100%; height: calc(100vh - 85px); min-height: 360px; }
   .score-wrap svg { width: 100%; height: 100%; display: block; }
 
   .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 10px;
@@ -77,7 +77,7 @@
   .nav-bar .k:active { background: #f5e2a8; }
 
   /* Onglets : disposés en grille 2 colonnes dans la colonne de gauche */
-  .tabs { display: grid; grid-template-columns: repeat(5, 1fr);
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr) 0.6fr;
     gap: 3px;
     border-bottom: 2px solid #b4b2a9; }
   .tab { height: 44px;
@@ -169,7 +169,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.37 PC</b></span>
+    <span>Éditeur ABC <b>v0.45 PC</b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -217,6 +217,7 @@
         <button class="tab" data-tab="play">Play</button>
         <button class="tab" data-tab="titre">Titre</button>
         <button class="tab" data-tab="fichier">Fichier</button>
+        <button class="tab" data-tab="vue">👁</button>
       </div>
 
       <div class="tab-panel active" data-panel="notes">
@@ -246,15 +247,6 @@
           <button class="k" id="btn-undo">↶</button>
           <button class="k" id="btn-redo">↷</button>
         </div>
-        <div class="control-row">
-          <button class="k" id="size-d">−</button>
-          <div class="label">Taille <b id="size-v">100</b></div>
-          <button class="k" id="size-u">+</button>
-        </div>
-        <div class="dim-info">
-          <span>Zone : <b id="dim-w">0</b>×<b id="dim-h">0</b></span>
-          <span>SVG affiché : <b id="svg-h">0</b>px</span>
-        </div>
       </div>
 
       <div class="tab-panel" data-panel="mesure">
@@ -277,12 +269,15 @@
           <button class="k" id="btn-volta2">|2</button>
         </div>
         <div class="row-grid row-2">
-          <button class="k" id="btn-swing-dot" style="font-size:14px;">♪♪→♪.𝅘𝅥𝅯</button>
-          <button class="k" id="btn-swing-triplet" style="font-size:14px;">♪♪→♩♪³</button>
+          <button class="k" id="btn-swing-dot" style="font-size:14px;">2♪→♪.𝅘𝅥𝅯</button>
+          <button class="k" id="btn-swing-triplet" style="font-size:14px;">2♪→♩♪³</button>
         </div>
         <div class="row-grid row-2">
-          <button class="k" id="btn-shift-left">⇦ Décal.</button>
-          <button class="k" id="btn-shift-right">Décal. ⇨</button>
+          <button class="k" id="btn-swing-undot" style="font-size:14px;">♪.𝅘𝅥𝅯→2♪</button>
+          <button class="k" id="btn-swing-untriplet" style="font-size:14px;">♩♪³→2♪</button>
+        </div>
+        <div class="row-grid">
+          <button class="k" id="btn-shift">⇦ Décaler ⇨</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-copy-mes">📋</button>
@@ -295,27 +290,29 @@
       </div>
 
       <div class="tab-panel" data-panel="play">
-        <div class="row-grid row-4">
+        <div class="row-grid row-3">
           <button class="k" id="btn-play">▶</button>
           <button class="k" id="btn-stop">■</button>
           <button class="k" id="btn-loop">⟲</button>
-          <button class="k" id="btn-viewmode">👁</button>
         </div>
-        <div class="control-row">
-          <button class="k" id="vol-d">−</button>
-          <div class="label">Vol <b id="vol-v">60</b></div>
-          <button class="k" id="vol-u">+</button>
+        <div class="label" style="text-align:center;margin:4px 0;">Vol <b id="vol-v">60</b></div>
+        <div class="row-grid row-4">
+          <button class="k" id="vol-d5">−5</button>
+          <button class="k" id="vol-d">−1</button>
+          <button class="k" id="vol-u">+1</button>
+          <button class="k" id="vol-u5">+5</button>
         </div>
-        <div class="control-row">
-          <button class="k" id="tempo-d">−</button>
-          <div class="label">♩ <b id="tempo-v">60</b>  ♩. <b id="tempo-v-dot">40</b></div>
-          <button class="k" id="tempo-u">+</button>
+        <div class="label" style="text-align:center;margin:6px 0 4px;">♩ <b id="tempo-v">60</b>  ·  ♩. <b id="tempo-v-dot">40</b></div>
+        <div class="row-grid row-4">
+          <button class="k" id="tempo-d5">−5</button>
+          <button class="k" id="tempo-d">−1</button>
+          <button class="k" id="tempo-u">+1</button>
+          <button class="k" id="tempo-u5">+5</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="tempo-mode-q" style="font-size:14px;">♩ noire</button>
           <button class="k" id="tempo-mode-qd" style="font-size:14px;">♩. pointée</button>
         </div>
-        <div class="row-grid"><button class="k" id="btn-fs">⛶</button></div>
       </div>
 
       <div class="tab-panel" data-panel="titre">
@@ -337,6 +334,19 @@
         </div>
         <div class="row-grid"><button class="k" id="btn-export-mxl" style="font-size:18px;">MusicXML (.mxl)</button></div>
         <div class="row-grid"><button class="k" id="btn-help" style="font-size:18px;">? Aide</button></div>
+      </div>
+
+      <div class="tab-panel" data-panel="vue">
+        <div class="row-grid"><button class="k" id="btn-viewmode">👁</button></div>
+        <div class="control-row">
+          <button class="k" id="size-d">−</button>
+          <div class="label">Taille <b id="size-v">100</b></div>
+          <button class="k" id="size-u">+</button>
+        </div>
+        <div class="dim-info">
+          <span>Zone : <b id="dim-w">0</b>×<b id="dim-h">0</b></span>
+          <span>SVG affiché : <b id="svg-h">0</b>px</span>
+        </div>
       </div>
     </div>
 
@@ -667,6 +677,20 @@
     const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
     const scoreH=STAFF_TOP_Y+linesShown*STAFF_SPACING+10;
     let svg='<svg viewBox="0 0 '+SCORE_W+' '+scoreH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">';
+    // === Scale de reference : on prend le scale des lignes "pleines" (le plus petit) ===
+    // pour ne pas etaler les mesures de la derniere ligne incomplete sur toute la largeur.
+    let refScale=Infinity;
+    for(let li=0;li<pageLines.length;li++){
+      const ld=pageLines[li];
+      if(!ld||ld.mIdxs.length===0)continue;
+      const costs=ld.mIdxs.map(mi=>measureCost(mi));
+      const hC2=lineHeaderCost(ld.mIdxs[0],pageStart===0&&li===0);
+      const avail=usableLineW-hC2+20;
+      const sum=costs.reduce((a,b)=>a+b,0)||1;
+      const sc=avail/sum;
+      if(sc<refScale)refScale=sc;
+    }
+    if(!isFinite(refScale)||refScale<=0)refScale=1;
     for(let line=0;line<linesShown;line++){
       const lineData=pageLines[line];
       if(!lineData||lineData.mIdxs.length===0)continue;
@@ -707,7 +731,9 @@
       const headerC=lineHeaderCost(lsm,isFirstDocLine);
       const availableForMeasures=usableLineW-headerC+20; // recuperer la marge fixe deja comptee dans header
       const sumCosts=measureCosts.reduce((a,b)=>a+b,0)||1;
-      const lineScale=availableForMeasures/sumCosts;
+      // On n'etire jamais au-dela de la densite des lignes pleines : la derniere ligne incomplete
+      // garde la meme echelle et reste alignee a gauche au lieu de s'etaler sur toute la largeur.
+      const lineScale=Math.min(availableForMeasures/sumCosts, refScale);
       // Positions cumulatives de chaque mesure (xL,xR)
       const measureBounds=[];
       let curX=LEFT_PAD+headerC-20; // commence apres l'header (le 20 etait deja dans le cost de base)
@@ -1043,7 +1069,7 @@
     if(v1)v1.classList.toggle('active', !!(rA&&rA.volta===1));
     const v2=document.getElementById('btn-volta2');
     if(v2)v2.classList.toggle('active', !!(rA&&rA.volta===2));
-    document.getElementById('btn-viewmode').textContent=state.viewmode?'✎':'👁';
+    const vmBtn=document.getElementById('btn-viewmode');if(vmBtn)vmBtn.textContent=state.viewmode?'✎':'👁';
     document.getElementById('hdr-x-val').textContent=state.headers.X||'0';
     document.getElementById('hdr-t-val').textContent=(state.headers.T||'—').split('\n')[0];
     document.getElementById('hdr-c-val').textContent=(state.headers.C||'—').split('\n')[0];
@@ -1552,56 +1578,106 @@
   document.getElementById('btn-volta1').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===1)?0:1;pushHistory();render()});
   document.getElementById('btn-volta2').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===2)?0:2;pushHistory();render()});
 
-  // === Transformations rythmiques (paire de notes consecutives) ===
-  function pairForSwing(){
-    const m=state.measures[state.sel.m];if(!m)return null;
-    const idx=state.sel.s;
-    if(idx<0||idx>=m.length-1)return null;
-    const a=m[idx],b=m[idx+1];
-    if(a.tuplet||b.tuplet)return null;
-    if(!a.dot&&!b.dot&&Math.abs(a.dur-b.dur)<1e-6)return{a,b,kind:'equal',idx};
-    if(a.dot&&!b.dot&&Math.abs(b.dur-a.dur/2)<1e-6)return{a,b,kind:'dotted',idx};
-    return null;
+  // === Transformations rythmiques globales (toute la partition) ===
+  function slotOffsets(meas){
+    const offs=[];let cur=0;
+    for(let i=0;i<meas.length;i++){offs.push(cur);cur+=effDur(meas[i])}
+    return offs;
   }
-  function pairForTriplet(){
-    const m=state.measures[state.sel.m];if(!m)return null;
-    const idx=state.sel.s;
-    if(idx<0||idx>=m.length-1)return null;
-    const a=m[idx],b=m[idx+1];
-    if(!a.tuplet&&!b.tuplet&&!a.dot&&!b.dot&&Math.abs(a.dur-b.dur)<1e-6)return{a,b,kind:'equal',idx};
-    if(a.tuplet===3&&b.tuplet===3&&a.tupletId===b.tupletId){
-      if(Math.abs(a.dur-2*b.dur)<1e-6)return{a,b,kind:'triplet',idx};
-    }
-    return null;
+  function onBeat(o,beat){const eps=1e-6;const r=o%beat;return r<eps||Math.abs(r-beat)<eps}
+  function applySwingGlobal(matchFn,transformFn,labelForAlert){
+    let count=0;
+    state.measures.forEach((meas,mi)=>{
+      const beat=4/parseMeter(meterAt(mi)).den;
+      let i=0;
+      while(i<meas.length-1){
+        const offs=slotOffsets(meas);
+        if(onBeat(offs[i],beat)&&matchFn(meas,i,beat)){
+          transformFn(meas,i,beat);
+          count++;
+          i+=2;continue;
+        }
+        i++;
+      }
+    });
+    if(count===0){alert(labelForAlert+' : aucune occurrence trouvee');return false}
+    pushHistory();render();return true;
+  }
+  function matchEqualPair(meas,i,beat){
+    if(i>=meas.length-1)return false;
+    const a=meas[i],b=meas[i+1];
+    if(a.tuplet||b.tuplet)return false;
+    if(a.dot||b.dot)return false;
+    if(Math.abs(a.dur-b.dur)>1e-6)return false;
+    if(Math.abs(2*a.dur-beat)>1e-6)return false;
+    return true;
   }
   document.getElementById('btn-swing-dot').addEventListener('click',()=>{
-    const p=pairForSwing();
-    if(!p){alert('♪♪→♪.𝅘𝅥𝅯 : selectionnez la 1ere de 2 notes consecutives de meme duree (hors n-uplet), ou une note pointee + double.');return}
-    const m=state.measures[state.sel.m];
-    if(p.kind==='equal'){
-      m[p.idx]={...p.a,dur:p.a.dur,dot:true};
-      m[p.idx+1]={...p.b,dur:p.b.dur/2,dot:false};
-    } else if(p.kind==='dotted'){
-      m[p.idx]={...p.a,dur:p.a.dur,dot:false};
-      m[p.idx+1]={...p.b,dur:p.a.dur,dot:false};
-    }
-    pushHistory();render();
+    applySwingGlobal(matchEqualPair,(meas,i)=>{
+      const a=meas[i],b=meas[i+1];
+      meas[i]={...a,dur:a.dur,dot:true};
+      meas[i+1]={...b,dur:b.dur/2,dot:false};
+    },'2croches vers croche pointee+double');
   });
   document.getElementById('btn-swing-triplet').addEventListener('click',()=>{
-    const p=pairForTriplet();
-    if(!p){alert('♪♪→♩♪³ : selectionnez la 1ere de 2 notes consecutives de meme duree, ou la 1ere d un triolet noire+croche.');return}
-    const m=state.measures[state.sel.m];
-    if(p.kind==='equal'){
+    applySwingGlobal(matchEqualPair,(meas,i)=>{
+      const a=meas[i],b=meas[i+1];
       const tid=nextTupletId++;
-      m[p.idx]={...p.a,dur:2*p.a.dur,dot:false,tuplet:3,tupletId:tid};
-      m[p.idx+1]={...p.b,dur:p.b.dur,dot:false,tuplet:3,tupletId:tid};
-    } else if(p.kind==='triplet'){
-      const na={...p.a,dur:p.b.dur,dot:false};delete na.tuplet;delete na.tupletId;
-      const nb={...p.b,dur:p.b.dur,dot:false};delete nb.tuplet;delete nb.tupletId;
-      m[p.idx]=na;m[p.idx+1]=nb;
-    }
-    pushHistory();render();
+      meas[i]={...a,dur:2*a.dur,dot:false,tuplet:3,tupletId:tid};
+      meas[i+1]={...b,dur:b.dur,dot:false,tuplet:3,tupletId:tid};
+    },'2croches vers triolet noire+croche');
   });
+  function matchDotPair(meas,i,beat){
+    if(i>=meas.length-1)return false;
+    const a=meas[i],b=meas[i+1];
+    if(a.tuplet||b.tuplet)return false;
+    if(!a.dot||b.dot)return false;
+    if(Math.abs(b.dur-a.dur/2)>1e-6)return false;
+    if(Math.abs(2*a.dur-beat)>1e-6)return false;
+    return true;
+  }
+  document.getElementById('btn-swing-undot').addEventListener('click',()=>{
+    applySwingGlobal(matchDotPair,(meas,i)=>{
+      const a=meas[i],b=meas[i+1];
+      meas[i]={...a,dur:a.dur,dot:false};
+      meas[i+1]={...b,dur:a.dur,dot:false};
+    },'croche pointee+double vers 2croches');
+  });
+  function matchTripletPair(meas,i,beat){
+    if(i>=meas.length-1)return false;
+    const a=meas[i],b=meas[i+1];
+    if(a.tuplet!==3||b.tuplet!==3||a.tupletId!==b.tupletId)return false;
+    if(Math.abs(a.dur-2*b.dur)>1e-6)return false;
+    if(Math.abs(2*b.dur-beat)>1e-6)return false;
+    return true;
+  }
+  document.getElementById('btn-swing-untriplet').addEventListener('click',()=>{
+    applySwingGlobal(matchTripletPair,(meas,i)=>{
+      const a=meas[i],b=meas[i+1];
+      const na={...a,dur:b.dur,dot:false};delete na.tuplet;delete na.tupletId;
+      const nb={...b,dur:b.dur,dot:false};delete nb.tuplet;delete nb.tupletId;
+      meas[i]=na;meas[i+1]=nb;
+    },'triolet noire+croche vers 2croches');
+  });
+
+  // === Materialisation des alterations implicites avant un decalage ===
+  function materializeAccidentals(){
+    state.measures.forEach((meas,mi)=>{
+      const sig=keyAt(mi);
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        if(slot.acc)return;
+        let priorAcc=null;
+        for(let k=si-1;k>=0;k--){
+          const p=meas[k];
+          if(p.type==='note'&&p.note===slot.note&&p.octave===slot.octave&&p.acc){priorAcc=p.acc;break}
+        }
+        if(priorAcc!==null){slot.acc=priorAcc;return}
+        if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))slot.acc='^';
+        else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))slot.acc='_';
+      });
+    });
+  }
 
   // === Decalage global du morceau a partir de la note selectionnee ===
   function flattenSlots(){
@@ -1672,43 +1748,108 @@
     }
     return result;
   }
-  function chooseShiftDuration(direction){
-    const sl=selectedSlot();
-    const defDur=sl?(sl.dot?sl.dur*1.5:sl.dur):1;
-    const DURS=[{label:'𝅝',d:4},{label:'𝅗𝅥',d:2},{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
-    let chosen=defDur,chosenDot=false;
-    function body(){
-      let h='<div style="font-size:14px;margin-bottom:8px;">Decaler vers la '+(direction>0?'droite':'gauche')+' de :</div>';
-      h+='<div class="row-grid row-6" style="margin-bottom:8px;">';
-      DURS.forEach(d=>h+='<button class="k symbol" data-shdur="'+d.d+'">'+d.label+'</button>');
-      h+='</div>';
-      h+='<div class="row-grid row-2">';
-      h+='<button class="k" id="shift-dot-tgl">Pointee : <b id="shift-dot-v">non</b></button>';
-      h+='</div>';
-      return h;
-    }
-    function refreshSel(){
-      document.querySelectorAll('[data-shdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.shdur)===chosen));
-      const dv=document.getElementById('shift-dot-v');if(dv)dv.textContent=chosenDot?'oui':'non';
-    }
-    openPanel({title:'Decalage',body:body(),hideActions:true,extraButtons:['Annuler','Appliquer'],
-      onMount:()=>{
-        refreshSel();
-        document.querySelectorAll('[data-shdur]').forEach(b=>{
-          b.addEventListener('click',()=>{chosen=parseFloat(b.dataset.shdur);refreshSel()});
-        });
-        const tgl=document.getElementById('shift-dot-tgl');
-        if(tgl)tgl.addEventListener('click',()=>{chosenDot=!chosenDot;refreshSel()});
-      },
-      onExtra:(w)=>{
-        if(w==='Annuler'){closePanel();return}
-        if(w==='Appliquer'){closePanel();shiftPiece(direction,chosen,chosenDot)}
+  // Re-barre une plage de mesures avec une nouvelle capacite, en preservant toutes les notes.
+  // Genere autant de mesures que necessaire (debordement) ou aspire les notes suivantes (remplissage).
+  function rebuildRangeWithCap(slots,newCap){
+    const result=[];
+    let used=0,curM=[];
+    const eps=1e-6;
+    function splitSlot(sl,want){
+      const e=effDur(sl);
+      if(want>=e-eps)return[sl,null];
+      if(!sl.tuplet){
+        const head={...sl,dur:want,dot:false};
+        const tail={...sl,dur:e-want,dot:false};
+        if(sl.type==='note'){head.tieToNext=true;if(!sl.tieToNext)delete tail.tieToNext}
+        return[head,tail];
       }
-    });
+      return[sl,null]; // ne coupe pas un tuplet
+    }
+    for(const sl0 of slots){
+      let sl=sl0;
+      while(sl){
+        const remain=newCap-used;
+        const e=effDur(sl);
+        if(e<=remain+eps){
+          curM.push(sl);used+=e;sl=null;
+          if(used>=newCap-eps){result.push(curM);curM=[];used=0}
+        } else {
+          const[head,tail]=splitSlot(sl,remain);
+          curM.push(head);used+=effDur(head);
+          if(used>=newCap-eps){result.push(curM);curM=[];used=0}
+          sl=tail;
+        }
+      }
+    }
+    // Derniere mesure incomplete : completer avec des silences
+    if(curM.length>0||used>eps){
+      const remain=newCap-used;
+      if(remain>eps){
+        const{den}=parseMeter(newMeterGlobalTmp);
+        const beat=4/den;
+        const pieces=splitDurationByBeat(used,remain,beat);
+        pieces.forEach(p=>curM.push({type:'rest',dur:p.dur,dot:p.dot}));
+      }
+      result.push(curM);
+    }
+    if(result.length===0)result.push([]);
+    return result;
+  }
+  let newMeterGlobalTmp='4/4'; // utilise par rebuildRangeWithCap pour le beat des silences
+  function applyMeterChangeFromSel(newMeter,newUnit){
+    const startM=state.sel.m;
+    // Determiner la fin de la plage : prochaine frontiere (changement signature/armure/cle/reprise) apres startM
+    let endM=state.measures.length-1;
+    for(let i=startM+1;i<state.measures.length;i++){
+      const hasBoundary=(state.timeChanges[i]!==undefined)||(state.keyChanges[i]!==undefined)||(state.clefChanges[i]!==undefined)||(state.repeats[i]&&(state.repeats[i].start||state.repeats[i].end||state.repeats[i].volta!==undefined));
+      if(hasBoundary){endM=i-1;break}
+    }
+    // Aplatir les slots de la plage [startM..endM]
+    const flat=[];
+    for(let i=startM;i<=endM;i++){for(const s of state.measures[i])flat.push(s)}
+    // Nouvelle capacite
+    newMeterGlobalTmp=newMeter;
+    const newCap=measureCapacity(newMeter);
+    const rebuilt=rebuildRangeWithCap(flat,newCap);
+    // Remplacer la plage par les nouvelles mesures
+    const before=state.measures.slice(0,startM);
+    const after=state.measures.slice(endM+1);
+    const oldCount=endM-startM+1;
+    const newCount=rebuilt.length;
+    const delta=newCount-oldCount;
+    state.measures=[...before,...rebuilt,...after];
+    // Decaler les changements (timeChanges/keyChanges/clefChanges/repeats) situes APRES la plage
+    if(delta!==0){
+      const shiftMap=(obj)=>{
+        const out={};
+        Object.keys(obj).forEach(k=>{
+          const idx=parseInt(k,10);
+          if(idx>endM)out[idx+delta]=obj[k];
+          else out[idx]=obj[k];
+        });
+        return out;
+      };
+      state.timeChanges=shiftMap(state.timeChanges);
+      state.keyChanges=shiftMap(state.keyChanges);
+      state.clefChanges=shiftMap(state.clefChanges);
+      state.repeats=shiftMap(state.repeats);
+    }
+    // Appliquer le changement de signature inline a startM (sauf si startM==0 -> signature globale)
+    if(startM===0){
+      state.pieceMeter=newMeter;
+      delete state.timeChanges[0];
+    } else {
+      state.timeChanges[startM]=newMeter;
+    }
+    state.pieceUnit=newUnit;
+    state.sel={m:startM,s:0};
+    cleanupAccidentals();
+    pushHistory();render();
   }
   function shiftPiece(direction,shiftDur,shiftDot){
     const sl=selectedSlot();if(!sl)return;
     if(sl.tuplet){alert('Decalage impossible sur une note dans un n-uplet');return}
+    materializeAccidentals();
     const dur=shiftDot?shiftDur*1.5:shiftDur;
     const{slots,absSel,caps}=flattenSlots();
     if(absSel<0)return;
@@ -1755,10 +1896,49 @@
       if(state.sel.s>0)state.sel.s--;
       else if(state.sel.m>0){state.sel.m--;state.sel.s=Math.max(0,state.measures[state.sel.m].length-1)}
     }
+    cleanupAccidentals();
     pushHistory();render();
   }
-  document.getElementById('btn-shift-left').addEventListener('click',()=>chooseShiftDuration(-1));
-  document.getElementById('btn-shift-right').addEventListener('click',()=>chooseShiftDuration(+1));
+  function openShiftPanel(){
+    const sl=selectedSlot();
+    const defDur=sl?sl.dur:1;
+    const defDot=sl?!!sl.dot:false;
+    const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
+    let chosen=defDur,chosenDot=defDot;
+    function body(){
+      let h='<div style="font-size:14px;margin-bottom:8px;">Duree du decalage :</div>';
+      h+='<div class="row-grid row-6" style="margin-bottom:8px;">';
+      DURS.forEach(d=>h+='<button class="k symbol" data-shdur="'+d.d+'">'+d.label+'</button>');
+      h+='</div>';
+      h+='<div class="row-grid" style="margin-bottom:8px;">';
+      h+='<button class="k" id="shift-dot-tgl">Pointee : <b id="shift-dot-v">non</b></button>';
+      h+='</div>';
+      h+='<div class="row-grid row-3">';
+      h+='<button class="k" id="shift-do-left">\u21E6</button>';
+      h+='<button class="k primary" id="shift-done">Fini</button>';
+      h+='<button class="k" id="shift-do-right">\u21E8</button>';
+      h+='</div>';
+      return h;
+    }
+    function refreshSel(){
+      document.querySelectorAll('[data-shdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.shdur)===chosen));
+      const dv=document.getElementById('shift-dot-v');if(dv)dv.textContent=chosenDot?'oui':'non';
+    }
+    openPanel({title:'Decalage',body:body(),hideActions:true,
+      onMount:()=>{
+        refreshSel();
+        document.querySelectorAll('[data-shdur]').forEach(b=>{
+          b.addEventListener('click',()=>{chosen=parseFloat(b.dataset.shdur);refreshSel()});
+        });
+        const tgl=document.getElementById('shift-dot-tgl');
+        if(tgl)tgl.addEventListener('click',()=>{chosenDot=!chosenDot;refreshSel()});
+        document.getElementById('shift-do-left').addEventListener('click',()=>shiftPiece(-1,chosen,chosenDot));
+        document.getElementById('shift-do-right').addEventListener('click',()=>shiftPiece(+1,chosen,chosenDot));
+        document.getElementById('shift-done').addEventListener('click',()=>closePanel());
+      }
+    });
+  }
+  document.getElementById('btn-shift').addEventListener('click',openShiftPanel);
 
   // Point 6+11 : annuler/refaire + copier/coller dans Mesure
   document.getElementById('btn-undo-mes').addEventListener('click',undo);
@@ -1840,10 +2020,25 @@
     pushHistory();render();
   });
 
-  document.getElementById('vol-u').addEventListener('click',()=>{state.volume=Math.min(100,state.volume+10);ensureAudio();render()});
-  document.getElementById('vol-d').addEventListener('click',()=>{state.volume=Math.max(0,state.volume-10);ensureAudio();render()});
-  document.getElementById('tempo-u').addEventListener('click',()=>{state.tempo=Math.min(300,state.tempo+5);if(audio.playing){stopPlayback(false);playSchedule()}else render()});
-  document.getElementById('tempo-d').addEventListener('click',()=>{state.tempo=Math.max(30,state.tempo-5);if(audio.playing){stopPlayback(false);playSchedule()}else render()});
+  function changeVolume(delta){state.volume=Math.max(0,Math.min(100,state.volume+delta));ensureAudio();render()}
+  document.getElementById('vol-u').addEventListener('click',()=>changeVolume(1));
+  document.getElementById('vol-d').addEventListener('click',()=>changeVolume(-1));
+  document.getElementById('vol-u5').addEventListener('click',()=>changeVolume(5));
+  document.getElementById('vol-d5').addEventListener('click',()=>changeVolume(-5));
+  function changeTempo(delta){
+    if(state.tempoDotted){
+      let dotted=Math.round(state.tempo*2/3)+delta;
+      dotted=Math.max(20,Math.min(200,dotted));
+      state.tempo=Math.round(dotted*3/2);
+    } else {
+      state.tempo=Math.max(30,Math.min(300,state.tempo+delta));
+    }
+    if(audio.playing){stopPlayback(false);playSchedule()}else render();
+  }
+  document.getElementById('tempo-u').addEventListener('click',()=>changeTempo(1));
+  document.getElementById('tempo-d').addEventListener('click',()=>changeTempo(-1));
+  document.getElementById('tempo-u5').addEventListener('click',()=>changeTempo(5));
+  document.getElementById('tempo-d5').addEventListener('click',()=>changeTempo(-5));
   document.getElementById('tempo-mode-q').addEventListener('click',()=>{state.tempoDotted=false;render()});
   document.getElementById('tempo-mode-qd').addEventListener('click',()=>{state.tempoDotted=true;render()});
   document.getElementById('size-u').addEventListener('click',()=>{state.scoreScale=Math.min(250,(state.scoreScale||100)+10);render()});
@@ -1852,7 +2047,6 @@
   document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
   document.getElementById('btn-loop').addEventListener('click',()=>{state.loop=!state.loop;document.getElementById('btn-loop').classList.toggle('active',state.loop)});
   document.getElementById('btn-viewmode').addEventListener('click',()=>{state.viewmode=!state.viewmode;document.getElementById('app').classList.toggle('viewmode',state.viewmode);render()});
-  document.getElementById('btn-fs').addEventListener('click',()=>{state.fullscreen=!state.fullscreen;document.getElementById('app').classList.toggle('fullscreen',state.fullscreen)});
 
   // ⭐ Accord : boutons ajoutent leur texte, ⌫ efface dernier char, pas de fondamentale
   document.getElementById('btn-chord').addEventListener('click',()=>{
@@ -2322,21 +2516,8 @@
       },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        if(state.sel.m===0){
-          state.pieceMeter=st.n+'/'+st.d;
-          state.pieceUnit='1/'+st.uD;
-          delete state.timeChanges[0];
-          rebuildMeasures();
-        } else {
-          state.pieceUnit='1/'+st.uD;
-          state.timeChanges[state.sel.m]=st.n+'/'+st.d;
-          for(let i=state.sel.m;i<state.measures.length;i++){
-            if(i>state.sel.m&&state.timeChanges[i])break;
-            state.measures[i]=buildEmptyMeasure(meterAt(i));
-          }
-          state.sel={m:state.sel.m,s:0};
-        }
-        cleanupAccidentals();pushHistory();closePanel();render();
+        applyMeterChangeFromSel(st.n+'/'+st.d,'1/'+st.uD);
+        closePanel();
       }
     });
   });
@@ -2436,7 +2617,13 @@
     render();
   });
 
-  window.addEventListener('resize',updateBadge);updateBadge();
+  let resizeTimer=null;
+  window.addEventListener('resize',()=>{
+    updateBadge();
+    if(resizeTimer)clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(()=>{render()},120);
+  });
+  updateBadge();
 
   // Clic sur la partition : selectionner le slot/mesure cliques
   document.getElementById('score').addEventListener('click',(e)=>{
