@@ -8,7 +8,7 @@
   .abc-app.fullscreen { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; border-radius: 0; z-index: 9999; overflow-y: auto; }
 
   /* === LAYOUT PC : 2 colonnes === */
-  .pc-layout { display: grid; grid-template-columns: 340px 1fr; gap: 10px; align-items: stretch; }
+  .pc-layout { display: grid; grid-template-columns: 260px 1fr; gap: 8px; align-items: stretch; }
   .pc-left { display: flex; flex-direction: column; gap: 6px; }
   .pc-right { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
@@ -27,18 +27,18 @@
   .score-wrap { width: 100%; height: calc(100vh - 85px); min-height: 360px; }
   .score-wrap svg { width: 100%; height: 100%; display: block; }
 
-  .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 20px; color: #1a1a1a; line-height: 1.3; font-weight: 700; }
+  .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 15px; color: #1a1a1a; line-height: 1.25; font-weight: 700; }
   .ctx-card > div { margin: 2px 0; }
-  .ctx-card .line-small { font-size: 14px; font-weight: 700; }
+  .ctx-card .line-small { font-size: 12px; font-weight: 700; }
   .ctx-card b { color: #185fa5; font-weight: 700; }
 
   /* Boutons standards : compacts pour PC souris */
   .abc-app button.k { display: flex; align-items: center; justify-content: center; gap: 4px;
-    width: 100%; height: 44px; padding: 0 4px;
+    width: 100%; height: 38px; padding: 0 3px;
     background: #ffffff; border: 2px solid #b4b2a9; border-radius: 8px;
-    font-family: inherit; font-size: 18px; font-weight: 700; color: #1a1a1a;
+    font-family: inherit; font-size: 15px; font-weight: 700; color: #1a1a1a;
     cursor: pointer; text-align: center; line-height: 1;
     -webkit-tap-highlight-color: transparent; -webkit-appearance: none; appearance: none;
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -47,15 +47,15 @@
   .abc-app button.k:active { background: #e8e6df; }
   .abc-app button.k:disabled { color: #bbb8a8; background: #f3f1ea; cursor: not-allowed; }
   .abc-app button.k.active { background: #cfe5fa; border-color: #185fa5; color: #0c447c; }
-  .abc-app button.k.symbol { font-size: 22px; font-family: "Times New Roman", serif; }
+  .abc-app button.k.symbol { font-size: 19px; font-family: "Times New Roman", serif; }
   .abc-app button.k.primary { background: #185fa5; border-color: #185fa5; color: #ffffff; }
   .abc-app button.k.primary:hover { background: #1a6cbb; }
   .abc-app button.k.clef-small { font-size: 20px; }
 
   /* Notes : un peu plus hautes avec sub-label */
-  .note-btn { flex-direction: column !important; gap: 1px !important; height: 56px !important; }
-  .note-btn .lbl { font-size: 20px; font-weight: 700; line-height: 1; }
-  .note-btn .sub { font-size: 14px; font-weight: 400; color: #5f5e5a; line-height: 1; }
+  .note-btn { flex-direction: column !important; gap: 1px !important; height: 48px !important; }
+  .note-btn .lbl { font-size: 17px; font-weight: 700; line-height: 1; }
+  .note-btn .sub { font-size: 12px; font-weight: 400; color: #5f5e5a; line-height: 1; }
 
   .row-grid { display: grid; gap: 5px; }
   .row-2 { grid-template-columns: 1fr 1fr; }
@@ -71,8 +71,8 @@
     background: #fdf1d8; border: 2px solid #e2b840; padding: 5px;
     border-radius: 10px; }
   .nav-bar .k { background: #fffaee; border-color: #e2b840;
-    font-size: 20px; height: 42px; padding: 0; }
-  .nav-bar .k.dbtxt { font-size: 18px; font-weight: 700; }
+    font-size: 17px; height: 36px; padding: 0; }
+  .nav-bar .k.dbtxt { font-size: 14px; font-weight: 700; }
   .nav-bar .k:hover { background: #faecc4; }
   .nav-bar .k:active { background: #f5e2a8; }
 
@@ -80,10 +80,10 @@
   .tabs { display: grid; grid-template-columns: repeat(5, 1fr) 0.6fr;
     gap: 3px;
     border-bottom: 2px solid #b4b2a9; }
-  .tab { height: 44px;
+  .tab { height: 38px;
     background: #ebe9e0; border: 2px solid #b4b2a9; border-bottom: none;
     border-radius: 8px 8px 0 0;
-    font-family: inherit; font-size: 15px; font-weight: 700; color: #5f5e5a;
+    font-family: inherit; font-size: 11px; font-weight: 700; color: #5f5e5a;
     cursor: pointer; padding: 0 2px;
     -webkit-tap-highlight-color: transparent;
     display: flex; align-items: center; justify-content: center;
@@ -100,19 +100,19 @@
     gap: 5px;
     background: #ebe9e0; padding: 5px; border-radius: 10px;
     align-items: center; }
-  .oct-row .label, .control-row .label { font-size: 20px; color: #1a1a1a; text-align: center; font-weight: 700; }
-  .oct-row .label b, .control-row .label b { color: #185fa5; font-size: 22px; margin-left: 4px; }
+  .oct-row .label, .control-row .label { font-size: 15px; color: #1a1a1a; text-align: center; font-weight: 700; }
+  .oct-row .label b, .control-row .label b { color: #185fa5; font-size: 17px; margin-left: 4px; }
 
   /* Ligne transposer */
   .transpose-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;
     background: #ebe9e0; padding: 5px; border-radius: 10px; align-items: center; }
-  .transpose-row .label { font-size: 16px; color: #1a1a1a; text-align: center; font-weight: 700; }
+  .transpose-row .label { font-size: 13px; color: #1a1a1a; text-align: center; font-weight: 700; }
 
   /* Panel d'édition : overlay centré (positionné en absolute par-dessus le layout) */
   .panel { background: #e6f1fb; border: 2px solid #378add; border-radius: 12px;
-    padding: 12px; display: none;
-    position: fixed; top: 200px; left: 10px;
-    width: 440px;
+    padding: 10px; display: none;
+    position: fixed; top: 160px; left: 8px;
+    width: 260px; max-width: calc(100vw - 16px);
     max-height: calc(100vh - 210px); overflow-y: auto;
     z-index: 10000; box-shadow: 0 6px 24px rgba(0,0,0,0.2); }
   .panel.open { display: block; }
@@ -122,41 +122,43 @@
   .abc-app:has(.panel.open) .panel-backdrop { display: block; }
   .panel .title-row { display: flex; align-items: center; justify-content: space-between;
     gap: 10px; margin-bottom: 10px; }
-  .panel .title { font-size: 26px; color: #0c447c; font-weight: 700; }
-  .panel .title-mes { font-size: 22px; color: #185fa5; font-weight: 700; }
+  .panel .title { font-size: 16px; color: #0c447c; font-weight: 700; }
+  .panel .title-mes { font-size: 14px; color: #185fa5; font-weight: 700; }
   .panel-nav { display: flex; align-items: center; gap: 8px; }
   .panel-nav .k { min-width: 36px; }
   .panel .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .panel input, .panel textarea { flex: 1; min-height: 44px; font-family: inherit;
-    font-size: 20px; padding: 8px 12px; border: 2px solid #b4b2a9;
+  .panel input, .panel textarea { flex: 1; min-height: 34px; font-family: inherit;
+    font-size: 13px; padding: 5px 7px; border: 2px solid #b4b2a9;
     border-radius: 8px; background: #ffffff; color: #1a1a1a; font-weight: 700; }
   .panel textarea { width: 100%; min-height: 120px; line-height: 1.3; }
-  .panel .field-label { font-family: inherit; font-size: 20px;
-    color: #0c447c; font-weight: 700; min-width: 70px; }
+  .panel .field-label { font-family: inherit; font-size: 12px;
+    color: #0c447c; font-weight: 700; min-width: 48px; }
   .panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .panel .actions.three { grid-template-columns: 1fr 1fr 1fr; }
   .panel .actions.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
-  .panel .actions .k { width: 100% !important; padding: 0 8px !important;
-    height: 44px !important; font-size: 16px !important; }
-  .panel .stepper { display: grid; grid-template-columns: 56px 1fr 56px;
-    gap: 10px; align-items: center; margin-bottom: 6px; }
-  .panel .stepper .k { height: 44px !important; font-size: 22px !important; padding: 0 !important; }
+  .panel .actions .k { width: 100% !important; padding: 0 6px !important;
+    height: 36px !important; font-size: 13px !important; }
+  .panel .stepper { display: grid; grid-template-columns: 40px 1fr 40px;
+    gap: 5px; align-items: center; margin-bottom: 0; }
+  .panel .stepper .k { height: 26px !important; font-size: 15px !important; padding: 0 !important; }
   .panel .stepper .val { text-align: center; font-family: inherit;
-    font-size: 24px; color: #0c447c; font-weight: 700; }
-  .panel .stepper-label { font-size: 16px; color: #1a1a1a; font-weight: 700; margin-bottom: 2px; text-align: center; }
-  .panel small { display: block; color: #5f5e5a; font-size: 14px;
+    font-size: 17px; color: #0c447c; font-weight: 700; }
+  .panel .stepper-label { font-size: 10px; color: #1a1a1a; font-weight: 700; margin-bottom: 0; margin-top: 1px; text-align: center; }
+  .panel small { display: block; color: #5f5e5a; font-size: 12px;
     margin-bottom: 8px; font-style: italic; font-weight: 600; }
-  .panel .save-list { max-height: 320px; overflow-y: auto;
+  .panel .save-list { max-height: calc(100vh - 360px); min-height: 120px; overflow-y: auto;
     border: 2px solid #b4b2a9; border-radius: 8px;
     background: #ffffff; margin-bottom: 10px; }
-  .panel .save-list .item { padding: 10px 12px; border-bottom: 1px solid #ebe9e0;
+  .panel .save-list .item { padding: 8px 10px; border-bottom: 1px solid #ebe9e0;
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 18px; cursor: pointer; font-weight: 700; }
+    font-size: 14px; cursor: pointer; font-weight: 700; }
   .panel .save-list .item:hover { background: #f0eee5; }
-  .panel .save-list .item .del { color: #c34536; font-size: 22px; padding: 0 10px; cursor: pointer; font-weight: 700; }
-  .panel .mes-active { font-size: 18px; color: #0c447c; font-weight: 700;
-    background: #ffffff; padding: 10px; border-radius: 8px; border: 2px solid #b4b2a9;
-    text-align: center; margin-bottom: 10px; }
+  .panel .save-list .item .del { color: #c34536; font-size: 18px; padding: 0 8px; cursor: pointer; font-weight: 700; }
+  .panel .mes-active { font-size: 12px; color: #0c447c; font-weight: 700;
+    background: #ffffff; padding: 4px; border-radius: 6px; border: 2px solid #b4b2a9;
+    text-align: center; margin-bottom: 4px; }
+  .panel .row-grid .k { height: 36px; font-size: 13px; }
+  .panel .row-grid .k.symbol { font-size: 17px; }
 
   /* Accord */
   .chord-input { width: 100%; min-height: 44px; font-family: inherit;
@@ -165,11 +167,24 @@
     margin-bottom: 10px; text-align: center; }
   .chord-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-bottom: 10px; }
   .chord-pad .k { height: 40px !important; font-size: 16px !important; padding: 0 !important; }
+  /* Fenetres etroites : compacter encore le menu pour laisser le maximum a la partition */
+  @media (max-width: 1300px){
+    .pc-layout { grid-template-columns: 230px 1fr; gap: 6px; }
+    .ctx-card { font-size: 13px; padding: 4px 7px; }
+    .ctx-card .line-small { font-size: 11px; }
+    .abc-app button.k { height: 34px; font-size: 14px; }
+    .note-btn { height: 44px !important; }
+    .tab { height: 34px; font-size: 12px; }
+    .nav-bar .k { height: 32px; font-size: 15px; }
+    .oct-row .label, .control-row .label { font-size: 13px; }
+    .oct-row .label b, .control-row .label b { font-size: 15px; }
+    .panel { width: 230px; }
+  }
 </style>
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.53 PC</b></span>
+    <span>Éditeur ABC <b>v0.60 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -261,6 +276,9 @@
           <button class="k" id="btn-volta2">|2</button>
         </div>
         <div class="row-grid">
+          <button class="k" id="btn-part" style="font-size:16px;">Partie P: <span id="part-val">—</span></button>
+        </div>
+        <div class="row-grid">
           <button class="k" id="btn-shift">⇦ Décaler ⇨</button>
         </div>
         <div class="row-grid row-2">
@@ -321,7 +339,6 @@
       </div>
 
       <div class="tab-panel" data-panel="vue">
-        <div class="row-grid"><button class="k" id="btn-viewmode">👁</button></div>
         <div class="control-row">
           <button class="k" id="size-d">−</button>
           <div class="label">Taille <b id="size-v">100</b></div>
@@ -342,6 +359,16 @@
         <div class="row-grid row-2">
           <button class="k" id="btn-swing-undot" style="font-size:14px;">♪.𝅘𝅥𝅯→2♪</button>
           <button class="k" id="btn-swing-untriplet" style="font-size:14px;">♩♪³→2♪</button>
+        </div>
+        <div class="row-grid"><button class="k" id="btn-reorg" style="font-size:15px;">⮂ Réorganiser rythme</button></div>
+        <div class="row-grid row-3">
+          <button class="k" id="btn-toggle-chords" style="font-size:14px;">Accords</button>
+          <button class="k" id="btn-toggle-text" style="font-size:14px;">Texte</button>
+          <button class="k" id="btn-toggle-lyrics" style="font-size:14px;">Paroles</button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-toggle-parts" style="font-size:14px;">Parties</button>
+          <button class="k" id="btn-toggle-measnums" style="font-size:14px;">N° mesures</button>
         </div>
         <div class="dim-info">
           <span>Zone : <b id="dim-w">0</b>×<b id="dim-h">0</b></span>
@@ -369,7 +396,7 @@
   const KEY_NAMES_MAJOR=['C','G','D','A','E','B','F♯','C♯'];
   const KEY_NAMES_MAJOR_FLAT=['C','F','B♭','E♭','A♭','D♭','G♭','C♭'];
 
-  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,openedFileName:null};
+  const state={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},parts:{}};
 
   const history={stack:[],pos:-1,max:100};
   function snapshot(){return JSON.stringify(state)}
@@ -396,7 +423,7 @@
   function beamGroupUnit(meter){const{num,den}=parseMeter(meter);if(den===8&&num%3===0&&num>=6)return 1.5;return 4/den}
 
   function buildEmptyMeasure(meter){const{num,den}=parseMeter(meter);const beatDur=4/den;const slots=[];for(let i=0;i<num;i++)slots.push({type:'rest',dur:beatDur,dot:false});return slots}
-  function rebuildMeasures(){const count=Math.max(state.measures.length,9);state.measures=[];state.timeChanges={};state.keyChanges={};state.clefChanges={};state.repeats={};for(let i=0;i<count;i++)state.measures.push(buildEmptyMeasure(state.pieceMeter));state.sel={m:0,s:0}}
+  function rebuildMeasures(){const count=Math.max(state.measures.length,9);state.measures=[];state.timeChanges={};state.keyChanges={};state.clefChanges={};state.repeats={};state.parts={};for(let i=0;i<count;i++)state.measures.push(buildEmptyMeasure(state.pieceMeter));state.sel={m:0,s:0}}
 
   function splitDurationByBeat(offset,amount,beat){const eps=1e-6;const out=[];let cur=+offset.toFixed(6);let rem=+amount.toFixed(6);const distToBeat=((cur%beat)===0)?0:(beat-(cur%beat));if(distToBeat>eps&&rem>eps){const toFill=Math.min(distToBeat,rem);const subs=[4,2,1,0.5,0.25,0.125].filter(u=>u<=beat/2+eps);let used=0;for(const u of subs)while(toFill-used>=u-eps){out.push({dur:u,dot:false});used=+(used+u).toFixed(6)}cur=+(cur+used).toFixed(6);rem=+(rem-used).toFixed(6)}while(rem>=beat-eps){out.push({dur:(beat===1.5)?1:beat,dot:(beat===1.5)});rem=+(rem-beat).toFixed(6);cur=+(cur+beat).toFixed(6)}if(rem>eps){const subs=[4,2,1,0.5,0.25,0.125].filter(u=>u<=beat/2+eps);let leftover=rem;for(const u of subs)while(leftover>=u-eps){out.push({dur:u,dot:false});leftover=+(leftover-u).toFixed(6)}}return out}
   function rebalanceMeasure(m,anchorIdx,oldEffDur){const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const cap=measureCapacity(meter);const meas=state.measures[m];const anchor=meas[anchorIdx];let newDur=effDur(anchor);let beforeUsed=0;for(let i=0;i<anchorIdx;i++)beforeUsed+=effDur(meas[i]);if(beforeUsed+newDur>cap+1e-6){const fits=cap-beforeUsed;const overflow=newDur-fits;anchor.tieToNext=true;const fitsPieces=splitDurationByBeat(beforeUsed,fits,beat);if(fitsPieces.length>0){anchor.dur=fitsPieces[0].dur;anchor.dot=fitsPieces[0].dot;const extras=fitsPieces.slice(1).map(p=>{const c=Object.assign({},anchor,{dur:p.dur,dot:p.dot});c.tieToNext=true;return c});state.measures[m]=meas.slice(0,anchorIdx+1).concat(extras)}const nextM=m+1;if(nextM>=state.measures.length)state.measures.push(buildEmptyMeasure(meterAt(m)));const contPieces=splitDurationByBeat(0,overflow,4/parseMeter(meterAt(nextM)).den);const contSlots=contPieces.map((p,i)=>{const c=Object.assign({},anchor,{dur:p.dur,dot:p.dot});delete c.tieToNext;if(i<contPieces.length-1)c.tieToNext=true;return c});_consumeFromHead(nextM,overflow,contSlots);return}const delta=+(newDur-oldEffDur).toFixed(6);const eps=1e-6;if(Math.abs(delta)<eps)return;if(delta<0){const freeAmount=-delta;const offsetAfterAnchor=beforeUsed+newDur;const pieces=splitDurationByBeat(offsetAfterAnchor,freeAmount,beat);const newSlots=pieces.map(p=>{const copy=Object.assign({},anchor,{dur:p.dur,dot:p.dot});delete copy.tieToNext;return copy});const tail=meas.slice(anchorIdx+1);state.measures[m]=meas.slice(0,anchorIdx+1).concat(newSlots,tail);truncateMeasureToCapacity(m,cap);return}let need=delta;let cursor=anchorIdx+1;while(need>eps&&cursor<meas.length){const slot=meas[cursor];const dur=effDur(slot);if(dur<=need+eps){need=+(need-dur).toFixed(6);meas.splice(cursor,1)}else{const remaining=+(dur-need).toFixed(6);let off=0;for(let i=0;i<cursor;i++)off+=effDur(meas[i]);const pieces=splitDurationByBeat(off+need,remaining,beat);const newCopies=pieces.map(p=>Object.assign({},slot,{dur:p.dur,dot:p.dot}));meas.splice(cursor,1,...newCopies);need=0}}truncateMeasureToCapacity(m,cap)}
@@ -406,7 +433,7 @@
   function unitMultiplier(){const m=state.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;const denom=parseInt(m[1],10);return denom/4}
   function effDToAbc(d){const v=d*unitMultiplier();const e=1e-9;if(Math.abs(v-1)<e)return'';if(Math.abs(v-2)<e)return'2';if(Math.abs(v-3)<e)return'3';if(Math.abs(v-4)<e)return'4';if(Math.abs(v-6)<e)return'6';if(Math.abs(v-8)<e)return'8';if(Math.abs(v-0.5)<e)return'/2';if(Math.abs(v-0.25)<e)return'/4';if(Math.abs(v-0.125)<e)return'/8';if(Math.abs(v-1.5)<e)return'3/2';if(Math.abs(v-0.75)<e)return'3/4';if(Math.abs(v-0.375)<e)return'3/8';const denom=16;const numer=Math.round(v*denom);function gcd(a,b){return b?gcd(b,a%b):a}const g=gcd(numer,denom);const a=numer/g,b=denom/g;if(b===1)return String(a);if(a===1)return'/'+b;return a+'/'+b}
   function nominalDur(t){return t.dot?t.dur*1.5:t.dur}
-  function slotStr(t){let s='';if(t.chord)s+='"'+t.chord+'"';if(t.orn&&t.orn.length)t.orn.forEach(o=>{if('TMPHLRuv'.includes(o))s+=o;else if(o==='.')s+='.';else s+='!'+o+'!'});if(t.type==='note'){s+=t.acc||'';let n=t.note;if(t.octave>=1)n=n.toLowerCase();s+=n;if(t.octave>=2)s+="'".repeat(t.octave-1);else if(t.octave<=-1)s+=",".repeat(-t.octave)}else s+='z';s+=effDToAbc(nominalDur(t));if(t.tieToNext)s+='-';return s}
+  function slotStr(t){let s='';if(t.chord)s+='"'+t.chord+'"';if(t.text)s+='"^'+t.text+'"';if(t.orn&&t.orn.length)t.orn.forEach(o=>{if('TMPHLRuv'.includes(o))s+=o;else if(o==='.')s+='.';else s+='!'+o+'!'});if(t.type==='note'){s+=t.acc||'';let n=t.note;if(t.octave>=1)n=n.toLowerCase();s+=n;if(t.octave>=2)s+="'".repeat(t.octave-1);else if(t.octave<=-1)s+=",".repeat(-t.octave)}else s+='z';s+=effDToAbc(nominalDur(t));if(t.tieToNext)s+='-';return s}
   function keyAbc(sig){if(sig===0)return'C';if(sig>0)return['C','G','D','A','E','B','F#','C#'][sig];return['C','F','Bb','Eb','Ab','Db','Gb','Cb'][-sig]}
   function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';return''}
   function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';return'Sol'}
@@ -577,11 +604,46 @@
   function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
   function buildVoltaFor(mi){const r=state.repeats[mi];if(!r||!r.volta)return'';return'['+r.volta}
 
-  function buildAbcText(){let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});h+='M:'+state.pieceMeter+'\n';h+='L:'+state.pieceUnit+'\n';if(state.tempoDotted){h+='Q:3/8='+Math.round(state.tempo*2/3)+'\n'}else{h+='Q:1/4='+state.tempo+'\n'}h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';let body='';state.measures.forEach((m,mi)=>{body+=buildBarSeparator(mi-1,mi);body+=buildInlineFor(mi);body+=buildVoltaFor(mi);const groups=computeBeamGroups(m,meterAt(mi));const gOf={};groups.forEach((g,gi)=>{g.forEach((idx,k)=>{gOf[idx]={gi}})});let lastTid=null;m.forEach((t,si)=>{if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}if(!t.tuplet)lastTid=null;body+=slotStr(t);const isLast=(si===m.length-1);if(isLast)return;const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;if(!inSame)body+=' '})});const li=state.measures.length-1;if(state.repeats[li]?.end)body+=':|';else body+='|';return h+body}
+  function buildAbcText(){let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});h+='M:'+state.pieceMeter+'\n';h+='L:'+state.pieceUnit+'\n';if(state.tempoDotted){h+='Q:3/8='+Math.round(state.tempo*2/3)+'\n'}else{h+='Q:1/4='+state.tempo+'\n'}h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';let body='';state.measures.forEach((m,mi)=>{if(state.parts&&state.parts[mi]){if(body&&!body.endsWith('\n'))body+='\n';body+='P:'+state.parts[mi]+'\n'}body+=buildBarSeparator(mi-1,mi);body+=buildInlineFor(mi);body+=buildVoltaFor(mi);const groups=computeBeamGroups(m,meterAt(mi));const gOf={};groups.forEach((g,gi)=>{g.forEach((idx,k)=>{gOf[idx]={gi}})});let lastTid=null;m.forEach((t,si)=>{if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}if(!t.tuplet)lastTid=null;body+=slotStr(t);const isLast=(si===m.length-1);if(isLast)return;const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;if(!inSame)body+=' '})});const li=state.measures.length-1;if(state.repeats[li]?.end)body+=':|';else body+='|';const lyr=buildLyricLine();return h+body+(lyr?('\n'+lyr):'')}
+  function buildLyricLine(){const syls=[];let any=false;state.measures.forEach(m=>m.forEach(s=>{if(s.type==='note'){if(s.lyric){any=true;syls.push(s.lyric.replace(/ /g,'~'))}else syls.push('*')}}));if(!any)return'';return'w:'+syls.join(' ')}
 
   function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1];if(c==='bass'||c==='F')clef='bass';else if(c==='treble-8'||c==='treble_8')clef='treble8';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
-  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume};let inBody=false,bodyText='';for(const line of cleaned){const t=line.trim();if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='M')ns.pieceMeter=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);if(num===3&&den===8){ns.tempo=Math.round(bpm*3/2);ns.tempoDotted=true}else{ns.tempo=bpm;ns.tempoDotted=false}}else{const qm2=v.match(/=(\d+)/);if(qm2)ns.tempo=parseInt(qm2[1],10)}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}bodyText+=' '+t}if(!inBody)return null;parseAbcBody(bodyText,ns);return ns}
-  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,pendingOrn=[],pendingTuplet=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);const cc=ch.replace(/^[\^_<>@]/,'');if(cc)lastChord=cc;i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){const n=parseInt(body[i+1],10);let j=i+2,take=n;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);measures.forEach((meas,mi)=>{let used=0;for(const s of meas)used+=effDur(s);let lm=ns.pieceMeter;for(let k=0;k<=mi;k++)if(ns.timeChanges[k])lm=ns.timeChanges[k];const cap=measureCapacity(lm);if(used<cap-1e-6){const beat=4/parseMeter(lm).den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));meas.push(...tail)}else if(used>cap+1e-6){let a=0,ca=meas.length;for(let k=0;k<meas.length;k++){const d=effDur(meas[k]);if(a+d>cap+1e-6){ca=k;break}a+=d}meas.splice(ca)}});if(measures.length===0)measures.push(buildEmptyMeasure(ns.pieceMeter))}
+  // Repartit les syllabes des lignes w: sur les notes (dans l'ordre, hyphenation ABC standard)
+  function assignLyrics(ns,lines){
+    const notes=[];ns.measures.forEach(m=>m.forEach(s=>{if(s.type==='note')notes.push(s)}));
+    let ni=0;
+    lines.forEach(line=>{
+      // tokens : syllabes separees par espaces ; '-' colle a la note ; '_' tient ; '*' saute
+      const toks=line.replace(/\\-/g,'\u0001').split(/\s+/).filter(x=>x.length);
+      toks.forEach(tok=>{
+        if(ni>=notes.length)return;
+        if(tok==='*'){ni++;return}
+        if(tok==='|'){return}
+        if(tok==='_'){if(notes[ni-1])notes[ni-1].lyric=(notes[ni-1].lyric||'')+'_';return}
+        const syl=tok.replace(/\u0001/g,'-').replace(/~/g,' ');
+        notes[ni].lyric=syl;ni++;
+      });
+    });
+  }
+  // Decoupe un fichier ABC multi-morceaux en blocs (chaque morceau commence par X:)
+  function splitTunes(text){
+    const lines=text.split(/\r?\n/);
+    const tunes=[];let cur=null;
+    for(const line of lines){
+      if(/^\s*X:\s*/.test(line)){
+        if(cur)tunes.push(cur);
+        cur={lines:[line],title:'',x:(line.match(/^\s*X:\s*(.*)$/)||[])[1]||''};
+      } else if(cur){
+        cur.lines.push(line);
+        const tm=line.match(/^\s*T:\s*(.*)$/);
+        if(tm&&!cur.title)cur.title=tm[1].trim();
+      }
+    }
+    if(cur)tunes.push(cur);
+    return tunes.map(t=>({title:t.title||('Sans titre (X:'+(t.x||'?')+')'),x:t.x,abc:t.lines.join('\n')}));
+  }
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};let inBody=false,bodyText='';for(const line of cleaned){const t=line.trim();if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='M')ns.pieceMeter=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);if(num===3&&den===8){ns.tempo=Math.round(bpm*3/2);ns.tempoDotted=true}else{ns.tempo=bpm;ns.tempoDotted=false}}else{const qm2=v.match(/=(\d+)/);if(qm2)ns.tempo=parseInt(qm2[1],10)}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){bodyText+=' [P:'+fv.trim()+'] '}else if(fk==='w'||fk==='W'){ns._lyricLines=ns._lyricLines||[];ns._lyricLines.push(fv)}continue}bodyText+=' '+t}if(!inBody)return null;parseAbcBody(bodyText,ns);if(ns._lyricLines&&ns._lyricLines.length)assignLyrics(ns,ns._lyricLines);return ns}
+  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingTuplet=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);if(/^[\^_<>@]/.test(ch)){const txt=ch.replace(/^[\^_<>@]/,'');if(txt)lastText=txt}else{if(ch)lastChord=ch}i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){const n=parseInt(body[i+1],10);let j=i+2,take=n;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);measures.forEach((meas,mi)=>{let used=0;for(const s of meas)used+=effDur(s);let lm=ns.pieceMeter;for(let k=0;k<=mi;k++)if(ns.timeChanges[k])lm=ns.timeChanges[k];const cap=measureCapacity(lm);if(used<cap-1e-6){const beat=4/parseMeter(lm).den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));meas.push(...tail)}else if(used>cap+1e-6){let a=0,ca=meas.length;for(let k=0;k<meas.length;k++){const d=effDur(meas[k]);if(a+d>cap+1e-6){ca=k;break}a+=d}meas.splice(ca)}});if(measures.length===0)measures.push(buildEmptyMeasure(ns.pieceMeter))}
   function parseDurationSpec(s){if(s==='')return 1;if(s==='/')return 0.5;if(s==='//')return 0.25;if(s==='///')return 0.125;if(s.startsWith('/')){const n=parseInt(s.substring(1),10);return 1/(n||2)}if(s.includes('/')){const[n,d]=s.split('/');const a=parseInt(n,10)||1;const b=parseInt(d,10)||2;return a/b}return parseInt(s,10)||1}
 
   function expandForPlayback(){const out=[];const N=state.measures.length;if(N===0)return out;let i=0,pass=1,safety=0;const done={};const sectionStarted=new Set();while(i<N&&safety<5000){safety++;const r=state.repeats[i]||{};if(r.start&&!sectionStarted.has(i)){sectionStarted.add(i);pass=1}if(r.volta!==undefined&&r.volta!==pass){const skipV=r.volta;let j=i;while(j<N){const rj=state.repeats[j]||{};if(rj.volta!==skipV)break;j++}i=j;continue}out.push(i);if(r.end){let startIdx=0;for(let k=i;k>=0;k--){if(state.repeats[k]?.start){startIdx=k;break}}const key=startIdx+':'+i;if(!done[key]){done[key]=true;i=startIdx;pass=2;continue}pass=1}i++;if(out.length>5000)break}return out}
@@ -593,6 +655,13 @@
   const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
   function keySigAccidentals(sig,c){const out=[];if(sig>0){const m=c==='bass'?BSS:TSS;for(let i=0;i<sig;i++)out.push({sym:'♯',step:m[SHARP_NOTES[i]]})}else if(sig<0){const m=c==='bass'?BFS:TFS;for(let i=0;i<-sig;i++)out.push({sym:'♭',step:m[FLAT_NOTES[i]]})}return out}
   function computeBeamGroups(meas,meter){const gu=beamGroupUnit(meter),eps=1e-6;const groups=[];let cg=null,offset=0;function flush(){if(cg&&cg.length>=2)groups.push(cg);cg=null}for(let i=0;i<meas.length;i++){const t=meas[i];const eD=effDur(t);const gi=Math.floor((offset+eps)/gu);const bm=(t.type==='note')&&(t.dur<=0.5+eps);const cr=(offset+eD)>(gi*gu+gu+eps);if(bm&&!cr){if(cg&&cg.startGroup===gi)cg.push(i);else{flush();cg=[i];cg.startGroup=gi}}else flush();offset=+(offset+eD).toFixed(6)}flush();return groups}
+  function staccatoDot(t,cx,headY,stemUp,color){
+    if(!t.orn||!t.orn.includes('.'))return'';
+    // Le point staccato se place du cote oppose a la hampe, contre la tete de note
+    const dy=stemUp?4.5:-4.5;
+    return '<circle cx="'+cx+'" cy="'+(headY+dy)+'" r="1.3" fill="'+color+'"/>';
+  }
+  function escXml(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
   function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(accToDraw===undefined)?t.acc:accToDraw;if(aD==='^')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+='<ellipse cx="'+cx+'" cy="'+y+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';let sy=y,sx=cx;if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?y-19:y+19;svg+='<line x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx-7)+' '+(fy-4)+' '+(sx-4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
   function drawRest(t,cx,color,staffTop){let svg='';const y=staffTop+2*LINE_GAP;const eD=nominalDur(t);if(eD>=4)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+LINE_GAP)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=2)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+2*LINE_GAP-3.5)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=1)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄽</text>';else if(eD>=0.5)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄾</text>';else svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄿</text>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y}}
 
@@ -893,10 +962,11 @@
           svg+='<rect x="'+(cx-wBySlot[si]/2)+'" y="'+staffTop+'" width="'+wBySlot[si]+'" height="'+(4*LINE_GAP+20)+'" fill="transparent" pointer-events="all" data-m="'+mIdx+'" data-s="'+si+'" style="cursor:pointer"/>';
           const iS=(mIdx===selM&&si===state.sel.s);
           const cl=iS?sel:ink;
-          if(t.chord)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+t.chord+'</text>';
+          if(t.chord&&state.viewFlags.chords)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+escXml(t.chord)+'</text>';
+          if(t.text&&state.viewFlags.text)svg+='<text x="'+cx+'" y="'+(staffTop-(t.chord&&state.viewFlags.chords?13:3))+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+escXml(t.text)+'</text>';
           if(t.orn&&t.orn.length){
-            const ot=t.orn.map(o=>{if(o==='T')return'tr';if(o==='M')return'∼';if(o==='P')return'∿';if(o==='H')return'𝄐';if(o==='.')return'·';if(o==='L')return'>';if(o==='u')return'⋁';if(o==='v')return'⊓';if(o==='O')return'⊕';return o}).join(' ');
-            svg+='<text x="'+cx+'" y="'+(staffTop-12)+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+ot+'</text>';
+            const ot=t.orn.filter(o=>o!=='.').map(o=>{if(o==='T')return'tr';if(o==='M')return'∼';if(o==='P')return'∿';if(o==='H')return'𝄐';if(o==='L')return'>';if(o==='u')return'⋁';if(o==='v')return'⊓';if(o==='O')return'⊕';return o}).join(' ');
+            if(ot)svg+='<text x="'+cx+'" y="'+(staffTop-12)+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+ot+'</text>';
           }
           if(t.type==='note'){
             const gp=sTG[si];
@@ -907,6 +977,7 @@
               const dr=drawNoteHead(t,cx,cl,lC,false,su,staffTop,accToDrawFor(m,si,keyAt(mIdx)));
               const sx=dr.stemX,hY=dr.headY;
               svg+=dr.svg;
+              svg+=staccatoDot(t,cx,dr.headY,su,cl);
               svg+='<line x1="'+sx+'" y1="'+hY+'" x2="'+sx+'" y2="'+bY+'" stroke="'+cl+'" stroke-width="0.8"/>';
               if(iS)svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
               if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY});
@@ -917,6 +988,7 @@
               const su=st<mS;
               const dr=drawNoteHead(t,cx,cl,lC,true,su,staffTop,accToDrawFor(m,si,keyAt(mIdx)));
               svg+=dr.svg;
+              svg+=staccatoDot(t,cx,dr.headY,su,cl);
               if(iS)svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
               if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY});
               if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in'});pendingIncomingTie=false}
@@ -945,8 +1017,10 @@
             }
           }
           if(si===0){
-            svg+='<text x="'+(xL+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
+            if(state.viewFlags.measureNums)svg+='<text x="'+(xL+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
+            if(state.viewFlags.parts&&state.parts&&state.parts[mIdx])svg+='<text x="'+(xL+2)+'" y="'+(staffTop-14)+'" font-size="11" font-weight="bold" fill="'+ink+'">'+escXml(state.parts[mIdx])+'</text>';
           }
+          if(t.type==='note'&&t.lyric&&state.viewFlags.lyrics){svg+='<text x="'+cx+'" y="'+(staffTop+4*LINE_GAP+12)+'" font-size="8" fill="'+ink+'" text-anchor="middle">'+escXml(t.lyric.replace(/_/g,''))+'</text>';}
           // Zone cliquable invisible pour selectionner ce slot
           svg+='<rect x="'+(cx-sW/2)+'" y="'+(staffTop-12)+'" width="'+sW+'" height="'+(LINE_GAP*4+24)+'" fill="transparent" style="cursor:pointer" data-m="'+mIdx+'" data-s="'+si+'"/>';
         });
@@ -1069,9 +1143,16 @@
     if(v1)v1.classList.toggle('active', !!(rA&&rA.volta===1));
     const v2=document.getElementById('btn-volta2');
     if(v2)v2.classList.toggle('active', !!(rA&&rA.volta===2));
+    const partV=state.parts&&state.parts[state.sel.m];const pvEl=document.getElementById('part-val');if(pvEl)pvEl.textContent=partV||'—';const pBtn=document.getElementById('btn-part');if(pBtn)pBtn.classList.toggle('active',!!partV);
     const vmBtn=document.getElementById('btn-viewmode');if(vmBtn)vmBtn.textContent=state.viewmode?'✎':'👁';
+    const tc=document.getElementById('btn-toggle-chords');if(tc)tc.classList.toggle('active',!!state.viewFlags.chords);
+    const tt=document.getElementById('btn-toggle-text');if(tt)tt.classList.toggle('active',!!state.viewFlags.text);
+    const tl=document.getElementById('btn-toggle-lyrics');if(tl)tl.classList.toggle('active',!!state.viewFlags.lyrics);
+    const tp=document.getElementById('btn-toggle-parts');if(tp)tp.classList.toggle('active',!!state.viewFlags.parts);
+    const tmn=document.getElementById('btn-toggle-measnums');if(tmn)tmn.classList.toggle('active',!!state.viewFlags.measureNums);
     document.getElementById('hdr-x-val').textContent=state.headers.X||'0';
     document.getElementById('hdr-t-val').textContent=(state.headers.T||'—').split('\n')[0];
+    {const vt=document.getElementById('ver-title');if(vt)vt.textContent=(state.headers.T||'').split('\n')[0];}
     document.getElementById('hdr-c-val').textContent=(state.headers.C||'—').split('\n')[0];
     document.getElementById('hdr-n-val').textContent=(state.headers.N||'—').split('\n')[0];
   }
@@ -1321,6 +1402,13 @@
   document.getElementById('btn-trans-down').addEventListener('click',()=>{transposePiece(-1);pushHistory();render()});
   document.getElementById('btn-tie').addEventListener('click',()=>{const sl=selectedSlot();if(sl){sl.tieToNext=!sl.tieToNext;pushHistory();render()}});
   document.getElementById('btn-disarm').addEventListener('click',()=>{disarmKey();pushHistory();render()});
+  document.getElementById('btn-reorg').addEventListener('click',()=>{consolidateRhythm(false)});
+  function bindToggle(id,key){const el=document.getElementById(id);if(!el)return;el.addEventListener('click',()=>{state.viewFlags[key]=!state.viewFlags[key];render()})}
+  bindToggle('btn-toggle-chords','chords');
+  bindToggle('btn-toggle-text','text');
+  bindToggle('btn-toggle-lyrics','lyrics');
+  bindToggle('btn-toggle-parts','parts');
+  bindToggle('btn-toggle-measnums','measureNums');
 
   document.getElementById('btn-tuplet').addEventListener('click',()=>{
     const sl=selectedSlot();if(!sl)return;
@@ -1504,6 +1592,7 @@
         state.keyChanges=sk(state.keyChanges,m,m+count);
         state.clefChanges=sk(state.clefChanges,m,m+count);
         state.repeats=sk(state.repeats,m,m+count);
+        if(state.parts)state.parts=sk(state.parts,m,m+count);
         if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
         state.sel.s=0;
         pushHistory();closePanel();render();
@@ -1566,6 +1655,7 @@
           state.keyChanges=sk(state.keyChanges,th,inc);
           state.clefChanges=sk(state.clefChanges,th,inc);
           state.repeats=sk(state.repeats,th,inc);
+          if(state.parts)state.parts=sk(state.parts,th,inc);
         }
         if(side==='end')state.sel={m:state.measures.length-count,s:0};
         else state.sel={m:(side==='right'?state.sel.m+1:state.sel.m),s:0};
@@ -1579,6 +1669,11 @@
   document.getElementById('btn-rep-end').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.end=!r.end;pushHistory();render()});
   document.getElementById('btn-volta1').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===1)?0:1;pushHistory();render()});
   document.getElementById('btn-volta2').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===2)?0:2;pushHistory();render()});
+  document.getElementById('btn-part').addEventListener('click',()=>{
+    if(!state.parts)state.parts={};
+    const cur=state.parts[state.sel.m]||'';
+    openPanel({title:'Partie (P:) — mesure '+(state.sel.m+1),body:'<small>Lettre ou nom de la partie qui commence à cette mesure (vide = aucune).</small><div class="row"><span class="field-label">P:</span><input id="pi" type="text" value="'+cur.replace(/"/g,'&quot;')+'" maxlength="20"/></div>',onMount:()=>{const e=document.getElementById('pi');e.focus();e.select()},onOk:()=>{const v=document.getElementById('pi').value.trim();if(v)state.parts[state.sel.m]=v;else delete state.parts[state.sel.m];pushHistory()}});
+  });
 
   // === Transformations rythmiques globales (toute la partition) ===
   function slotOffsets(meas){
@@ -1587,6 +1682,73 @@
     return offs;
   }
   function onBeat(o,beat){const eps=1e-6;const r=o%beat;return r<eps||Math.abs(r-beat)<eps}
+  // === Reorganisation rythmique : fusionne notes/silences contigus en valeurs plus simples ===
+  // Ex : deux croches identiques liees -> une noire ; deux silences contigus -> un silence plus long.
+  function isCleanValue(d){const e=1e-6;const bases=[4,2,1,0.5,0.25,0.125];for(const b of bases){if(Math.abs(d-b)<e)return{dur:b,dot:false};if(Math.abs(d-b*1.5)<e)return{dur:b,dot:true}}return null}
+  function consolidateRhythm(silent){
+    let count=0;
+    state.measures.forEach((meas,mi)=>{
+      const meter=meterAt(mi);
+      // Bloc rythmique de regroupement : noire en 3/4-4/4, noire pointee (grille croches) en 6/8.
+      const beat=4/parseMeter(meter).den;
+      // ---- Passe 1 : NOTES liees identiques -> valeurs plus longues (ex. 2 noires liees -> blanche)
+      // On autorise les valeurs longues meme a travers les temps (blanche, ronde, pointees).
+      let changed=true;
+      while(changed){
+        changed=false;
+        for(let i=0;i<meas.length-1;i++){
+          const a=meas[i],b=meas[i+1];
+          if(a.tuplet||b.tuplet)continue;
+          if(a.type!=='note'||b.type!=='note')continue;
+          if(!a.tieToNext)continue;
+          if(a.note!==b.note||a.octave!==b.octave||(a.acc||'')!==(b.acc||''))continue;
+          if((a.orn&&a.orn.length)||(b.orn&&b.orn.length))continue;
+          if(b.chord||b.text)continue;
+          const cv=isCleanValue(effDur(a)+effDur(b));
+          if(!cv)continue;
+          const merged=Object.assign({},a,{dur:cv.dur,dot:cv.dot});
+          if(b.tieToNext)merged.tieToNext=true;else delete merged.tieToNext;
+          if(b.lyric&&!merged.lyric)merged.lyric=b.lyric;
+          if(a._selMark||b._selMark)merged._selMark=true;
+          meas.splice(i,2,merged);
+          count++;changed=true;break;
+        }
+      }
+      // ---- Passe 2 : SILENCES -> recanonisation par plage, exactement comme une mesure neuve.
+      // On detecte chaque plage continue de silences "simples" (sans ornement/accord/texte)
+      // et on la remplace par la decomposition canonique splitDurationByBeat(offset,duree,beat).
+      let i=0;
+      while(i<meas.length){
+        const s=meas[i];
+        const simpleRest=(x)=>x&&x.type==='rest'&&!x.tuplet&&!(x.orn&&x.orn.length)&&!x.chord&&!x.text;
+        if(!simpleRest(s)){i++;continue}
+        // offset de debut de la plage
+        const offs=slotOffsets(meas);
+        const startOff=offs[i];
+        let j=i,total=0,hadMark=false;
+        while(j<meas.length&&simpleRest(meas[j])){total+=effDur(meas[j]);if(meas[j]._selMark)hadMark=true;j++}
+        // recanoniser [i, j) si plus d'un silence OU si le decoupage canonique differe
+        const pieces=splitDurationByBeat(startOff,total,beat).map(p=>({type:'rest',dur:p.dur,dot:!!p.dot}));
+        // ne remplacer que si ca change vraiment (evite boucle/inutile)
+        const sameLen=(j-i)===pieces.length;
+        let identical=sameLen;
+        if(sameLen){for(let k=0;k<pieces.length;k++){const o=meas[i+k];if(o.dur!==pieces[k].dur||!!o.dot!==pieces[k].dot){identical=false;break}}}
+        if(!identical&&pieces.length){
+          if(hadMark)pieces[0]._selMark=true;
+          meas.splice(i,j-i,...pieces);
+          count++;
+          i+=pieces.length;
+        } else {
+          i=j;
+        }
+      }
+    });
+    if(!silent){
+      if(count===0){alert('Reorganisation : rien a simplifier');return false}
+      pushHistory();render();
+    }
+    return count>0;
+  }
   function applySwingGlobal(matchFn,transformFn,labelForAlert){
     let count=0;
     state.measures.forEach((meas,mi)=>{
@@ -1852,13 +2014,56 @@
     cleanupAccidentals();
     pushHistory();render();
   }
+  function tupletGroupDur(mi,si){
+    const meas=state.measures[mi];const t=meas[si];if(!t||!t.tuplet)return 0;
+    let sum=0;
+    for(let j=0;j<meas.length;j++){if(meas[j].tuplet&&meas[j].tupletId===t.tupletId)sum+=effDur(meas[j])}
+    return sum;
+  }
+  // Renvoie true si un decalage a droite de duree d decouperait un n-uplet situe a la
+  // selection ou apres : soit la selection est au milieu d'un n-uplet, soit un groupe
+  // rencontre a une duree totale > d (il ne peut alors pas etre repositionne proprement).
+  function tupletBlockingShift(d){
+    const eps=1e-6;
+    // 1) La selection est-elle au milieu d'un n-uplet (pas sur sa 1re note) ?
+    const m0=state.measures[state.sel.m],s0=state.sel.s,t0=m0[s0];
+    if(t0&&t0.tuplet){
+      const prev=m0[s0-1];
+      const atFirst=(s0===0)||!prev||!prev.tuplet||prev.tupletId!==t0.tupletId;
+      if(!atFirst)return true;
+    }
+    // 2) Parcourir les n-uplets a partir de la selection ; bloquer si l'un a une duree > d
+    const seen={};
+    for(let mi=state.sel.m;mi<state.measures.length;mi++){
+      const meas=state.measures[mi];
+      const startS=(mi===state.sel.m)?state.sel.s:0;
+      for(let si=startS;si<meas.length;si++){
+        const t=meas[si];
+        if(t&&t.tuplet&&!seen[t.tupletId]){
+          seen[t.tupletId]=true;
+          const gd=tupletGroupDur(mi,si);
+          if(gd>d+eps)return true;
+        }
+      }
+    }
+    return false;
+  }
   function shiftPiece(direction,shiftDur,shiftDot){
     const sl=selectedSlot();if(!sl)return;
-    if(sl.tuplet){alert('Decalage impossible sur une note dans un n-uplet');return}
+    const eshift=shiftDot?shiftDur*1.5:shiftDur;
+    // Regle n-uplet (decalage a droite) : inserer du temps avant la selection pousse tout
+    // ce qui suit. Un n-uplet ne sait pas se decouper. On bloque donc si un n-uplet situe
+    // a / apres la selection a une duree de groupe superieure au decalage (il ne peut alors
+    // pas etre repositionne proprement), ou si la selection est au milieu d'un n-uplet.
+    if(direction>0){
+      if(tupletBlockingShift(eshift)){alert('Décalage impossible : la durée choisie est inférieure à celle d\u2019un n-uplet,\nqui ne peut pas être découpé. Choisissez une durée au moins égale au n-uplet.');return}
+    }
     materializeAccidentals();
-    const dur=shiftDot?shiftDur*1.5:shiftDur;
+    const dur=eshift;
+    // Marqueur pour retrouver la note active apres reconstruction
+    sl._selMark=true;
     const{slots,absSel,caps}=flattenSlots();
-    if(absSel<0)return;
+    if(absSel<0){delete sl._selMark;return}
     let newFlat;
     if(direction>0){
       const silence={type:'rest',dur:shiftDur,dot:!!shiftDot};
@@ -1871,7 +2076,7 @@
         capSum+=caps[caps.length-1];
       }
     } else {
-      if(absSel===0){alert('Rien a supprimer avant');return}
+      if(absSel===0){alert('Rien a supprimer avant');delete sl._selMark;return}
       const before=slots.slice(0,absSel).map(x=>x.slot);
       const after=slots.slice(absSel).map(x=>x.slot);
       let toRemove=dur;
@@ -1879,7 +2084,7 @@
       const eps=1e-6;
       while(toRemove>eps&&newBefore.length>0){
         const last=newBefore[newBefore.length-1];
-        if(last.tuplet){alert('Decalage gauche bloque par un n-uplet');return}
+        if(last.tuplet){alert('Decalage gauche bloque par un n-uplet');delete sl._selMark;return}
         const e=effDur(last);
         if(e<=toRemove+eps){newBefore.pop();toRemove-=e}
         else {
@@ -1892,17 +2097,21 @@
     }
     const rebuilt=rebuildMeasuresFromSlots(newFlat.map(s=>({slot:s})),caps);
     state.measures=rebuilt;
-    if(direction>0){
-      state.sel.s=state.sel.s+1;
-      if(state.sel.s>=state.measures[state.sel.m].length){
-        if(state.sel.m<state.measures.length-1){state.sel.m++;state.sel.s=0}
-        else state.sel.s=state.measures[state.sel.m].length-1;
-      }
-    } else {
-      if(state.sel.s>0)state.sel.s--;
-      else if(state.sel.m>0){state.sel.m--;state.sel.s=Math.max(0,state.measures[state.sel.m].length-1)}
-    }
     cleanupAccidentals();
+    // La consolidation peut fusionner des slots et changer les index : on la fait AVANT
+    // de localiser la note active, et on preserve le marqueur _selMark a travers la fusion.
+    consolidateRhythm(true);
+    // Retrouver la note active grace au marqueur (apres consolidation), puis nettoyer partout
+    let found=null;
+    for(let mi=0;mi<state.measures.length&&!found;mi++){
+      for(let si=0;si<state.measures[mi].length;si++){
+        if(state.measures[mi][si]._selMark){found={m:mi,s:si};break}
+      }
+    }
+    state.measures.forEach(m=>m.forEach(x=>{delete x._selMark}));
+    if(found){state.sel.m=found.m;state.sel.s=found.s}
+    if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
+    if(state.sel.s>=state.measures[state.sel.m].length)state.sel.s=state.measures[state.sel.m].length-1;
     pushHistory();render();
   }
   function openShiftPanel(){
@@ -2052,7 +2261,7 @@
   document.getElementById('btn-play').addEventListener('click',()=>{if(audio.playing)stopPlayback(true);else playSchedule()});
   document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
   document.getElementById('btn-loop').addEventListener('click',()=>{state.loop=!state.loop;document.getElementById('btn-loop').classList.toggle('active',state.loop)});
-  document.getElementById('btn-viewmode').addEventListener('click',()=>{state.viewmode=!state.viewmode;document.getElementById('app').classList.toggle('viewmode',state.viewmode);render()});
+  (function(){const vm=document.getElementById('btn-viewmode');if(vm)vm.addEventListener('click',()=>{state.viewmode=!state.viewmode;document.getElementById('app').classList.toggle('viewmode',state.viewmode);render()});})();
 
   // ⭐ Accord : boutons ajoutent leur texte, ⌫ efface dernier char, pas de fondamentale
   document.getElementById('btn-chord').addEventListener('click',()=>{
@@ -2097,7 +2306,32 @@
   document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const baseName=(state.headers.T&&state.headers.T.trim())||state.openedFileName||'morceau';const fn=baseName.replace(/[^a-zA-Z0-9_\-]/g,'_')+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
   const fileInput=document.getElementById('file-input');
   document.getElementById('btn-open-file').addEventListener('click',()=>fileInput.click());
-  fileInput.addEventListener('change',(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{const text=ev.target.result;const ns=parseAbcText(text);if(!ns){alert('Impossible de lire ce fichier ABC');fileInput.value='';return}Object.assign(state,ns);state.openedFileName=f.name.replace(/\.[^.]+$/,'');cleanupAccidentals();state.sel={m:0,s:0};pushHistory();render();fileInput.value=''};r.readAsText(f)});
+  function loadTuneAbc(text,fileName){const ns=parseAbcText(text);if(!ns){alert('Impossible de lire ce morceau ABC');return false}Object.assign(state,ns);if(!state.parts)state.parts={};if(fileName)state.openedFileName=fileName.replace(/\.[^.]+$/,'');cleanupAccidentals();state.sel={m:0,s:0};pushHistory();render();return true}
+  // Chargement d'un morceau pour APERCU (sans empiler l'historique ni changer openedFileName)
+  function previewTuneAbc(text){const ns=parseAbcText(text);if(!ns)return false;Object.assign(state,ns);if(!state.parts)state.parts={};cleanupAccidentals();state.sel={m:0,s:0};render();return true}
+  function chooseTune(tunes,fileName){
+    const prevSnap=snapshot();           // etat initial, restaure si Annuler
+    let selIdx=-1;                       // morceau actuellement previsualise
+    let header='<div class="row-grid row-2" style="margin-bottom:8px;">'+
+      '<button class="k" id="ct-cancel">Annuler</button>'+
+      '<button class="k primary" id="ct-open">Ouvrir</button></div>';
+    let lh=header+'<small>Plusieurs morceaux : cliquez pour prévisualiser, puis Ouvrir.</small><div class="save-list">';
+    tunes.forEach((t,i)=>{lh+='<div class="item" data-tune="'+i+'"><span>'+escXml((t.x?('X:'+t.x+' · '):'')+t.title)+'</span></div>'});
+    lh+='</div>';
+    function refreshSel(){document.querySelectorAll('.save-list .item[data-tune]').forEach(el=>{el.classList.toggle('active',parseInt(el.dataset.tune,10)===selIdx)})}
+    openPanel({title:'Choisir un morceau',body:lh,hideActions:true,fullHeight:true,onMount:()=>{
+      document.querySelectorAll('.save-list .item[data-tune]').forEach(el=>{
+        el.addEventListener('click',()=>{const idx=parseInt(el.dataset.tune,10);selIdx=idx;previewTuneAbc(tunes[idx].abc);refreshSel()});
+      });
+      document.getElementById('ct-cancel').addEventListener('click',()=>{loadFrom(prevSnap);render();closePanel()});
+      document.getElementById('ct-open').addEventListener('click',()=>{
+        if(selIdx<0){alert('Cliquez d\u2019abord sur un morceau pour le prévisualiser.');return}
+        // Confirmer : charger proprement (nom de fichier + historique) puis fermer
+        loadTuneAbc(tunes[selIdx].abc,fileName);closePanel();
+      });
+    }});
+  }
+  fileInput.addEventListener('change',(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{const text=ev.target.result;const tunes=splitTunes(text);if(tunes.length>1){chooseTune(tunes,f.name)}else{loadTuneAbc(text,f.name)}fileInput.value=''};r.readAsText(f)});
 
   const STORAGE_KEY='abc-editor-saves';
   function getSaves(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(_){return[]}}
@@ -2107,7 +2341,7 @@
 
   document.getElementById('btn-saves').addEventListener('click',()=>{const saves=getSaves();let lh='<div class="save-list">';if(saves.length===0)lh+='<div class="item" style="color:#888780;cursor:default;">Aucune sauvegarde</div>';else saves.forEach((s,i)=>lh+='<div class="item" data-idx="'+i+'"><span>'+s.name+'</span><span class="del" data-del="'+i+'">×</span></div>');lh+='</div>';lh+='<div class="row"><span class="field-label">Nom:</span><input id="sn" type="text" value="'+(state.headers.T||'Morceau').replace(/"/g,'&quot;')+'"/></div>';openPanel({title:'Mémoires',body:lh,hideActions:true,extraButtons:['Annuler','Enregistrer'],onMount:()=>{document.querySelectorAll('.save-list .item[data-idx]').forEach(el=>{el.addEventListener('click',(ev)=>{if(ev.target.dataset.del!==undefined){const idx=parseInt(ev.target.dataset.del,10);const saves=getSaves();saves.splice(idx,1);setSaves(saves);closePanel();return}const idx=parseInt(el.dataset.idx,10);const saves=getSaves();if(saves[idx]&&importStateJson(saves[idx].data))closePanel()})})},onExtra:(w)=>{if(w==='Annuler'){closePanel();return}const name=document.getElementById('sn').value.trim()||'Morceau';const saves=getSaves();const ex=saves.findIndex(s=>s.name===name);const e={name,data:exportState(),date:new Date().toISOString()};if(ex>=0)saves[ex]=e;else saves.push(e);setSaves(saves);closePanel()}})});
 
-  document.getElementById('btn-export').addEventListener('click',()=>{const abc=buildAbcText();openPanel({title:'Code ABC',body:'<textarea id="exp" readonly>'+abc.replace(/</g,'&lt;')+'</textarea>',hideActions:true,extraButtons:['Fermer','Copier'],onMount:()=>{document.getElementById('exp').select()},onExtra:(w)=>{if(w==='Copier'){const ta=document.getElementById('exp');ta.select();try{document.execCommand('copy')}catch(_){}}closePanel()}})});
+  document.getElementById('btn-export').addEventListener('click',()=>{const abc=buildAbcText();openPanel({title:'Code ABC',body:'<textarea id="exp" readonly style="height:calc(100vh - 300px);min-height:200px;">'+abc.replace(/</g,'&lt;')+'</textarea>',hideActions:true,extraButtons:['Fermer','Copier'],fullHeight:true,onMount:()=>{document.getElementById('exp').select()},onExtra:(w)=>{if(w==='Copier'){const ta=document.getElementById('exp');ta.select();try{document.execCommand('copy')}catch(_){}}closePanel()}})});
 
   // ============ Export MusicXML compresse (.mxl) ============
   function escapeXml(s){return (s+'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]))}
@@ -2407,7 +2641,15 @@
       +'<b style="color:#0c447c;">Onglet Fichier</b><br>'
       +'• 📄 nouveau, 📂 ouvrir .abc, 💾 enregistrer .abc<br>'
       +'• ⭐ mémoires locales, ABC voir le code généré<br>'
-      +'• MusicXML (.mxl) : export au format MusicXML compressé<br><br>'
+      +'• MusicXML (.mxl) : export au format MusicXML compressé<br>'
+      +'• 📂 ouvrir un fichier multi-morceaux affiche la liste pour choisir<br><br>'
+      +'<b style="color:#0c447c;">Onglet 👁 (Œil)</b><br>'
+      +'• ⮂ Réorganiser rythme : fusionne les valeurs liées identiques (2 croches liées → noire) et les silences contigus ; appelé aussi automatiquement après chaque Décaler<br>'
+      +'• Accords / Texte / Paroles : affiche ou masque ces éléments<br>'
+      +'• Parties / N° mesures : affiche ou masque les repères P: et les numéros de mesure<br>'
+      +'• Transp. ↓↑, Armure → C, et conversions de swing<br><br>'
+      +'<b style="color:#0c447c;">Parties (P:)</b><br>'
+      +'• Onglet Mesure → Partie P: nomme la partie qui commence à la mesure active (A, B, Refrain…)<br><br>'
       +'<b style="color:#0c447c;">Limites</b><br>'
       +'• Une seule voix (monophonique)<br>'
       +'• Accord (texte) sur la note, pas plusieurs notes simultanées<br>'
@@ -2425,11 +2667,11 @@
   const panelCancel=document.getElementById('panel-cancel');
   let cOnOk=null,cOnExtra=null,cOnMeasureChange=null,cShowMes=false;
 
-  function openPanel({title,body,onMount,onOk,hideActions,extraButtons,onExtra,actionsClass,showMes,onMeasureChange}){
+  function openPanel({title,body,onMount,onOk,hideActions,extraButtons,onExtra,actionsClass,showMes,onMeasureChange,fullHeight,compact}){
     panelTitle.textContent=title;
     cShowMes=!!showMes;
     panelMes.textContent=cShowMes?('Mes '+(state.sel.m+1)):'';
-    document.getElementById('panel-nav').style.display=cShowMes?'flex':'none';
+    document.getElementById('panel-nav').style.display='none';
     let eH='';
     if(extraButtons&&extraButtons.length){
       let cls='actions';
@@ -2443,10 +2685,51 @@
     panelOk.style.display=(hideActions||extraButtons)?'none':'';
     panelCancel.style.display=(hideActions||extraButtons)?'none':'';
     panel.classList.add('open');
+    // Positionnement PC : la popup recouvre la colonne de menu, son haut au niveau des onglets
+    // (la barre de navigation ← ⟪ Deb Fin ⟫ → reste accessible au-dessus). Son bas s'arrête
+    // juste au-dessus de la rangée Annuler/Refaire (↶ ↷) de l'onglet actif, pour la garder
+    // accessible elle aussi.
+    try{
+      const left=document.querySelector('.pc-left');
+      const tabs=document.querySelector('.pc-left .tabs');
+      if(left&&tabs){
+        const lr=left.getBoundingClientRect();
+        const tr=tabs.getBoundingClientRect();
+        panel.style.left=lr.left+'px';
+        panel.style.width=lr.width+'px';
+        panel.style.top=tr.top+'px';
+        if(compact){
+          // Hauteur naturelle : le popup s'ajuste a son contenu (pas d'etirement vertical),
+          // ancre sous les onglets, avec un plafond pour ne pas deborder l'ecran.
+          panel.style.bottom='auto';
+          panel.style.maxHeight=(window.innerHeight - tr.top - 12)+'px';
+        } else {
+        // Bas du popup : par defaut juste au-dessus de la rangee Annuler/Refaire (↶ ↷) de
+        // l'onglet actif, pour la garder accessible. Mais si fullHeight est demande, ou si
+        // l'onglet actif n'a pas de rangee undo/redo, le popup descend jusqu'a la marge basse.
+        let undoRow=null;
+        if(!fullHeight){
+          const activePanel=document.querySelector('.tab-panel[data-panel="'+state.activeTab+'"]')||document.querySelector('.tab-panel');
+          if(activePanel){
+            const rows=activePanel.querySelectorAll('.row-grid');
+            rows.forEach(r=>{if(r.querySelector('[id^="btn-undo"]'))undoRow=r;});
+          }
+        }
+        if(undoRow){
+          const ur=undoRow.getBoundingClientRect();
+          const bottomPx=Math.max(12, window.innerHeight - ur.top + 8);
+          panel.style.bottom=bottomPx+'px';
+        } else {
+          panel.style.bottom='12px';
+        }
+        panel.style.maxHeight='none';
+        }
+      }
+    }catch(_){ }
     if(onMount)setTimeout(onMount,50);
     if(extraButtons)setTimeout(()=>{panelBody.querySelectorAll('[data-extra]').forEach(b=>{b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)})})},50);
   }
-  function closePanel(){panel.classList.remove('open');cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false}
+  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false}
   function notifyPanelMeasureChanged(){
     if(!panel.classList.contains('open'))return;
     if(cShowMes)panelMes.textContent='Mes '+(state.sel.m+1);
@@ -2467,8 +2750,9 @@
   function headerPromptMulti(key,title){return ()=>{
     openPanel({
       title:title,
-      body:'<textarea id="hi">'+((state.headers[key]||'')+'').replace(/</g,'&lt;')+'</textarea>'+
-        '<div class="row-grid" style="margin-top:8px;"><button class="k" id="newline-btn" style="font-size:36px;">↵ Nouvelle ligne</button></div>',
+      compact:true,
+      body:'<textarea id="hi" rows="3" style="height:auto;min-height:0;">'+((state.headers[key]||'')+'').replace(/</g,'&lt;')+'</textarea>'+
+        '<div class="row-grid" style="margin-top:8px;"><button class="k" id="newline-btn" style="font-size:14px;">↵ Nouvelle ligne</button></div>',
       onMount:()=>{
         const ta=document.getElementById('hi');
         ta.focus();
