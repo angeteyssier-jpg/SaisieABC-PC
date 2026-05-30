@@ -24,7 +24,7 @@
 
   .abc-card { background: #ffffff; border: 1px solid #d8d6ce; border-radius: 6px; padding: 6px; height: 100%; }
   /* Partition : utilise toute la hauteur de la fenetre (moins le badge version et les marges) */
-  .score-wrap { width: 100%; height: calc(100vh - 85px); min-height: 360px; }
+  .score-wrap { width: 100%; height: calc(100vh - 85px); min-height: 360px; overflow-y: auto; }
   .score-wrap svg { width: 100%; height: 100%; display: block; }
 
   .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 8px;
@@ -110,7 +110,7 @@
 
   /* Panel d'édition : overlay centré (positionné en absolute par-dessus le layout) */
   .panel { background: #e6f1fb; border: 2px solid #378add; border-radius: 12px;
-    padding: 10px; display: none;
+    padding: 0 10px 10px 10px; display: none;
     position: fixed; top: 160px; left: 8px;
     width: 260px; max-width: calc(100vw - 16px);
     max-height: calc(100vh - 210px); overflow-y: auto;
@@ -121,7 +121,8 @@
     background: transparent; z-index: 9999; pointer-events: none; }
   .abc-app:has(.panel.open) .panel-backdrop { display: block; }
   .panel .title-row { display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; margin-bottom: 10px; }
+    gap: 10px; margin-bottom: 10px;
+    position: sticky; top: 0; z-index: 7; background: #e6f1fb; padding-top: 10px; }
   .panel .title { font-size: 16px; color: #0c447c; font-weight: 700; }
   .panel .title-mes { font-size: 14px; color: #185fa5; font-weight: 700; }
   .panel-nav { display: flex; align-items: center; gap: 8px; }
@@ -181,11 +182,20 @@
     .oct-row .label b, .control-row .label b { font-size: 15px; }
     .panel { width: 230px; }
   }
+  #toast { position: fixed; left: 50%; bottom: 24px;
+    transform: translateX(-50%) translateY(20px);
+    background: #0c447c; color: #fff; padding: 10px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; line-height: 1.35; max-width: 520px; width: max-content;
+    max-width: calc(100vw - 32px); text-align: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+    opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease;
+    z-index: 20000; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.81 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v0.99 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -199,6 +209,7 @@
         <div class="title-mes" id="panel-mes"></div>
         <button class="k" id="panel-nav-next" style="height:36px;padding:0 10px;font-size:18px;width:auto;">+</button>
       </div>
+      <button class="k primary" id="panel-close-top" title="Fermer" style="display:none;width:auto;padding:0 14px;height:32px;font-size:16px;">✕ Fermer</button>
     </div>
     <div id="panel-body"></div>
     <div class="actions">
@@ -230,9 +241,10 @@
       <div class="tabs">
         <button class="tab active" data-tab="notes" title="Notes" aria-label="Notes" style="font-size:22px;">♪</button>
         <button class="tab" data-tab="mesure" title="Mesure" aria-label="Mesure"><svg width="26" height="16" viewBox="0 0 26 16" style="vertical-align:middle;"><g stroke="currentColor" stroke-width="1"><line x1="2" y1="2" x2="24" y2="2"/><line x1="2" y1="5" x2="24" y2="5"/><line x1="2" y1="8" x2="24" y2="8"/><line x1="2" y1="11" x2="24" y2="11"/><line x1="2" y1="14" x2="24" y2="14"/></g><g stroke="currentColor" stroke-width="1.6"><line x1="2" y1="2" x2="2" y2="14"/><line x1="13" y1="2" x2="13" y2="14"/><line x1="24" y1="2" x2="24" y2="14"/></g></svg></button>
+        <button class="tab" data-tab="pistes" title="Pistes" aria-label="Pistes"><svg width="26" height="16" viewBox="0 0 26 16" style="vertical-align:middle;"><g stroke="currentColor" stroke-width="0.8"><line x1="2" y1="2" x2="24" y2="2"/><line x1="2" y1="4.5" x2="24" y2="4.5"/><line x1="2" y1="7" x2="24" y2="7"/><line x1="2" y1="11" x2="24" y2="11"/><line x1="2" y1="13.5" x2="24" y2="13.5"/></g></svg></button>
         <button class="tab" data-tab="play" title="Play" aria-label="Play" style="font-size:20px;">▶</button>
         <button class="tab" data-tab="titre" title="Titre" aria-label="Titre" style="font-size:20px;">✎</button>
-        <button class="tab" data-tab="fichier" title="Fichier" aria-label="Fichier" style="font-size:20px;">📄</button>
+        <button class="tab" data-tab="fichier" title="Fichier" aria-label="Fichier" style="font-size:20px;">📂</button>
         <button class="tab" data-tab="vue" title="Vue" aria-label="Vue">👁</button>
       </div>
 
@@ -246,8 +258,7 @@
         <div class="row-grid row-6" id="dur-row"></div>
         <div class="row-grid row-5" id="alt-row"></div>
         <div class="row-grid row-3">
-          <button class="k" id="btn-tie" title="Liaison de durée (même note)">⌒ tie</button>
-          <button class="k" id="btn-slur" title="Liaison de phrasé">⌒ slur</button>
+          <button class="k" id="btn-link" title="Liaison — tie si la note suivante est de même hauteur, sinon slur (liaison de phrasé). Posable même sans note à droite (liaison en attente).">⌒ liaison</button>
           <button class="k" id="btn-del">⌫</button>
         </div>
         <div class="row-grid row-4" id="chord-row-normal">
@@ -295,10 +306,15 @@
           <button class="k" id="btn-copy-mes">📋</button>
           <button class="k" id="btn-paste-mes">📥</button>
         </div>
-        <div class="row-grid row-2">
+        <div class="row-grid row-3">
           <button class="k" id="btn-undo-mes">↶</button>
+          <button class="k" id="btn-measnums-mes" title="Afficher / masquer les numéros de mesure" style="font-size:13px;">N° mes</button>
           <button class="k" id="btn-redo-mes">↷</button>
         </div>
+      </div>
+
+      <div class="tab-panel" data-panel="pistes">
+        <div id="tracks-body"></div>
       </div>
 
       <div class="tab-panel" data-panel="play">
@@ -345,8 +361,8 @@
       <div class="tab-panel" data-panel="fichier">
         <div class="row-grid row-3">
           <button class="k" id="btn-new">📄 Nouveau</button>
-          <button class="k" id="btn-open-file">📂 Ouvrir</button>
-          <button class="k" id="btn-list">☰ Liste</button>
+          <button class="k" id="btn-open-file" title="Ouvrir un fichier (.abc)" style="font-size:18px;">📂</button>
+          <button class="k" id="btn-list" title="Liste des morceaux du fichier" style="font-size:18px;">☰</button>
         </div>
         <div class="row-grid row-3">
           <button class="k" id="btn-save-file" style="font-size:14px;">💾 ABC</button>
@@ -364,6 +380,10 @@
           <button class="k" id="size-d">−</button>
           <div class="label">Taille <b id="size-v">100</b></div>
           <button class="k" id="size-u">+</button>
+        </div>
+        <div class="row-grid row-2" style="margin-bottom:5px;">
+          <button class="k" id="btn-scope-one" style="font-size:13px;" title="Transposer / Armure → C : voix active seulement">Voix active</button>
+          <button class="k" id="btn-scope-all" style="font-size:13px;" title="Transposer / Armure → C : toutes les voix">Toutes</button>
         </div>
         <div class="transpose-row">
           <div class="label">Transp.</div>
@@ -397,6 +417,7 @@
 
   </div>
 </div>
+<div id="toast" role="status" aria-live="polite"></div>
 <script>
 (function(){
   const NOTES=[{label:'Do',sub:'C',n:'C'},{label:'Ré',sub:'D',n:'D'},{label:'Mi',sub:'E',n:'E'},{label:'Fa',sub:'F',n:'F'},{label:'Sol',sub:'G',n:'G'},{label:'La',sub:'A',n:'A'},{label:'Si',sub:'B',n:'B'}];
@@ -408,8 +429,61 @@
   const CHORD_BTNS=['#','b','m','Maj','2','4','5','6','7','9','11','13','sus','dim','aug','add','/'];
   const KEY_NAMES_MAJOR=['C','G','D','A','E','B','F♯','C♯'];
   const KEY_NAMES_MAJOR_FLAT=['C','F','B♭','E♭','A♭','D♭','G♭','C♭'];
+  // Mineurs relatifs (même armure que le majeur correspondant)
+  const KEY_NAMES_MINOR=['A','E','B','F♯','C♯','G♯','D♯','A♯'];          // dièses
+  const KEY_NAMES_MINOR_FLAT=['A','D','G','C','F','B♭','E♭','A♭'];        // bémols
 
-  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],sel:{m:0,s:0},octave:0,chordActive:0,timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},parts:{}};
+  // ===== Multi-pistes (étape 1) =====
+  // Champs propres à une piste (chacun aliasé sur la piste active via defineProperty)
+  const TRACK_FIELDS=['measures','pieceMeter','pieceUnit','pieceKeySig','pieceClef','timeChanges','keyChanges','clefChanges','repeats','parts'];
+  const MAX_TRACKS=6;
+  // Crée une piste vierge avec valeurs par défaut
+  function makeTrack(opts){opts=opts||{};return {
+    name:opts.name||'',
+    measures:opts.measures||[],
+    pieceMeter:opts.pieceMeter||'4/4',
+    pieceUnit:opts.pieceUnit||'1/4',
+    pieceKeySig:(opts.pieceKeySig!==undefined)?opts.pieceKeySig:0,
+    pieceClef:opts.pieceClef||'treble',
+    timeChanges:opts.timeChanges||{},
+    keyChanges:opts.keyChanges||{},
+    clefChanges:opts.clefChanges||{},
+    repeats:opts.repeats||{},
+    parts:opts.parts||{},
+    vol:(opts.vol!==undefined)?opts.vol:100,
+    mute:!!opts.mute,
+    visible:(opts.visible!==undefined)?opts.visible:true,
+    instrument:(opts.instrument!==undefined)?opts.instrument:0
+  }}
+  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
+  // Aliasing : state.<champ> lit/écrit la piste active
+  TRACK_FIELDS.forEach(f=>{Object.defineProperty(state,f,{
+    get(){const tr=state.tracks[state.activeTrack]||state.tracks[0];return tr?tr[f]:undefined},
+    set(v){const tr=state.tracks[state.activeTrack]||state.tracks[0];if(tr)tr[f]=v},
+    enumerable:true,configurable:true
+  })});
+  function activeTrackObj(){return state.tracks[state.activeTrack]||state.tracks[0]}
+  // Lot 2 : exécute une mutation sur CHAQUE piste (state.* est aliasé sur la piste active,
+  // donc on bascule activeTrack temporairement). La mutation ne doit PAS appeler
+  // pushHistory()/render() : l'appelant le fait une seule fois après la boucle.
+  function applyToAllTracks(mutator){
+    const saved=state.activeTrack;
+    for(let i=0;i<state.tracks.length;i++){state.activeTrack=i;mutator(i);}
+    state.activeTrack=saved;
+  }
+  // Nettoie un nom pour usage de nom de fichier : retire UNIQUEMENT les caractères vraiment
+  // interdits par les systèmes de fichiers ; conserve accents, espaces, tirets, parenthèses.
+  // Espaces remplacés par "_" pour des URL/téléchargements plus propres.
+  function sanitizeFilename(name){
+    let s=String(name||'').trim();
+    // caractères interdits sur Windows (et sécurité générale) + caractères de contrôle
+    s=s.replace(/[<>:"/\\|?*\x00-\x1f]/g,'');
+    s=s.replace(/\s+/g,'_');
+    s=s.replace(/_+/g,'_');
+    s=s.replace(/^[_.]+|[_.]+$/g,'');   // pas de . ou _ en début/fin
+    if(!s)s='morceau';
+    return s.substring(0,120);
+  }
 
   const history={stack:[],pos:-1,max:100};
   // Mode d'affichage du tempo : 'q'(noire) 'qd'(noire pointée) 'e'(croche) 'ed'(croche pointée). state.tempo reste canonique en noires/min.
@@ -436,9 +510,22 @@
   function beatFromAbc(num,den){const q=num/den*4;// durée en noires
     for(const tu of TEMPO_UNITS){if(Math.abs(q-tu.u)<1e-6)return{unit:tu.u,dotted:false};if(Math.abs(q-tu.u*1.5)<1e-6)return{unit:tu.u,dotted:true}}
     return{unit:q>0?q:1,dotted:false}}
-  function snapshot(){return JSON.stringify(state)}
+  function snapshot(){
+    const o={};for(const k in state){if(TRACK_FIELDS.indexOf(k)>=0)continue;o[k]=state[k]}
+    return JSON.stringify(o);
+  }
   function pushHistory(){if(history.pos<history.stack.length-1)history.stack=history.stack.slice(0,history.pos+1);history.stack.push(snapshot());if(history.stack.length>history.max)history.stack.shift();history.pos=history.stack.length-1}
-  function loadFrom(snap){const o=JSON.parse(snap);Object.assign(state,o)}
+  function loadFrom(snap){
+    const o=JSON.parse(snap);
+    if(!o.tracks){
+      const tr=makeTrack({measures:o.measures||[],pieceMeter:o.pieceMeter,pieceUnit:o.pieceUnit,pieceKeySig:o.pieceKeySig,pieceClef:o.pieceClef,timeChanges:o.timeChanges,keyChanges:o.keyChanges,clefChanges:o.clefChanges,repeats:o.repeats,parts:o.parts});
+      TRACK_FIELDS.forEach(f=>{delete o[f]});
+      o.tracks=[tr];o.activeTrack=0;
+    }
+    state.tracks=o.tracks.map(t=>makeTrack(t));
+    state.activeTrack=Math.max(0,Math.min((o.activeTrack||0),state.tracks.length-1));
+    for(const k in o){if(k==='tracks'||k==='activeTrack')continue;if(TRACK_FIELDS.indexOf(k)>=0)continue;state[k]=o[k]}
+  }
   function undo(){if(history.pos>0){history.pos--;loadFrom(history.stack[history.pos]);render()}}
   function redo(){if(history.pos<history.stack.length-1){history.pos++;loadFrom(history.stack[history.pos]);render()}}
 
@@ -476,6 +563,13 @@
   function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';return''}
   function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';return'Sol'}
   function keyHumanLabel(sig){if(sig===0)return'C maj : 0';if(sig>0)return KEY_NAMES_MAJOR[sig]+' maj : '+sig+' ♯';return KEY_NAMES_MAJOR_FLAT[-sig]+' maj : '+Math.abs(sig)+' ♭'}
+  // Étiquette « X maj / Y min » avec le mineur relatif et le nombre d'altérations
+  function keyMajMinLabel(sig){
+    const maj=(sig>=0)?KEY_NAMES_MAJOR[sig]:KEY_NAMES_MAJOR_FLAT[-sig];
+    const min=(sig>=0)?KEY_NAMES_MINOR[sig]:KEY_NAMES_MINOR_FLAT[-sig];
+    const acc=(sig===0)?'0':(sig>0?sig+' ♯':Math.abs(sig)+' ♭');
+    return maj+' maj / '+min+' min ('+acc+')';
+  }
   function cleanupAccidentals(){
     state.measures.forEach((meas,mi)=>{
       const sig=keyAt(mi);
@@ -568,6 +662,90 @@
   function midiOfSlot(slot,sig){const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[slot.note];let midi=60+baseSemi+slot.octave*12;if(slot.acc==='^')midi+=1;else if(slot.acc==='_')midi-=1;else if(slot.acc==='='){}else{if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))midi+=1;else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))midi-=1}return midi}
   // Altération effective d'un slot en tenant compte de l'héritage dans la mesure
   function effectiveAcc(meas,slotIdx,keySig){const t=meas[slotIdx];if(!t||t.type!=='note')return '';if(t.acc)return t.acc;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type==='note'&&s.note===t.note&&s.octave===t.octave&&s.acc)return s.acc}if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))return '^';if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))return '_';return ''}
+  // Altération que l'armure `sig` applique d'office à une lettre (en demi-tons : +1, -1, 0)
+  function keyAccVal(letter,sig){
+    if(sig>0&&SHARP_NOTES.slice(0,sig).includes(letter))return 1;
+    if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(letter))return -1;
+    return 0;
+  }
+  // Orthographe canonique d'une classe de hauteur (0..11) sous l'armure `sig`.
+  // Renvoie {note, acc} où acc∈{'', '^', '_', '='} ; le son est garanti par construction.
+  const NAT_SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+  const LETTERS=['C','D','E','F','G','A','B'];
+  function spellPitchClass(pc,sig){
+    pc=((pc%12)+12)%12;
+    // 1) Couverte par l'armure → plain (pas d'altération écrite)
+    for(const L of LETTERS){const ap=((NAT_SEMI[L]+keyAccVal(L,sig))%12+12)%12;if(ap===pc)return{note:L,acc:''};}
+    // 2) Note naturelle qu'une armure altère → bécarre explicite
+    for(const L of LETTERS){if(NAT_SEMI[L]%12===pc&&keyAccVal(L,sig)!==0)return{note:L,acc:'='};}
+    // 3) Touche noire non couverte → ♭ si armure de bémols (ou neutre), sinon ♯
+    if(sig<0){for(const L of LETTERS){if(((NAT_SEMI[L]-1)%12+12)%12===pc)return{note:L,acc:'_'};}}
+    for(const L of LETTERS){if((NAT_SEMI[L]+1)%12===pc)return{note:L,acc:'^'};}
+    // filet de sécurité (ne devrait pas arriver)
+    return{note:'C',acc:'='};
+  }
+  // Orthographe d'une note de classe `pc`, en PRÉSERVANT si possible la lettre d'origine `origLetter`.
+  // Règle : si l'armure couvre `pc` via une lettre altérée (ex. Si sous armure de bémols), on adopte
+  // cette lettre (absorption, ex. La# → Si). Sinon on garde la lettre d'origine avec l'altération
+  // écrite qui redonne le bon son (ex. retour en Do d'un Si♭ → reste Si♭, pas La#).
+  function spellPitchKeepLetter(pc,sig,origLetter){
+    pc=((pc%12)+12)%12;
+    for(const L of LETTERS){const ap=((NAT_SEMI[L]+keyAccVal(L,sig))%12+12)%12;if(ap===pc&&keyAccVal(L,sig)!==0)return{note:L,acc:''};}
+    for(const L of LETTERS){if(NAT_SEMI[L]%12===pc&&keyAccVal(L,sig)===0)return{note:L,acc:''};}
+    if(origLetter){
+      const base=NAT_SEMI[origLetter];
+      const diff=((pc-base)%12+12)%12;
+      if(diff===0)return{note:origLetter,acc:(keyAccVal(origLetter,sig)!==0?'=':'')};
+      if(diff===1)return{note:origLetter,acc:'^'};
+      if(diff===11)return{note:origLetter,acc:'_'};
+    }
+    return spellPitchClass(pc,sig);
+  }
+  // Réécrit une note (et ses notes empilées) pour l'armure `newSig` en CONSERVANT le son.
+  function respellSlotForKey(slot,oldSig,measForCtx,idxForCtx,newSig){
+    // hauteur sonore réelle dans l'ancien contexte
+    const oldEff=(idxForCtx!=null&&measForCtx)?effectiveAcc(measForCtx,idxForCtx,oldSig):(slot.acc||(keyAccVal(slot.note,oldSig)?(keyAccVal(slot.note,oldSig)>0?'^':'_'):''));
+    const midi=midiOfNote(slot.note,slot.octave,oldEff,oldSig);
+    const pc=((midi%12)+12)%12;
+    const sp=spellPitchClass(pc,newSig);
+    // recalculer l'octave pour conserver exactement le même MIDI
+    const effNew=(sp.acc==='^')?1:(sp.acc==='_')?-1:(sp.acc==='=')?0:keyAccVal(sp.note,newSig);
+    const baseNoOct=60+NAT_SEMI[sp.note]+effNew;
+    const oct=Math.round((midi-baseNoOct)/12);
+    slot.note=sp.note;slot.octave=oct;
+    if(sp.acc)slot.acc=sp.acc;else delete slot.acc;
+  }
+  // Réécrit toutes les notes des mesures [fromM..toM] pour la nouvelle armure, à son constant.
+  function respellRangeForKey(fromM,toM,newSig){
+    for(let mi=fromM;mi<=toM&&mi<state.measures.length;mi++){
+      const meas=state.measures[mi];const oldSig=keyAt(mi);
+      // On fige d'abord les altérations effectives héritées (snapshot) pour ne pas être pollué
+      // par les réécritures successives dans la même mesure.
+      const effs=meas.map((s,i)=>s.type==='note'?effectiveAcc(meas,i,oldSig):'');
+      meas.forEach((slot,si)=>{
+        if(slot.type!=='note')return;
+        // note principale
+        const midiMain=midiOfNote(slot.note,slot.octave,effs[si],oldSig);
+        const spMain=spellPitchKeepLetter(((midiMain%12)+12)%12,newSig,slot.note);
+        const effNewMain=(spMain.acc==='^')?1:(spMain.acc==='_')?-1:(spMain.acc==='=')?0:keyAccVal(spMain.note,newSig);
+        slot.octave=Math.round((midiMain-(60+NAT_SEMI[spMain.note]+effNewMain))/12);
+        slot.note=spMain.note;
+        if(spMain.acc)slot.acc=spMain.acc;else delete slot.acc;
+        // notes empilées (accord)
+        if(slot.stack&&slot.stack.length){
+          slot.stack.forEach(x=>{
+            const xEff=x.acc||(keyAccVal(x.note,oldSig)?(keyAccVal(x.note,oldSig)>0?'^':'_'):'');
+            const xMidi=midiOfNote(x.note,x.octave,xEff,oldSig);
+            const sp=spellPitchKeepLetter(((xMidi%12)+12)%12,newSig,x.note);
+            const en=(sp.acc==='^')?1:(sp.acc==='_')?-1:(sp.acc==='=')?0:keyAccVal(sp.note,newSig);
+            x.octave=Math.round((xMidi-(60+NAT_SEMI[sp.note]+en))/12);
+            x.note=sp.note;
+            if(sp.acc)x.acc=sp.acc;else delete x.acc;
+          });
+        }
+      });
+    }
+  }
   // Altération à dessiner pour un slot (notation : afficher seulement si différente du contexte courant)
   // Convention : une note sans acc hérite de la dernière altération de même (note,octave) dans la mesure,
   // ou de l'armure sinon. On affiche acc uniquement s'il diffère de cet héritage.
@@ -642,7 +820,78 @@
   function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
   function buildVoltaFor(mi){const r=state.repeats[mi];if(!r||!r.volta)return'';return'['+r.volta}
 
-  function buildAbcText(){let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});if(state.headers.R&&state.headers.R.trim())h+='R:'+state.headers.R.trim()+'\n';if(state.headers.H&&state.headers.H.trim())state.headers.H.split('\n').forEach(l=>{if(l.trim())h+='H:'+l+'\n'});if(state.headers.F&&state.headers.F.trim())h+='F:'+state.headers.F.trim()+'\n';if(state.headers.Z&&state.headers.Z.trim())h+='Z:'+state.headers.Z.trim()+'\n';if(state.headers.P&&state.headers.P.trim())h+='P:'+state.headers.P.trim()+'\n';h+='M:'+state.pieceMeter+'\n';h+='L:'+state.pieceUnit+'\n';h+='Q:'+beatAbcFraction()+'='+Math.round(state.tempo/beatQuarters())+'\n';h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';let body='';state.measures.forEach((m,mi)=>{if(state.parts&&state.parts[mi]){if(body&&!body.endsWith('\n'))body+='\n';body+='P:'+state.parts[mi]+'\n'}body+=buildBarSeparator(mi-1,mi);body+=buildInlineFor(mi);body+=buildVoltaFor(mi);const groups=computeBeamGroups(m,meterAt(mi));const gOf={};groups.forEach((g,gi)=>{g.forEach((idx,k)=>{gOf[idx]={gi}})});let lastTid=null;m.forEach((t,si)=>{if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}if(!t.tuplet)lastTid=null;const prevSlur=si>0&&m[si-1]&&m[si-1].type==='note'&&m[si-1].slurToNext;if(t.type==='note'&&t.slurToNext&&!prevSlur)body+='(';body+=slotStr(t);if(t.type==='note'&&prevSlur&&!t.slurToNext)body+=')';const isLast=(si===m.length-1);if(isLast)return;const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;if(!inSame)body+=' '})});const li=state.measures.length-1;if(state.repeats[li]?.end)body+=':|';else body+='|';const lyr=buildLyricLine();return h+body+(lyr?('\n'+lyr):'')}
+  // Construit le corps ABC pour la voix courante (lit la piste active via les alias state.*)
+  function buildVoiceBody(){
+    let body='';
+    state.measures.forEach((m,mi)=>{
+      if(state.parts&&state.parts[mi]){if(body&&!body.endsWith('\n'))body+='\n';body+='P:'+state.parts[mi]+'\n'}
+      body+=buildBarSeparator(mi-1,mi);
+      body+=buildInlineFor(mi);
+      body+=buildVoltaFor(mi);
+      const groups=computeBeamGroups(m,meterAt(mi));
+      const gOf={};groups.forEach((g,gi)=>{g.forEach((idx)=>{gOf[idx]={gi}})});
+      let lastTid=null;
+      m.forEach((t,si)=>{
+        if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}
+        if(!t.tuplet)lastTid=null;
+        const prevSlur=si>0&&m[si-1]&&m[si-1].type==='note'&&m[si-1].slurToNext;
+        if(t.type==='note'&&t.slurToNext&&!prevSlur)body+='(';
+        body+=slotStr(t);
+        if(t.type==='note'&&prevSlur&&!t.slurToNext)body+=')';
+        const isLast=(si===m.length-1);if(isLast)return;
+        const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;
+        if(!inSame)body+=' ';
+      });
+    });
+    const li=state.measures.length-1;
+    if(state.repeats[li]?.end)body+=':|';else body+='|';
+    return body;
+  }
+  function buildAbcText(){
+    let h='';h+='X:'+(state.headers.X||'0')+'\n';
+    if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});
+    if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});
+    if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});
+    if(state.headers.R&&state.headers.R.trim())h+='R:'+state.headers.R.trim()+'\n';
+    if(state.headers.H&&state.headers.H.trim())state.headers.H.split('\n').forEach(l=>{if(l.trim())h+='H:'+l+'\n'});
+    if(state.headers.F&&state.headers.F.trim())h+='F:'+state.headers.F.trim()+'\n';
+    if(state.headers.Z&&state.headers.Z.trim())h+='Z:'+state.headers.Z.trim()+'\n';
+    if(state.headers.P&&state.headers.P.trim())h+='P:'+state.headers.P.trim()+'\n';
+    // Champs M/L/Q/K du morceau : ceux de la piste 1 (référence)
+    const savedTrack=state.activeTrack;
+    state.activeTrack=0;
+    h+='M:'+state.pieceMeter+'\n';
+    h+='L:'+state.pieceUnit+'\n';
+    h+='Q:'+beatAbcFraction()+'='+Math.round(state.tempo/beatQuarters())+'\n';
+    h+='K:'+keyAbc(state.pieceKeySig)+clefAbcSuffix(state.pieceClef)+'\n';
+    const nTracks=state.tracks.length;
+    let body='';
+    if(nTracks<=1){
+      body=buildVoiceBody();
+      const lyr=buildLyricLine();
+      state.activeTrack=savedTrack;
+      return h+body+(lyr?('\n'+lyr):'');
+    }
+    // Multi-voix : déclarer les voix en en-tête, puis émettre chaque corps
+    let header='';
+    for(let i=0;i<nTracks;i++){const tr=state.tracks[i];const id=String(i+1);const clName=(tr.pieceClef==='bass')?'bass':(tr.pieceClef==='treble8'?'treble-8':'treble');header+='V:'+id+' clef='+clName;if(tr.name)header+=' name="'+tr.name.replace(/"/g,'')+'"';header+='\n'}
+    h+=header;
+    for(let i=0;i<nTracks;i++){
+      state.activeTrack=i;
+      body+='V:'+String(i+1)+'\n';
+      // Override M/L/K si la piste diffère de la piste 0
+      const t0=state.tracks[0];const ti=state.tracks[i];
+      if(i>0){
+        if(ti.pieceMeter!==t0.pieceMeter)body+='M:'+ti.pieceMeter+'\n';
+        if(ti.pieceUnit!==t0.pieceUnit)body+='L:'+ti.pieceUnit+'\n';
+        if(ti.pieceKeySig!==t0.pieceKeySig||ti.pieceClef!==t0.pieceClef)body+='K:'+keyAbc(ti.pieceKeySig)+clefAbcSuffix(ti.pieceClef)+'\n';
+      }
+      body+=buildVoiceBody()+'\n';
+    }
+    state.activeTrack=savedTrack;
+    const lyr=buildLyricLine();
+    return h+body+(lyr?(lyr+'\n'):'');
+  }
   function buildLyricLine(){const syls=[];let any=false;state.measures.forEach(m=>m.forEach(s=>{if(s.type==='note'){if(s.lyric){any=true;syls.push(s.lyric.replace(/ /g,'~'))}else syls.push('*')}}));if(!any)return'';return'w:'+syls.join(' ')}
 
   function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1];if(c==='bass'||c==='F')clef='bass';else if(c==='treble-8'||c==='treble_8')clef='treble8';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
@@ -733,22 +982,67 @@
     return out;
   }
 
-  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};let inBody=false,bodyText='',sawL=false;for(const line of cleaned){const t=line.trim();if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='R'){ns.headers.R=v}else if(k==='H'){ns.headers.H=ns.headers.H?(ns.headers.H+'\n'+v):v}else if(k==='F'){ns.headers.F=v}else if(k==='Z'){ns.headers.Z=v}else if(k==='P'){ns.headers.P=v}else if(k==='M')ns.pieceMeter=v;else if(k==='L'){ns.pieceUnit=v;sawL=true}else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=v.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){bodyText+=' [P:'+fv.trim()+'] '}else if(fk==='w'||fk==='W'){ns._lyricLines=ns._lyricLines||[];ns._lyricLines.push(fv)}continue}
-    // Champs d'en-tete (M/L/Q/K) places APRES le premier K: : si on n'a pas encore vu de
-    // musique, ils completent l'en-tete du morceau ; sinon ce sont des changements en cours.
-    const hf=t.match(/^([MLQK]):\s*(.*)$/);
-    if(hf){const hk=hf[1],hv=hf[2].trim();const seenMusic=/[A-Ga-gz]/.test(bodyText);
-      if(!seenMusic){
-        if(hk==='M')ns.pieceMeter=hv;
-        else if(hk==='L'){ns.pieceUnit=hv;sawL=true}
-        else if(hk==='Q'){const qm=hv.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=hv.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=hv.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}
-        else if(hk==='K'){const kd=parseKeyDef(hv);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef}
-      } else {
-        if(hk==='M'||hk==='L'||hk==='K')bodyText+=' ['+hk+':'+hv+'] ';
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};
+    // --- multi-voix ---
+    const voiceOrder=[];            // ordre d'apparition des voix
+    const voiceMeta={};             // id -> {clef,name}
+    const bodyByVoice={};           // id -> bodyText
+    let curVoice='1';               // voix courante (défaut '1' si aucune V: déclarée)
+    let usedVoices=false;           // a-t-on rencontré au moins un V: ?
+    function ensureVoice(id){if(!(id in bodyByVoice)){bodyByVoice[id]='';voiceOrder.push(id);voiceMeta[id]=voiceMeta[id]||{}}}
+    ensureVoice('1');
+    function addBody(s){bodyByVoice[curVoice]=(bodyByVoice[curVoice]||'')+s}
+    let inBody=false,sawL=false;
+    for(const line of cleaned){const t=line.trim();
+      if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='R'){ns.headers.R=v}else if(k==='H'){ns.headers.H=ns.headers.H?(ns.headers.H+'\n'+v):v}else if(k==='F'){ns.headers.F=v}else if(k==='Z'){ns.headers.Z=v}else if(k==='P'){ns.headers.P=v}else if(k==='M')ns.pieceMeter=v;else if(k==='L'){ns.pieceUnit=v;sawL=true}else if(k==='V'){const vm=v.match(/^(\S+)(.*)$/);if(vm){const vid=vm[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=v.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=(cc.indexOf('bass')>=0||cc==='f')?'bass':((cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0)?'treble8':(cc.indexOf('treble')>=0?'treble':undefined))}const nm=v.match(/(?:name|nm)\s*=\s*"([^"]*)"/i)||v.match(/(?:name|nm)\s*=\s*(\S+)/i);if(nm)voiceMeta[vid].name=nm[1]}}else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=v.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}
+      // --- corps ---
+      // Ligne V: dans le corps -> change la voix courante
+      const vline=t.match(/^V:\s*(\S+)(.*)$/);
+      if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=(cc.indexOf('bass')>=0||cc==='f')?'bass':((cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0)?'treble8':(cc.indexOf('treble')>=0?'treble':voiceMeta[vid].clef))}const nm=t.match(/(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];continue}
+      const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){addBody(' [P:'+fv.trim()+'] ')}else if(fk==='w'||fk==='W'){ns._lyricLines=ns._lyricLines||[];ns._lyricLines.push(fv)}continue}
+      const hf=t.match(/^([MLQK]):\s*(.*)$/);
+      if(hf){const hk=hf[1],hv=hf[2].trim();const seenMusic=/[A-Ga-gz]/.test(bodyByVoice[curVoice]||'');
+        if(!seenMusic){
+          if(hk==='M')ns.pieceMeter=hv;
+          else if(hk==='L'){ns.pieceUnit=hv;sawL=true}
+          else if(hk==='Q'){const qm=hv.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=hv.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=hv.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}
+          else if(hk==='K'){const kd=parseKeyDef(hv);
+            if(usedVoices&&curVoice){
+              // K: en tête du corps d'une voix → définit la clé/armure de CETTE voix
+              voiceMeta[curVoice]=voiceMeta[curVoice]||{};
+              if(kd.clef)voiceMeta[curVoice].clef=kd.clef;
+              voiceMeta[curVoice].keySig=kd.sig;
+            } else {
+              ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;
+            }
+          }
+        } else {
+          if(hk==='M'||hk==='L'||hk==='K')addBody(' ['+hk+':'+hv+'] ');
+        }
+        continue;
       }
-      continue;
+      addBody(' '+t);
     }
-    bodyText+=' '+t}if(!inBody)return null;if(!sawL){const pm=parseMeter(ns.pieceMeter);ns.pieceUnit=(pm.num/pm.den<0.75)?'1/16':'1/8'}bodyText=expandGraceNotesBody(bodyText);parseAbcBody(bodyText,ns);if(ns._lyricLines&&ns._lyricLines.length)assignLyrics(ns,ns._lyricLines);return ns}
+    if(!inBody)return null;
+    if(!sawL){const pm=parseMeter(ns.pieceMeter);ns.pieceUnit=(pm.num/pm.den<0.75)?'1/16':'1/8'}
+    // Construire les pistes à partir des voix collectées
+    const voices=voiceOrder.filter(id=>(bodyByVoice[id]||'').trim().length>0);
+    const finalVoices=(voices.length?voices:['1']).slice(0,MAX_TRACKS);
+    ns.tracks=[];
+    finalVoices.forEach(vid=>{
+      const meta=voiceMeta[vid]||{};
+      // sous-état temporaire pour parser cette voix
+      const sub={pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:(meta.keySig!==undefined?meta.keySig:ns.pieceKeySig),pieceClef:meta.clef||ns.pieceClef,measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},parts:{}};
+      let bt=expandGraceNotesBody(bodyByVoice[vid]||'');
+      parseAbcBody(bt,sub);
+      ns.tracks.push(makeTrack({name:meta.name||('V'+vid),measures:sub.measures,pieceMeter:sub.pieceMeter,pieceUnit:sub.pieceUnit,pieceKeySig:sub.pieceKeySig,pieceClef:sub.pieceClef,timeChanges:sub.timeChanges,keyChanges:sub.keyChanges,clefChanges:sub.clefChanges,repeats:sub.repeats,parts:sub.parts}));
+    });
+    if(!ns.tracks.length)ns.tracks.push(makeTrack({pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:ns.pieceKeySig,pieceClef:ns.pieceClef}));
+    ns.activeTrack=0;
+    // Paroles : appliquées à la 1re piste (étape 1)
+    if(ns._lyricLines&&ns._lyricLines.length){const t0=ns.tracks[0];const tmp={measures:t0.measures};assignLyrics(tmp,ns._lyricLines)}
+    return ns;
+  }
   function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingTuplet=null,slurDepth=0,lastNoteSlot=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='['&&body[i+1]&&/[\^_=A-Ga-g]/.test(body[i+1])){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);i=end+1;let dsOut='';while(i<body.length&&/[\d/]/.test(body[i])){dsOut+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}
         // découper les notes internes de l'accord (avec leur durée propre)
         const chordNotes=[];let p=0;let firstDs='';while(p<inner.length){let a='';while(p<inner.length&&(inner[p]==='^'||inner[p]==='_'||inner[p]==='=')){if(inner[p]==='^')a=(a==='^'?'^^':'^');else if(inner[p]==='_')a=(a==='_'?'__':'_');else a='=';p++}if(p>=inner.length)break;const cc=inner[p];if(/[A-Ga-g]/.test(cc)){let nn=cc.toUpperCase();let oo=(cc===cc.toLowerCase())?1:0;p++;while(p<inner.length&&(inner[p]==="'"||inner[p]===',')){if(inner[p]==="'")oo++;else oo--;p++}let ids='';while(p<inner.length&&/[\d/]/.test(inner[p])){ids+=inner[p];p++}if(firstDs==='')firstDs=ids;chordNotes.push({note:nn,octave:oo,acc:a?(a.length>1?a[0]:a):''})}else p++}
@@ -796,7 +1090,14 @@
   function expandForPlayback(){const out=[];const N=state.measures.length;if(N===0)return out;let i=0,pass=1,safety=0;const done={};const sectionStarted=new Set();while(i<N&&safety<5000){safety++;const r=state.repeats[i]||{};if(r.start&&!sectionStarted.has(i)){sectionStarted.add(i);pass=1}if(r.volta!==undefined&&r.volta!==pass){const skipV=r.volta;let j=i;while(j<N){const rj=state.repeats[j]||{};if(rj.volta!==skipV)break;j++}i=j;continue}out.push(i);if(r.end){let startIdx=0;for(let k=i;k>=0;k--){if(state.repeats[k]?.start){startIdx=k;break}}const key=startIdx+':'+i;if(!done[key]){done[key]=true;i=startIdx;pass=2;continue}pass=1}i++;if(out.length>5000)break}return out}
 
   const SCORE_W=800,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=52;
-  function clefRefStep(c){return c==='bass'?-12:2}
+  // Référence verticale de chaque clé (en demi-pas de portée).
+  // treble=2 (ligne du bas = Mi). bass=-3 : un Ré sous la portée en sol tombe sur la ligne du milieu en fa.
+  // treble8 (Sol-8) : MÊME affichage que la clé de sol (têtes aux mêmes positions, conforme EasyABC) ;
+  // le « 8 » sous la clé indique seulement que le SON est une octave plus bas (géré à la lecture/export).
+  function clefRefStep(c){if(c==='bass')return -3;return 2}
+  // Décalage SONORE dû à la clé : Sol-8 (treble8) sonne une octave plus bas (−12 demi-tons).
+  // N'affecte que la lecture/preview, jamais le modèle ni l'affichage.
+  function clefSoundShift(clef){return clef==='treble8'?-12:0;}
   function noteY(staffTop,step,c){const r=clefRefStep(c);const bl=staffTop+4*LINE_GAP;return bl-(step-r)*(LINE_GAP/2)}
   function stepIndex(note,oct){const m={C:0,D:1,E:2,F:3,G:4,A:5,B:6};return m[note]+7*oct}
   const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
@@ -815,58 +1116,59 @@
     return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
   function drawRest(t,cx,color,staffTop){let svg='';const y=staffTop+2*LINE_GAP;const eD=nominalDur(t);if(eD>=4)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+LINE_GAP)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=2)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+2*LINE_GAP-3.5)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=1)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄽</text>';else if(eD>=0.5)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄾</text>';else svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄿</text>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y}}
 
-  function renderScore(){
+  // === Cout d'une mesure / d'un en-tete de ligne (niveau module : reutilises par le layout partage) ===
+  function measureCost(mIdx){
+    const meas=state.measures[mIdx];
+    if(!meas||meas.length===0)return 30;
+    const sig=keyAt(mIdx);
+    let nAlt=0;
+    meas.forEach((slot,si)=>{if(slot.type!=='note')return;if(accToDrawFor(meas,si,sig))nAlt++;});
+    let cost=10*meas.length+4*nAlt+10;
+    const r=state.repeats[mIdx];
+    if(r){if(r.start)cost+=6;if(r.end)cost+=8;}
+    if(mIdx>0){
+      if(clefAt(mIdx)!==clefAt(mIdx-1))cost+=14;
+      if(keyAt(mIdx)!==keyAt(mIdx-1))cost+=Math.abs(keyAt(mIdx))*7+5;
+      if(meterAt(mIdx)!==meterAt(mIdx-1))cost+=14;
+    }
+    return cost;
+  }
+  function lineHeaderCost(mIdx,isFirstLineOfDoc){
+    const hK=keyAt(mIdx);
+    const nAccs=keySigAccidentals(hK,clefAt(mIdx)).length;
+    let cost=20+nAccs*6;
+    if(isFirstLineOfDoc)cost+=12;
+    return cost;
+  }
+  // layout optionnel {single:true,N,widthUnits[],firstX,totalUnits} : mode "une ligne par voix" (Lot 5)
+  function renderScoreOnce(layout){
     const selM=state.sel.m;
+    // Note surlignée (rouge) : pendant le play, chaque voix suit sa propre position de lecture ;
+    // sinon, le curseur d'édition (state.sel). Les voix sans position de lecture n'affichent rien.
+    let hlM=state.sel.m,hlS=state.sel.s;
+    if(typeof audio!=='undefined'&&audio.playing){
+      const ph=state._playHL&&state._playHL[state.activeTrack];
+      if(ph){hlM=ph.m;hlS=ph.s;}else{hlM=-1;hlS=-1;}
+    }
+    const single=!!(layout&&layout.single);
     // === Calcul dynamique des dimensions selon le conteneur et la taille choisie ===
     const sw=document.getElementById('score');
     const cw=sw?sw.clientWidth:600;
-    const ch=sw?sw.clientHeight:400;
+    const chRaw=sw?sw.clientHeight:400;
     const pxPerUnit=1.8*(state.scoreScale||100)/100;
     const viewW=Math.max(200,cw/pxPerUnit);
-    const viewH=Math.max(100,ch/pxPerUnit);
-    // Nb max de lignes (selon hauteur disponible)
+    const viewH=Math.max(100,chRaw/pxPerUnit);
+    // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SPACING));
-    const SCORE_W=viewW;
+    const SCORE_W=single?layout.totalUnits:viewW;
     const usableLineW=SCORE_W-LEFT_PAD-RIGHT_PAD;
-    const N=state.measures.length;
-    // === Calcul du cout d'une mesure (largeur ideale en unites SVG) ===
-    function measureCost(mIdx){
-      const meas=state.measures[mIdx];
-      if(!meas||meas.length===0)return 30;
-      const sig=keyAt(mIdx);
-      let nAlt=0;
-      meas.forEach((slot,si)=>{
-        if(slot.type!=='note')return;
-        const accD=accToDrawFor(meas,si,sig);
-        if(accD)nAlt++;
-      });
-      // Cout brut : 10 par slot + 4 par alteration. Marge fixe de 10 pour les bords de la mesure
-      let cost=10*meas.length+4*nAlt+10;
-      // Reprises
-      const r=state.repeats[mIdx];
-      if(r){
-        if(r.start)cost+=6;
-        if(r.end)cost+=8;
-      }
-      // Changements clef/armure/rythme inline (par rapport a la mesure precedente)
-      if(mIdx>0){
-        if(clefAt(mIdx)!==clefAt(mIdx-1))cost+=14;
-        if(keyAt(mIdx)!==keyAt(mIdx-1))cost+=Math.abs(keyAt(mIdx))*7+5;
-        if(meterAt(mIdx)!==meterAt(mIdx-1))cost+=14;
-      }
-      return cost;
-    }
-    // Cout supplementaire pour la 1ere mesure d'une ligne (clef + armure + metrique eventuelle)
-    function lineHeaderCost(mIdx,isFirstLineOfDoc){
-      const hK=keyAt(mIdx);
-      const nAccs=keySigAccidentals(hK,clefAt(mIdx)).length;
-      let cost=20;
-      cost+=nAccs*6;
-      if(isFirstLineOfDoc)cost+=12;
-      return cost;
-    }
-    // === Regroupement glouton des mesures en lignes ===
+    const N=single?layout.N:state.measures.length;
+    // === Regroupement des mesures en lignes ===
     const allLines=[];
+    if(single){
+      const idxs=[];for(let k=0;k<N;k++)idxs.push(k);
+      allLines.push({mIdxs:idxs,totalCost:0});
+    } else {
     let cur={mIdxs:[],totalCost:0};
     let isFirstLineOfDoc=true;
     for(let mi=0;mi<N;mi++){
@@ -883,16 +1185,22 @@
       cur.totalCost+=c+headerC;
     }
     if(cur.mIdxs.length>0)allLines.push(cur);
+    }
     if(allLines.length===0)allLines.push({mIdxs:[],totalCost:0});
     // === Trouver la page contenant selM ===
+    let pageStart,pageLines,linesShown;
+    if(single){
+      pageStart=0;pageLines=allLines;linesShown=1;
+    } else {
     let lineOfSel=0;
     for(let li=0;li<allLines.length;li++){
       if(allLines[li].mIdxs.includes(selM)){lineOfSel=li;break}
     }
-    const pageStart=Math.floor(lineOfSel/linesMax)*linesMax;
+    pageStart=Math.floor(lineOfSel/linesMax)*linesMax;
     const pageEnd=Math.min(allLines.length,pageStart+linesMax);
-    const pageLines=allLines.slice(pageStart,pageEnd);
-    const linesShown=Math.max(1,pageLines.length);
+    pageLines=allLines.slice(pageStart,pageEnd);
+    linesShown=Math.max(1,pageLines.length);
+    }
     const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
     const scoreH=STAFF_TOP_Y+linesShown*STAFF_SPACING+10;
     let svg='<svg viewBox="0 0 '+SCORE_W+' '+scoreH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">';
@@ -945,7 +1253,17 @@
         svg+='<text x="'+mx+'" y="'+(staffTop+1.7*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
         svg+='<text x="'+mx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
       }
-      // === Calculer la largeur reelle de chaque mesure de la ligne (echelle par rapport au cout) ===
+      // Positions cumulatives de chaque mesure (xL,xR)
+      const measureBounds=[];
+      if(single){
+        let curX=layout.firstX;
+        for(let i=0;i<lineData.mIdxs.length;i++){
+          const mi=lineData.mIdxs[i];
+          const w=layout.widthUnits[mi];
+          measureBounds.push({xL:curX,xR:curX+w,measureW:w});
+          curX+=w;
+        }
+      } else {
       const measureCosts=lineData.mIdxs.map(mi=>measureCost(mi));
       const headerC=lineHeaderCost(lsm,isFirstDocLine);
       const availableForMeasures=usableLineW-headerC+20; // recuperer la marge fixe deja comptee dans header
@@ -953,13 +1271,12 @@
       // On n'etire jamais au-dela de la densite des lignes pleines : la derniere ligne incomplete
       // garde la meme echelle et reste alignee a gauche au lieu de s'etaler sur toute la largeur.
       const lineScale=Math.min(availableForMeasures/sumCosts, refScale);
-      // Positions cumulatives de chaque mesure (xL,xR)
-      const measureBounds=[];
       let curX=LEFT_PAD+headerC-20; // commence apres l'header (le 20 etait deja dans le cost de base)
       for(let i=0;i<lineData.mIdxs.length;i++){
         const w=measureCosts[i]*lineScale;
         measureBounds.push({xL:curX,xR:curX+w,measureW:w});
         curX+=w;
+      }
       }
       // Dessiner les barres de mesure
       for(let i=0;i<=lineData.mIdxs.length;i++){
@@ -970,6 +1287,7 @@
       let pS=null;
       const tP=[];
       const sP=[];           // arcs de slur (phrasé), un par chaîne continue
+      const pendP=[];        // liaisons « en attente » (linkToNext sans note suivante) → arc pointillé
       let slurStart=null;    // {cx,y} de la première note de la chaîne de slur en cours
       let slurLast=null;     // {cx,y} de la dernière note vue dans la chaîne
       let pendingIncomingTie=false;
@@ -1123,10 +1441,10 @@
           const cx=cxBySlot[si];
           // Rectangle cliquable invisible sur toute la zone du slot (selection par clic)
           svg+='<rect x="'+(cx-wBySlot[si]/2)+'" y="'+staffTop+'" width="'+wBySlot[si]+'" height="'+(4*LINE_GAP+20)+'" fill="transparent" pointer-events="all" data-m="'+mIdx+'" data-s="'+si+'" style="cursor:pointer"/>';
-          const iS=(mIdx===selM&&si===state.sel.s);
+          const iS=(mIdx===hlM&&si===hlS);
           const cl=iS?sel:ink;
           if(t.chord&&state.viewFlags.chords)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+escXml(t.chord)+'</text>';
-          if(t.text&&state.viewFlags.text)svg+='<text x="'+cx+'" y="'+(staffTop-(t.chord&&state.viewFlags.chords?13:3))+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+escXml(t.text)+'</text>';
+          if(t.text&&state.viewFlags.text)svg+='<text x="'+cx+'" y="'+(staffTop-(t.chord&&state.viewFlags.chords?13:3))+'" font-size="6" font-style="italic" fill="'+ink+'" text-anchor="middle">'+escXml(t.text)+'</text>';
           if(t.orn&&t.orn.length){
             const ot=t.orn.filter(o=>o!=='.').map(o=>{if(o==='~')return'tr';if(o==='T')return'tr';if(o==='M')return'∼';if(o==='P')return'∿';if(o==='H')return'𝄐';if(o==='L')return'>';if(o==='u')return'⋁';if(o==='v')return'⊓';if(o==='O')return'⊕';return o}).join(' ');
             if(ot)svg+='<text x="'+cx+'" y="'+(staffTop-12)+'" font-size="8" font-style="italic" fill="'+ink+'" text-anchor="middle">'+ot+'</text>';
@@ -1161,6 +1479,8 @@
               handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext);
               pS={t,cx,y:dr.headY};
             }
+            // Liaison « en attente » : intention posée mais ni tie ni slur résolu (pas de note à droite)
+            if(t.linkToNext&&!t.tieToNext&&!t.slurToNext&&pS){pendP.push({cx:pS.cx,y:pS.y});}
           } else {
             const dr=drawRest(t,cx,cl,staffTop);
             svg+=dr.svg;
@@ -1264,9 +1584,128 @@
         const cy=topY-9;  // arc au-dessus
         svg+='<path d="M '+(sp.fromCx+1)+' '+(sp.fromY-4)+' Q '+cx+' '+cy+' '+(sp.toCx-1)+' '+(sp.toY-4)+'" stroke="'+ink+'" stroke-width="1.1" fill="none" stroke-linecap="round"/>';
       });
+      // Liaisons « en attente » : petit arc pointillé bleu sortant de la note (aucune note à droite encore)
+      pendP.forEach(pp=>{
+        const x2=pp.cx+12;
+        svg+='<path d="M '+(pp.cx+3)+' '+(pp.y+3)+' Q '+(pp.cx+8)+' '+(pp.y+8)+' '+x2+' '+(pp.y+3)+'" stroke="#185fa5" stroke-width="1" fill="none" stroke-dasharray="2 2" opacity="0.9"/>';
+      });
     }
     svg+='</svg>';
-    document.getElementById('score').innerHTML=svg;
+    return svg;
+  }
+  // Wrapper multi-pistes : rend chaque piste visible et empile les SVG dans #score.
+  // Calcule le layout horizontal partagé : largeur de chaque mesure = max sur les voix visibles
+  function computeSharedLayout(visibleIdx){
+    const saved=state.activeTrack;
+    let N=0;
+    visibleIdx.forEach(i=>{N=Math.max(N,(state.tracks[i].measures||[]).length)});
+    if(N===0)N=1;
+    const widthUnits=new Array(N).fill(0);
+    let headerUnits=20;
+    visibleIdx.forEach(i=>{
+      state.activeTrack=i;
+      headerUnits=Math.max(headerUnits,lineHeaderCost(0,true));
+      const len=(state.measures||[]).length;
+      for(let mi=0;mi<N&&mi<len;mi++){
+        const c=measureCost(mi);
+        if(c>widthUnits[mi])widthUnits[mi]=c;
+      }
+    });
+    state.activeTrack=saved;
+    // Étirement horizontal piloté par « Taille » (les barres restent alignées entre voix)
+    const spread=(state.scoreScale||100)/100;
+    for(let mi=0;mi<N;mi++)widthUnits[mi]=Math.max(24,widthUnits[mi])*spread;
+    const firstX=LEFT_PAD+(headerUnits-20);
+    let sum=0;for(let mi=0;mi<N;mi++)sum+=widthUnits[mi];
+    const totalUnits=firstX+sum+RIGHT_PAD;
+    return {single:true,N,widthUnits,firstX,totalUnits,headerUnits};
+  }
+
+  function renderScore(){
+    const cont=document.getElementById('score');if(!cont)return;
+    const tracks=state.tracks||[];
+    // La piste active est TOUJOURS visible, plus les autres pistes marquées visibles.
+    let visibleIdx=tracks.map((t,i)=>(i===state.activeTrack||t.visible!==false)?i:-1).filter(i=>i>=0);
+    if(!visibleIdx.length)visibleIdx=[state.activeTrack];
+
+    const layout=computeSharedLayout(visibleIdx);
+    // Échelle uniforme : on dimensionne chaque voix pour que toutes tiennent en hauteur (scroll vertical en secours)
+    const voiceUnitH=STAFF_TOP_Y+STAFF_SPACING+10; // = hauteur du viewBox d'une voix (1 ligne)
+    const availH=Math.max(120,cont.clientHeight||400);
+    const numV=visibleIdx.length;
+    const LABEL_PX=16,PAD_V=4,GAP=4;
+    const MIN_VOICE_PX=86,MAX_VOICE_PX=230;
+    let voicePxH=Math.floor((availH-numV*(LABEL_PX+PAD_V+GAP))/numV);
+    voicePxH=Math.max(MIN_VOICE_PX,Math.min(MAX_VOICE_PX,voicePxH));
+    const pxPerUnit=voicePxH/voiceUnitH;
+    const contentPxW=Math.ceil(layout.totalUnits*pxPerUnit);
+
+    const saved=state.activeTrack;
+    const blocks=[];
+    visibleIdx.forEach(i=>{
+      state.activeTrack=i;
+      const svg=renderScoreOnce(layout);
+      const tr=tracks[i];
+      const isActive=(i===saved);
+      const single=(numV===1);
+      const label=(tr.name||('V'+(i+1)))+(tr.mute?' [muet]':'');
+      const border=isActive&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
+      const bg=isActive&&!single?'background:#f4f8fd;':'background:#ffffff;';
+      const labelHtml=single?'':'<div style="position:absolute;top:1px;left:8px;font-size:11px;font-weight:700;color:'+(isActive?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';
+      blocks.push(
+        '<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+'border-radius:6px;'
+        +'margin-bottom:'+GAP+'px;padding-top:'+(single?2:LABEL_PX)+'px;'
+        +'width:'+contentPxW+'px;height:'+voicePxH+'px;box-sizing:content-box;">'
+        +labelHtml
+        +'<div class="voice-svg" style="width:'+contentPxW+'px;height:'+voicePxH+'px;">'+svg+'</div>'
+        +'</div>'
+      );
+    });
+    state.activeTrack=saved;
+    cont.style.overflowX='auto';
+    cont.style.overflowY='auto';
+    cont.innerHTML=blocks.join('');
+    // Clic sur un bloc → piste active (sauf mono-piste)
+    if(numV>1){
+      document.querySelectorAll('#score .track-block').forEach(el=>{
+        el.addEventListener('click',(e)=>{
+          const idx=parseInt(el.dataset.track,10);
+          if(!isNaN(idx)&&idx!==state.activeTrack){state.activeTrack=idx;state.sel={m:0,s:0};render();}
+        });
+      });
+    }
+    // Mémoriser pour l'auto-scroll horizontal
+    state._layoutCache={layout,pxPerUnit,contentPxW};
+    ensureSelectionVisible();
+  }
+
+  // Fait défiler #score horizontalement pour que la mesure sélectionnée soit visible (play + navigation)
+  function ensureSelectionVisible(){
+    const cont=document.getElementById('score');
+    const lc=state._layoutCache;
+    if(!cont||!lc||!lc.layout)return;
+    const mi=state.sel.m;
+    const wu=lc.layout.widthUnits;
+    if(mi<0||mi>=wu.length)return;
+    function leftOf(idx){let x=lc.layout.firstX;for(let k=0;k<idx&&k<wu.length;k++)x+=wu[k];return x;}
+    const xL=leftOf(mi), xR=xL+wu[mi];
+    const pxL=xL*lc.pxPerUnit, pxR=xR*lc.pxPerUnit;
+    const viewL=cont.scrollLeft, viewR=cont.scrollLeft+cont.clientWidth;
+    const margin=24;
+    // Anticipation : on garde ~2 mesures visibles DEVANT la sélection, de sorte que la mesure
+    // courante se cale sur l'avant-avant-dernière mesure visible (saisie + play).
+    const LOOKAHEAD=2;
+    const aheadIdx=Math.min(mi+LOOKAHEAD, wu.length-1);
+    const pxAheadR=(leftOf(aheadIdx)+wu[aheadIdx])*lc.pxPerUnit;
+    if(pxL<viewL+margin){
+      // recul : amener la sélection près du bord gauche
+      cont.scrollLeft=Math.max(0,pxL-margin);
+    } else if(pxAheadR>viewR-margin){
+      // avance : amener la 2e mesure d'anticipation au bord droit, sans masquer le début de la sélection
+      let target=pxAheadR-cont.clientWidth+margin;
+      target=Math.min(target, pxL-margin); // ne jamais cacher le début de la mesure sélectionnée
+      cont.scrollLeft=Math.max(0,target);
+    }
   }
 
   function selectedSlot(){const m=state.measures[state.sel.m];return m?(m[state.sel.s]||null):null}
@@ -1360,11 +1799,9 @@
     const sl0=selectedSlot();
     const tb=document.getElementById('btn-tuplet');
     if(tb)tb.classList.toggle('active', !!(sl0&&sl0.tuplet));
-    // Point 2 : bouton liaison en bleu si la note active a un tieToNext
-    const tieBtn=document.getElementById('btn-tie');
-    if(tieBtn)tieBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.tieToNext));
-    const slurBtn=document.getElementById('btn-slur');
-    if(slurBtn)slurBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.slurToNext));
+    // Bouton liaison en bleu si la note active porte une liaison (tie, slur, ou en attente)
+    const linkBtn=document.getElementById('btn-link');
+    if(linkBtn)linkBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.linkToNext));
     // Boutons reprises et voltas en bleu selon l'etat de la mesure active
     const rA=state.repeats[state.sel.m];
     const repS=document.getElementById('btn-rep-start');
@@ -1382,6 +1819,12 @@
     const tl=document.getElementById('btn-toggle-lyrics');if(tl)tl.classList.toggle('active',!!state.viewFlags.lyrics);
     const tp=document.getElementById('btn-toggle-parts');if(tp)tp.classList.toggle('active',!!state.viewFlags.parts);
     const tmn=document.getElementById('btn-toggle-measnums');if(tmn)tmn.classList.toggle('active',!!state.viewFlags.measureNums);
+    const tmn2=document.getElementById('btn-measnums-mes');if(tmn2)tmn2.classList.toggle('active',!!state.viewFlags.measureNums);
+    // En-têtes (Rythme/Armure/Clé) : bleu si un changement est posé sur la mesure courante
+    {const m=state.sel.m;
+     const bM=document.querySelector('[data-hdr="M"]');if(bM)bM.classList.toggle('active',m===0||state.timeChanges[m]!==undefined);
+     const bK=document.querySelector('[data-hdr="K"]');if(bK)bK.classList.toggle('active',m===0||state.keyChanges[m]!==undefined);
+     const bC=document.querySelector('[data-hdr="CLEF"]');if(bC)bC.classList.toggle('active',m===0||state.clefChanges[m]!==undefined);}
     document.getElementById('hdr-x-val').textContent=state.headers.X||'0';
     document.getElementById('hdr-t-val').textContent=(state.headers.T||'—').split('\n')[0];
     {const vt=document.getElementById('ver-title');if(vt)vt.textContent=(state.headers.T||'').split('\n')[0];}
@@ -1392,7 +1835,7 @@
   }
   function render(){renderScore();renderState();notifyPanelMeasureChanged();if(typeof updateBadge==='function')updateBadge()}
 
-  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(sl.note,sl.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
+  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(sl.note,sl.octave,effectiveAcc(meas,state.sel.s,sig),sig)+clefSoundShift(clefAt(state.sel.m));previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
   // À appeler AVANT de changer state.sel : dédoublonne silencieusement l'accord du slot quitté
   function leaveChordSlot(){
     if(!state._chordEditMode)return;
@@ -1415,65 +1858,152 @@
   function jumpToStart(){state.sel={m:0,s:0};render()}
   function jumpToEnd(){state.sel={m:state.measures.length-1,s:0};render()}
 
-  const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null};
+  const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null,events:[],eventIdx:0,markers:[],markerIdx:0,voiceMarkers:{},voiceIdx:{}};
   function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.comp=audio.ctx.createDynamicsCompressor();audio.comp.threshold.value=-10;audio.comp.knee.value=20;audio.comp.ratio.value=8;audio.comp.attack.value=0.003;audio.comp.release.value=0.25;audio.master.connect(audio.comp);audio.comp.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/100;if(audio.ctx.state==='suspended')audio.ctx.resume()}
   function midiOfNote(note,oct,acc,keySig){const bs={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[note];let midi=60+bs+oct*12;let alt=0;if(acc==='^')alt=1;else if(acc==='_')alt=-1;else if(acc==='=')alt=0;else{if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(note))alt=1;else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(note))alt=-1}return midi+alt}
+  // Notification non bloquante (toast)
+  let _toastTimer=null;
+  function flash(msg){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.classList.add('show');if(_toastTimer)clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>{el.classList.remove('show')},3600);}
+  // Ensemble des hauteurs réelles (MIDI, trié) d'un slot note/accord, armure et altérations comprises
+  function slotMidiSet(meas,idx,sig){const t=meas[idx];if(!t||t.type!=='note')return null;const set=[midiOfNote(t.note,t.octave,effectiveAcc(meas,idx,sig),sig)];if(t.stack&&t.stack.length)t.stack.forEach(x=>{set.push(midiOfNote(x.note,x.octave,x.acc||'',sig))});return set.sort((a,b)=>a-b);}
+  // Localise la note suivante (même mesure, sinon début de la mesure suivante)
+  function nextNoteRef(){const meas=state.measures[state.sel.m];if(!meas)return null;if(state.sel.s<meas.length-1)return{meas:meas,idx:state.sel.s+1,sig:keyAt(state.sel.m)};if(state.sel.m<state.measures.length-1){const nm=state.measures[state.sel.m+1];if(nm&&nm.length)return{meas:nm,idx:0,sig:keyAt(state.sel.m+1)}}return null;}
+  // Résout l'intention de liaison (linkToNext) en tie (même hauteur réelle) ou slur (hauteur différente),
+  // pour toutes les voix. Si aucune note ne suit, la liaison reste « en attente » (ni tie ni slur résolu).
+  // Doit être appelée après toute édition de notes (saisie, suppression, transposition, changement d'armure…).
+  function resolveLinks(){
+    const saved=state.activeTrack;
+    for(let ti=0;ti<state.tracks.length;ti++){
+      state.activeTrack=ti;
+      const measures=state.measures;
+      for(let mi=0;mi<measures.length;mi++){
+        const meas=measures[mi];const sig=keyAt(mi);
+        for(let si=0;si<meas.length;si++){
+          const t=meas[si];
+          if(!t||t.type!=='note'){if(t){delete t.tieToNext;delete t.slurToNext;}continue;}
+          if(!t.linkToNext){delete t.tieToNext;delete t.slurToNext;continue;}
+          // Trouver la note suivante (même mesure puis mesure suivante)
+          let nx=null;
+          if(si<meas.length-1)nx={meas:meas,idx:si+1,sig:sig};
+          else if(mi<measures.length-1&&measures[mi+1].length)nx={meas:measures[mi+1],idx:0,sig:keyAt(mi+1)};
+          if(!nx){delete t.tieToNext;delete t.slurToNext;continue;} // liaison en attente
+          const nextSlot=nx.meas[nx.idx];
+          if(!nextSlot||nextSlot.type!=='note'){delete t.tieToNext;delete t.slurToNext;continue;} // silence → en attente
+          const a=slotMidiSet(meas,si,sig);
+          const b=slotMidiSet(nx.meas,nx.idx,nx.sig);
+          const same=a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
+          if(same){t.tieToNext=true;delete t.slurToNext;}
+          else{t.slurToNext=true;delete t.tieToNext;}
+        }
+      }
+    }
+    state.activeTrack=saved;
+  }
   function freqOfMidi(m){return 440*Math.pow(2,(m-69)/12)}
   function previewNote(midi,durSec=0.25){ensureAudio();const t=audio.ctx.currentTime+0.005;const f=freqOfMidi(midi);const o=audio.ctx.createOscillator();const g=audio.ctx.createGain();o.type='triangle';o.frequency.value=f;const p=0.5,a=0.005;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(p,t+a);g.gain.setValueAtTime(p,t+Math.max(durSec-0.06,a));g.gain.linearRampToValueAtTime(0,t+durSec);o.connect(g);g.connect(audio.master);o.start(t);o.stop(t+durSec+0.03)}
+  // Indices des pistes incluses dans la lecture (non muettes). Fallback : la piste active.
+  function playableTracks(){
+    const out=[];
+    (state.tracks||[]).forEach((t,i)=>{if(!t.mute&&(t.measures||[]).length)out.push(i)});
+    if(!out.length)out.push(state.activeTrack);
+    return out;
+  }
+  // Re-rend UNIQUEMENT le SVG d'une voix (déplacement de sa note rouge pendant le play),
+  // en réutilisant le layout en cache : pas de recalcul de mise en page ni des autres voix.
+  function renderVoiceSvg(ti){
+    const cont=document.getElementById('score');if(!cont)return;
+    const lc=state._layoutCache;if(!lc||!lc.layout){renderScore();return}
+    const blk=cont.querySelector('.track-block[data-track="'+ti+'"] .voice-svg');
+    if(!blk){renderScore();return}
+    const saved=state.activeTrack;state.activeTrack=ti;
+    blk.innerHTML=renderScoreOnce(lc.layout);
+    state.activeTrack=saved;
+  }
+  function renderActiveVoiceSvg(){renderVoiceSvg(state.activeTrack)}
   function playSchedule(){
     ensureAudio();stopPlayback(false);audio.playing=true;
     document.getElementById('btn-play').textContent='⏸';
     const st=audio.ctx.currentTime+0.05;
     const qD=60/state.tempo;
+    const playSet=playableTracks();
+    const multi=playSet.length>1;
+    const startMeasure=state.sel.m,startSlotActive=state.sel.s;
+    if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlotActive};
+    // Ordre de lecture (reprises/voltas) calculé sur la voix active (les reprises sont synchronisées entre voix)
+    const savedAT=state.activeTrack;
     const order=expandForPlayback();
-    if(order.length===0){stopPlayback(true);return}
-    const startMeasure=state.sel.m,startSlot=state.sel.s;
-    if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlot};
-    let startIdxInOrder=order.indexOf(startMeasure);
-    if(startIdxInOrder<0)startIdxInOrder=0;
-    // Construire la liste complete des events (sans creer les oscillateurs)
-    const events=[];
-    for(let oi=startIdxInOrder;oi<order.length;oi++){
-      const mi=order[oi];
-      const m=state.measures[mi];if(!m)continue;
-      const sig=keyAt(mi);
-      const firstSlot=(oi===startIdxInOrder&&mi===startMeasure)?startSlot:0;
-      for(let si=firstSlot;si<m.length;si++){
-        const slot=m[si];
-        const dur=effDur(slot)*qD;
-        if(slot.type==='note'){
-          const midi=midiOfNote(slot.note,slot.octave,effectiveAcc(m,si,sig),sig);
-          const ev={midi,dur,measureIdx:mi,slotIdx:si,tieToNext:!!slot.tieToNext};
-          if(slot.stack&&slot.stack.length){ev.stackMidi=slot.stack.map(x=>midiOfNote(x.note,x.octave,x.acc||'',sig))}
-          events.push(ev);
-        } else {
-          events.push({midi:null,dur,measureIdx:mi,slotIdx:si,tieToNext:false});
+    if(order.length===0){state.activeTrack=savedAT;stopPlayback(true);return}
+    let startIdxInOrder=order.indexOf(startMeasure);if(startIdxInOrder<0)startIdxInOrder=0;
+    // Construit les events d'une voix en suivant `order`, temps absolus à partir de `st`.
+    function buildVoiceEvents(ti){
+      state.activeTrack=ti;
+      const gainScale=Math.max(0,Math.min(1,((state.tracks[ti].vol!==undefined?state.tracks[ti].vol:100)/100)));
+      const evs=[];
+      let acc=st;
+      for(let oi=startIdxInOrder;oi<order.length;oi++){
+        const mi=order[oi];
+        const m=state.measures[mi];
+        if(!m){continue}
+        const sig=keyAt(mi);
+        const oct=clefSoundShift(clefAt(mi));
+        // start slot : en multi on démarre toujours en début de mesure (synchro parfaite entre voix) ;
+        // en mono on respecte le slot sélectionné (démarrage en cours de mesure).
+        const firstSlot=(!multi&&oi===startIdxInOrder&&mi===startMeasure)?startSlotActive:0;
+        for(let si=firstSlot;si<m.length;si++){
+          const slot=m[si];
+          const dur=effDur(slot)*qD;
+          if(slot.type==='note'){
+            const midi=midiOfNote(slot.note,slot.octave,effectiveAcc(m,si,sig),sig)+oct;
+            const ev={midi,dur,startAt:acc,measureIdx:mi,slotIdx:si,trackIdx:ti,gainScale,tieToNext:!!slot.tieToNext};
+            if(slot.stack&&slot.stack.length)ev.stackMidi=slot.stack.map(x=>midiOfNote(x.note,x.octave,x.acc||'',sig)+oct);
+            evs.push(ev);
+          } else {
+            evs.push({midi:null,dur,startAt:acc,measureIdx:mi,slotIdx:si,trackIdx:ti,gainScale,tieToNext:false});
+          }
+          acc+=dur;
         }
       }
-    }
-    // Fusionner les notes liees de meme hauteur
-    let i=0;
-    while(i<events.length){
-      const ev=events[i];
-      if(ev.midi!==null&&ev.tieToNext){
-        let j=i+1;
-        while(j<events.length&&events[j].midi===ev.midi){
-          ev.dur+=events[j].dur;
-          events[j].silent=true;
-          events[j].dur=0;
-          if(!events[j].tieToNext)break;
-          j++;
+      // Fusion des liaisons de durée (tie) de même hauteur, au sein de la voix
+      let i=0;
+      while(i<evs.length){
+        const ev=evs[i];
+        if(ev.midi!==null&&ev.tieToNext){
+          let j=i+1;
+          while(j<evs.length&&evs[j].midi===ev.midi){
+            ev.dur+=evs[j].dur;evs[j].silent=true;evs[j].dur=0;
+            if(!evs[j].tieToNext)break;j++;
+          }
         }
+        i++;
       }
-      i++;
+      return evs;
     }
-    // Pre-calculer le temps absolu de chaque event
-    let acc=st;
-    events.forEach(ev=>{ev.startAt=acc;acc+=ev.dur});
-    audio.stopAt=acc;
-    audio.events=events;
-    audio.eventIdx=0;
-    // Planifier la fenetre initiale (environ 3s d'avance)
+    // Voix sonores : on conserve les events de chaque voix séparément (pour les marqueurs)
+    const voiceEvents={};
+    playSet.forEach(ti=>{voiceEvents[ti]=buildVoiceEvents(ti)});
+    let allEvents=[];
+    playSet.forEach(ti=>{allEvents=allEvents.concat(voiceEvents[ti])});
+    // Ensemble des voix dont on affiche la note rouge : jouées ET visibles (la voix active est toujours visible)
+    const visibleSet=state.tracks.map((t,i)=>(i===savedAT||t.visible!==false)?i:-1).filter(i=>i>=0);
+    const hlSet=playSet.filter(ti=>visibleSet.includes(ti));
+    // La voix active suit aussi la lecture (pour le défilement), même si elle n'est pas jouée
+    if(!hlSet.includes(savedAT))hlSet.push(savedAT);
+    state._playHL={};
+    audio.voiceMarkers={};audio.voiceIdx={};
+    hlSet.forEach(ti=>{
+      const evs=voiceEvents[ti]||buildVoiceEvents(ti); // construit pour le timing si non jouée
+      audio.voiceMarkers[ti]=evs.map(ev=>({updateAt:ev.startAt,m:ev.measureIdx,s:ev.slotIdx})).sort((a,b)=>a.updateAt-b.updateAt);
+      audio.voiceIdx[ti]=0;
+    });
+    state.activeTrack=savedAT;
+    // Tri temporel des events sonores
+    allEvents.sort((a,b)=>a.startAt-b.startAt);
+    audio.events=allEvents;audio.eventIdx=0;
+    // Fin de lecture = dernier event terminé (sonore ou marqueur)
+    let endAt=st;
+    allEvents.forEach(ev=>{endAt=Math.max(endAt,ev.startAt+ev.dur)});
+    Object.keys(audio.voiceMarkers).forEach(ti=>{const ms=audio.voiceMarkers[ti];if(ms.length)endAt=Math.max(endAt,ms[ms.length-1].updateAt+0.001)});
+    audio.stopAt=endAt;
     const SCHEDULE_AHEAD=3.0;
     function scheduleAhead(){
       const now=audio.ctx.currentTime;
@@ -1482,22 +2012,11 @@
         const ev=audio.events[audio.eventIdx];
         if(ev.startAt>horizon)break;
         if(ev.midi!==null&&!ev.silent&&ev.dur>0){
-          const o=audio.ctx.createOscillator();
-          const g=audio.ctx.createGain();
-          o.type='triangle';o.frequency.value=freqOfMidi(ev.midi);
-          const a=0.005,r=Math.min(0.05,ev.dur*0.3);
-          g.gain.setValueAtTime(0,ev.startAt);
-          g.gain.linearRampToValueAtTime(0.5,ev.startAt+a);
-          g.gain.setValueAtTime(0.5,ev.startAt+ev.dur-r);
-          g.gain.linearRampToValueAtTime(0,ev.startAt+ev.dur);
-          o.connect(g);g.connect(audio.master);
-          o.start(ev.startAt);o.stop(ev.startAt+ev.dur+0.02);
-          audio.scheduled.push(o);
-          // notes empilées (accord) : un oscillateur par note du stack
-          if(ev.stackMidi&&ev.stackMidi.length){ev.stackMidi.forEach(sm=>{const o2=audio.ctx.createOscillator();const g2=audio.ctx.createGain();o2.type='triangle';o2.frequency.value=freqOfMidi(sm);const a2=0.005,r2=Math.min(0.05,ev.dur*0.3);g2.gain.setValueAtTime(0,ev.startAt);g2.gain.linearRampToValueAtTime(0.5,ev.startAt+a2);g2.gain.setValueAtTime(0.5,ev.startAt+ev.dur-r2);g2.gain.linearRampToValueAtTime(0,ev.startAt+ev.dur);o2.connect(g2);g2.connect(audio.master);o2.start(ev.startAt);o2.stop(ev.startAt+ev.dur+0.02);audio.scheduled.push(o2)})}
+          const peak=0.5*(ev.gainScale!==undefined?ev.gainScale:1);
+          const mk=(freq)=>{const o=audio.ctx.createOscillator();const g=audio.ctx.createGain();o.type='triangle';o.frequency.value=freq;const a=0.005,r=Math.min(0.05,ev.dur*0.3);g.gain.setValueAtTime(0,ev.startAt);g.gain.linearRampToValueAtTime(peak,ev.startAt+a);g.gain.setValueAtTime(peak,ev.startAt+ev.dur-r);g.gain.linearRampToValueAtTime(0,ev.startAt+ev.dur);o.connect(g);g.connect(audio.master);o.start(ev.startAt);o.stop(ev.startAt+ev.dur+0.02);audio.scheduled.push(o)};
+          mk(freqOfMidi(ev.midi));
+          if(ev.stackMidi&&ev.stackMidi.length)ev.stackMidi.forEach(sm=>mk(freqOfMidi(sm)));
         }
-        // Marqueur de progression
-        audio.scheduled.push({updateAt:ev.startAt,measureIdx:ev.measureIdx,slotIdx:ev.slotIdx});
         audio.eventIdx++;
       }
     }
@@ -1505,39 +2024,58 @@
     function tick(){
       if(!audio.playing)return;
       const now=audio.ctx.currentTime;
-      // Planifier les events a venir si on approche du dernier planifie
       scheduleAhead();
-      // Nettoyer les oscillateurs deja joues (pour ne pas accumuler la memoire)
-      audio.scheduled=audio.scheduled.filter(ev=>{
-        if(ev.stop)return ev.startTimeAbs===undefined||ev.startTimeAbs+0.5>now;
-        // garder marqueurs updateAt encore utiles
-        return ev.updateAt===undefined||ev.updateAt>now-1;
+      audio.scheduled=audio.scheduled.filter(o=>o&&typeof o.stop==='function'); // ne garder que les oscillateurs
+      // Note rouge par voix : on anticipe un peu l'affichage pour compenser le délai de rendu,
+      // afin que la note passe en rouge pile au moment où le son sort.
+      const LOOKAHEAD=0.09;
+      const changed=[];
+      Object.keys(audio.voiceMarkers).forEach(k=>{
+        const ti=parseInt(k,10);
+        const ms=audio.voiceMarkers[k];if(!ms||!ms.length)return;
+        let idx=audio.voiceIdx[k]||0;
+        while(idx<ms.length-1&&ms[idx+1].updateAt<=now+LOOKAHEAD)idx++;
+        audio.voiceIdx[k]=idx;
+        const cm=ms[idx];
+        if(cm&&cm.updateAt<=now+LOOKAHEAD){
+          const prev=state._playHL[ti];
+          if(!prev||prev.m!==cm.m||prev.s!==cm.s){
+            state._playHL[ti]={m:cm.m,s:cm.s};
+            changed.push(ti);
+            if(ti===state.activeTrack)state.sel={m:cm.m,s:cm.s};
+          }
+        }
       });
-      // Trouver le dernier marqueur passe pour mettre a jour la selection
-      // On anticipe legerement (lookahead) pour que la note passe en rouge JUSTE AVANT d'etre jouee
-      const LOOKAHEAD=0.12;
-      let last=null;
-      for(const ev of audio.scheduled){
-        if(ev.updateAt!==undefined&&ev.updateAt<=now+LOOKAHEAD)last=ev;
-        if(ev.updateAt!==undefined&&ev.updateAt>now+LOOKAHEAD)break;
-      }
-      if(last&&(state.sel.m!==last.measureIdx||state.sel.s!==last.slotIdx)){
-        state.sel={m:last.measureIdx,s:last.slotIdx};renderScore();renderState();
+      if(changed.length){
+        changed.forEach(ti=>renderVoiceSvg(ti));
+        renderState();ensureSelectionVisible();
       }
       if(now>=audio.stopAt){
         if(state.loop&&audio.loopFrom){
           state.sel={m:audio.loopFrom.m,s:audio.loopFrom.s};
-          stopPlayback(false);
-          playSchedule();
-          return;
+          stopPlayback(false);playSchedule();return;
         }
-        stopPlayback(true);return
+        stopPlayback(true);return;
       }
       audio.raf=requestAnimationFrame(tick);
     }
     audio.raf=requestAnimationFrame(tick);
   }
-  function stopPlayback(refresh){if(audio.raf){cancelAnimationFrame(audio.raf);audio.raf=null}audio.scheduled.forEach(ev=>{if(ev.stop)try{ev.stop()}catch(_){}});audio.scheduled=[];audio.playing=false;document.getElementById('btn-play').textContent='▶';if(refresh){audio.loopFrom=null;render()}}
+  function stopPlayback(refresh){if(audio.raf){cancelAnimationFrame(audio.raf);audio.raf=null}audio.scheduled.forEach(o=>{if(o&&o.stop)try{o.stop()}catch(_){}});audio.scheduled=[];audio.events=[];audio.eventIdx=0;audio.markers=[];audio.markerIdx=0;audio.voiceMarkers={};audio.voiceIdx={};state._playHL=null;audio.playing=false;document.getElementById('btn-play').textContent='▶';if(refresh){audio.loopFrom=null;render()}}
+  // Re-planifie la lecture À PARTIR DE LA POSITION COURANTE (sans repartir du début).
+  // Utilisé quand on change le tempo ou les pistes jouées pendant la lecture.
+  function replayFromCurrent(){
+    if(!audio.playing)return;
+    // La position courante de lecture = note rouge de la voix active, sinon state.sel
+    let cur=state.sel;
+    const at=state.activeTrack;
+    if(state._playHL&&state._playHL[at])cur={m:state._playHL[at].m,s:state._playHL[at].s};
+    const savedLoop=audio.loopFrom;
+    stopPlayback(false);
+    state.sel={m:cur.m,s:cur.s};
+    audio.loopFrom=savedLoop; // conserver le point de boucle d'origine
+    playSchedule();
+  }
 
   function setNoteAtSelection(n){
     const sl=selectedSlot();if(!sl)return;
@@ -1596,25 +2134,19 @@
       }
       state.octave=best;
     }
-    const hadTie=!!sl.tieToNext;
+    const hadLink=!!sl.linkToNext;
     const newSlot={type:'note',note:n,octave:state.octave,dur,dot,acc};
-    if(hadTie)newSlot.tieToNext=true;
-    if(sl.slurToNext)newSlot.slurToNext=true;
+    if(hadLink)newSlot.linkToNext=true;
     // Conserver l'appartenance au triolet
     if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}
     // Conserver l'accord empilé existant
     if(sl.stack)newSlot.stack=sl.stack;
     state.measures[state.sel.m][state.sel.s]=newSlot;
     if(state._chordEditMode){state._chordAddPending=false;state.chordActive=0;}
-    // Point 7 : si la note précédente a un tie ENTRANT vers celle-ci et que la valeur change,
-    // le tie n'a plus de sens (notes différentes) → on l'enlève de la précédente.
-    {const prevSlot=findPreviousNote(state.sel.m,state.sel.s);
-     if(prevSlot&&prevSlot.tieToNext){
-       const sig=keyAt(state.sel.m);
-       const same=(prevSlot.note===n&&prevSlot.octave===state.octave&&(prevSlot.acc||'')===(acc||''));
-       if(!same)prevSlot.tieToNext=false;
-     }}
     propagateTieReplacement(state.sel.m,state.sel.s,n,state.octave,acc);
+    // Liaisons : la note précédente, si elle portait une liaison, devient tie ou slur
+    // selon que cette nouvelle note est de même hauteur ou non (résolu globalement).
+    resolveLinks();
     pushHistory();
     const midi=midiOfNote(n,state.octave,acc,keyAt(state.sel.m));previewNote(midi);
     render();
@@ -1681,11 +2213,73 @@
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
     // Point 6 : classe pour decaler la zone play vers le bas
     document.getElementById('app').classList.toggle('tab-play', name==='play');
-    // Point 7 : quand on quitte l'onglet play, couper le son et remettre la vue normale (oeil)
-    if(previous==='play'&&name!=='play'){
+    // Quand on quitte l'onglet Play, couper le son — SAUF si on va sur l'onglet Pistes,
+    // car on y règle les voix jouées et les volumes pendant la lecture.
+    if(previous==='play'&&name!=='play'&&name!=='pistes'){
       if(audio.playing)stopPlayback(true);
       if(state.viewmode){state.viewmode=false;document.getElementById('app').classList.remove('viewmode');render()}
     }
+    // Si on quitte Pistes pendant la lecture vers un onglet autre que Play, couper le son.
+    if(previous==='pistes'&&name!=='play'&&name!=='pistes'){
+      if(audio.playing)stopPlayback(true);
+      if(state.viewmode){state.viewmode=false;document.getElementById('app').classList.remove('viewmode');render()}
+    }
+    if(name==='pistes')renderTracksPanel();
+  }
+  // Panneau Pistes : un bloc par piste avec sélection active + Voir + Renommer + Supprimer + Ajouter
+  function renderTracksPanel(){
+    const body=document.getElementById('tracks-body');if(!body)return;
+    const tr=state.tracks||[];
+    let h='<small>Pistes (max '+MAX_TRACKS+'). Cliquez sur une piste pour l\u2019éditer ; les autres restent visibles si l\u2019œil est ouvert.</small>';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-top:6px;"><b style="font-size:12px;color:#0c447c;">▶ Lecture</b><button class="k" id="tk-all-play" style="font-size:12px;padding:2px 8px;width:auto;" title="Inclure toutes les pistes dans la lecture">Toutes</button><button class="k" id="tk-none-play" style="font-size:12px;padding:2px 8px;width:auto;" title="N’en lire aucune">Aucune</button></div>';
+    tr.forEach((t,i)=>{
+      const active=(i===state.activeTrack);
+      const visible=t.visible!==false;
+      const name=t.name||('V'+(i+1));
+      const clef=t.pieceClef||'treble';
+      const playOn=!t.mute;const vol=(t.vol!==undefined)?t.vol:100;
+      h+='<div class="tk-row" data-idx="'+i+'" style="display:flex;flex-direction:column;gap:4px;padding:5px;border-radius:6px;margin-top:4px;'+(active?'background:#e7eef8;border:1px solid #185fa5;':'background:#f4f3ec;border:1px solid #d6d3c3;')+'">';
+      h+='<div style="display:flex;align-items:center;gap:4px;">';
+      h+='<button class="k tk-select" data-idx="'+i+'" style="flex:1;text-align:left;font-size:13px;padding:6px 8px;'+(active?'color:#0c447c;font-weight:700;':'')+'" title="Éditer cette piste">V'+(i+1)+' · '+escXml(name)+' <span style="opacity:0.7;font-weight:400;">('+clef+')</span></button>';
+      h+='<button class="k tk-vis" data-idx="'+i+'" '+(active?'disabled':'')+' style="width:34px;font-size:14px;'+(active?'opacity:0.5;':'')+'" title="'+(active?'La piste active reste toujours visible':'Afficher/masquer')+'">'+(visible||active?'👁':'∅')+'</button>';
+      h+='<button class="k tk-rename" data-idx="'+i+'" style="width:34px;font-size:14px;" title="Renommer">✎</button>';
+      if(tr.length>1)h+='<button class="k tk-del" data-idx="'+i+'" style="width:34px;font-size:14px;color:#a33;" title="Supprimer cette piste">🗑</button>';
+      h+='</div>';
+      h+='<div style="display:flex;align-items:center;gap:6px;padding:0 2px;">';
+      h+='<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap;"><input type="checkbox" class="tk-play" data-idx="'+i+'" '+(playOn?'checked':'')+'/> Lire</label>';
+      h+='<span style="font-size:12px;opacity:0.7;">🔊</span>';
+      h+='<input type="range" class="tk-vol" data-idx="'+i+'" min="0" max="100" value="'+vol+'" style="flex:1;min-width:60px;" title="Volume de la piste"/>';
+      h+='<b class="tk-vol-v" data-idx="'+i+'" style="font-size:11px;width:26px;text-align:right;">'+vol+'</b>';
+      h+='</div>';
+      h+='</div>';
+    });
+    if(tr.length<MAX_TRACKS){
+      h+='<div style="margin-top:8px;"><button class="k" id="tk-add" style="width:100%;font-size:14px;">+ Ajouter une piste</button></div>';
+    }
+    body.innerHTML=h;
+    body.querySelectorAll('.tk-select').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);if(i!==state.activeTrack){state.activeTrack=i;state.sel={m:0,s:0};render();renderTracksPanel();}}));
+    body.querySelectorAll('.tk-vis').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);state.tracks[i].visible=(state.tracks[i].visible===false);pushHistory();render();renderTracksPanel();}));
+    body.querySelectorAll('.tk-play').forEach(b=>b.addEventListener('change',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);state.tracks[i].mute=!b.checked;pushHistory();if(audio.playing)replayFromCurrent();}));
+    body.querySelectorAll('.tk-vol').forEach(b=>{
+      b.addEventListener('input',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);const v=parseInt(b.value,10);state.tracks[i].vol=v;const lab=body.querySelector('.tk-vol-v[data-idx="'+i+'"]');if(lab)lab.textContent=v;});
+      b.addEventListener('change',(e)=>{e.stopPropagation();pushHistory();if(audio.playing)replayFromCurrent();});
+    });
+    {const ab=document.getElementById('tk-all-play');if(ab)ab.addEventListener('click',()=>{state.tracks.forEach(t=>{t.mute=false});pushHistory();renderTracksPanel();if(audio.playing)replayFromCurrent();});}
+    {const nb=document.getElementById('tk-none-play');if(nb)nb.addEventListener('click',()=>{state.tracks.forEach(t=>{t.mute=true});pushHistory();renderTracksPanel();if(audio.playing)replayFromCurrent();});}
+    body.querySelectorAll('.tk-rename').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);const cur=state.tracks[i].name||('V'+(i+1));const v=prompt('Nom de la piste :',cur);if(v!==null){state.tracks[i].name=v.trim();pushHistory();render();renderTracksPanel();}}));
+    body.querySelectorAll('.tk-del').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);if(state.tracks.length<=1)return;if(!confirm('Supprimer la piste « '+(state.tracks[i].name||('V'+(i+1)))+' » ?'))return;state.tracks.splice(i,1);if(state.activeTrack>=state.tracks.length)state.activeTrack=state.tracks.length-1;state.sel={m:0,s:0};pushHistory();render();renderTracksPanel();}));
+    const addBtn=document.getElementById('tk-add');
+    if(addBtn)addBtn.addEventListener('click',()=>{
+      if(state.tracks.length>=MAX_TRACKS)return;
+      // créer une piste vierge avec mêmes métrique/L/armure que la piste 0
+      const t0=state.tracks[0]||{};
+      const nt=makeTrack({pieceMeter:t0.pieceMeter,pieceUnit:t0.pieceUnit,pieceKeySig:t0.pieceKeySig,pieceClef:'treble'});
+      // remplir avec autant de mesures vides que la piste 0
+      const nMes=Math.max(1,(t0.measures||[]).length);
+      for(let i=0;i<nMes;i++)nt.measures.push(buildEmptyMeasure(nt.pieceMeter));
+      state.tracks.push(nt);
+      pushHistory();render();renderTracksPanel();
+    });
   }
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setActiveTab(t.dataset.tab)));
 
@@ -1711,11 +2305,25 @@
   document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}});
   document.getElementById('btn-undo').addEventListener('click',undo);
   document.getElementById('btn-redo').addEventListener('click',redo);
-  document.getElementById('btn-trans-up').addEventListener('click',()=>{transposePiece(+1);pushHistory();render()});
-  document.getElementById('btn-trans-down').addEventListener('click',()=>{transposePiece(-1);pushHistory();render()});
-  document.getElementById('btn-tie').addEventListener('click',()=>{const sl=selectedSlot();if(sl){sl.tieToNext=!sl.tieToNext;pushHistory();render()}});
-  document.getElementById('btn-slur').addEventListener('click',()=>{const sl=selectedSlot();if(sl&&sl.type==='note'){sl.slurToNext=!sl.slurToNext;pushHistory();render()}});
-  document.getElementById('btn-disarm').addEventListener('click',()=>{disarmKey();pushHistory();render()});
+  // Applique une mutation selon la portée choisie (voix active seule ou toutes les voix)
+  function applyScoped(mutator){
+    if(state.transposeScope==='one'){mutator();}
+    else{applyToAllTracks(()=>mutator());}
+  }
+  document.getElementById('btn-trans-up').addEventListener('click',()=>{applyScoped(()=>transposePiece(+1));pushHistory();render()});
+  document.getElementById('btn-trans-down').addEventListener('click',()=>{applyScoped(()=>transposePiece(-1));pushHistory();render()});
+  {const one=document.getElementById('btn-scope-one'),all=document.getElementById('btn-scope-all');
+   function syncScope(){if(one)one.classList.toggle('active',state.transposeScope==='one');if(all)all.classList.toggle('active',state.transposeScope==='all');}
+   if(one)one.addEventListener('click',()=>{state.transposeScope='one';syncScope();});
+   if(all)all.addEventListener('click',()=>{state.transposeScope='all';syncScope();});
+   syncScope();}
+  document.getElementById('btn-link').addEventListener('click',()=>{
+    const sl=selectedSlot();if(!sl||sl.type!=='note')return;
+    sl.linkToNext=!sl.linkToNext;
+    resolveLinks();
+    pushHistory();render();
+  });
+  document.getElementById('btn-disarm').addEventListener('click',()=>{applyScoped(()=>disarmKey());pushHistory();render()});
 
   function bindToggle(id,key){const el=document.getElementById(id);if(!el)return;el.addEventListener('click',()=>{state.viewFlags[key]=!state.viewFlags[key];render()})}
   bindToggle('btn-toggle-chords','chords');
@@ -1723,6 +2331,7 @@
   bindToggle('btn-toggle-lyrics','lyrics');
   bindToggle('btn-toggle-parts','parts');
   bindToggle('btn-toggle-measnums','measureNums');
+  bindToggle('btn-measnums-mes','measureNums');
 
   document.getElementById('btn-tuplet').addEventListener('click',()=>{
     const sl=selectedSlot();if(!sl)return;
@@ -1751,6 +2360,7 @@
     // ne contient pas d'autre n-uplet en cours. On le verifie au moment du choix de chiffre.
     let chosenDur=sl.dur;
     if(chosenDur>=2)chosenDur=1;
+    let chosenN=3; // n-uplet sélectionné (appliqué via le bouton Appliquer)
     const TUPLET_DURS=[{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
     function controls(){
       let h='<div class="stepper-label">Affichage sur 3:2</div>';
@@ -1765,34 +2375,38 @@
     }
     function refreshSel(){
       document.querySelectorAll('[data-tdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.tdur)===chosenDur));
+      document.querySelectorAll('[data-tn]').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.tn,10)===chosenN));
     }
-    openPanel({title:'N-uplet',body:controls(),hideActions:true,extraButtons:['Annuler'],
+    openPanel({title:'N-uplet',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
       onMount:()=>{
         refreshSel();
         document.querySelectorAll('[data-tdur]').forEach(b=>{
           b.addEventListener('click',()=>{chosenDur=parseFloat(b.dataset.tdur);refreshSel()});
         });
         document.querySelectorAll('[data-tn]').forEach(b=>{
-          b.addEventListener('click',()=>{
-            const n=parseInt(b.dataset.tn,10);
-            // Point 9 : verifier que la zone qu'on va consommer ne mord pas sur un autre tuplet
-            const totalSpace=2*chosenDur;
-            const m=state.measures[state.sel.m];
-            const idxLocal=state.sel.s;
-            let consumed=0;
-            for(let i=idxLocal;i<m.length&&consumed<totalSpace-1e-6;i++){
-              if(m[i].tuplet&&i!==idxLocal){
-                alert('Impossible : un autre n-uplet se trouve dans la zone occupee.');
-                return;
-              }
-              consumed+=effDur(m[i]);
-            }
-            applyTuplet(n,chosenDur);
-            closePanel();
-          });
+          b.addEventListener('click',()=>{chosenN=parseInt(b.dataset.tn,10);refreshSel()});
         });
       },
-      onExtra:(w)=>{if(w==='Annuler')closePanel()}
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        if(w==='Appliquer'){
+          const n=chosenN;
+          // Vérifier que la zone consommée ne mord pas sur un autre n-uplet
+          const totalSpace=2*chosenDur;
+          const m=state.measures[state.sel.m];
+          const idxLocal=state.sel.s;
+          let consumed=0;
+          for(let i=idxLocal;i<m.length&&consumed<totalSpace-1e-6;i++){
+            if(m[i].tuplet&&i!==idxLocal){
+              alert('Impossible : un autre n-uplet se trouve dans la zone occupee.');
+              return;
+            }
+            consumed+=effDur(m[i]);
+          }
+          applyTuplet(n,chosenDur);
+          closePanel();
+        }
+      }
     });
   });
 
@@ -1857,56 +2471,35 @@
     pushHistory();render();
   }
 
-  // ⭐ −Mes : panneau dédié avec compteur
+  // ⭐ −Mes : sélecteur de plage (de la mesure X → à la mesure Y), avec −10/−1/+1/+10
   document.getElementById('meas-del').addEventListener('click',()=>{
-    let count=1;
-    function controls(){
-      return '<div class="mes-active">Mesure active : <b id="del-active-mes">'+(state.sel.m+1)+'</b></div>'+
-        '<div class="stepper-label">Combien de mesures à supprimer</div>'+
-        '<div class="stepper">'+
-          '<button class="k" id="cnt-d">−</button>'+
-          '<div class="val"><b id="cnt-v">'+count+'</b></div>'+
-          '<button class="k" id="cnt-u">+</button>'+
-        '</div>';
-    }
-    function rebindStepper(){
-      document.getElementById('cnt-u').addEventListener('click',()=>{
-        const maxCount=state.measures.length-state.sel.m;
-        if(count<maxCount){count++;document.getElementById('cnt-v').textContent=count}
-      });
-      document.getElementById('cnt-d').addEventListener('click',()=>{
-        if(count>1){count--;document.getElementById('cnt-v').textContent=count}
-      });
-    }
+    const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
+      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};renderScore();renderState();ensureSelectionVisible();}}});
     openPanel({
       title:'Suppr mesure(s)',
-      body:controls(),
+      body:'<div class="mes-active">Supprimer une plage de mesures</div>'+rg.html(),
       hideActions:true,
       extraButtons:['Annuler','Supprimer'],
-      showMes:true,
-      onMount:rebindStepper,
-      onMeasureChange:()=>{
-        const maxCount=state.measures.length-state.sel.m;
-        if(count>maxCount)count=maxCount;
-        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
-        rebindStepper();
-        // Re-bind extra buttons (they got rewritten)
-        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
-          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
-        });
-      },
+      onMount:()=>{rg.bind(document.getElementById('panel-body'));},
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        if(state.measures.length<=count){count=state.measures.length-1}
+        const from=rg.getFrom()-1, to=rg.getTo()-1;
+        const m=Math.min(from,to);
+        let count=Math.abs(to-from)+1;
+        if(count>=state.measures.length){count=state.measures.length-1}
         if(count<=0){closePanel();return}
-        const m=state.sel.m;
-        state.measures.splice(m,count);
-        function sk(map,from,to){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);if(i<from)out[i]=map[k];else if(i>=to)out[i-count]=map[k]}return out}
-        state.timeChanges=sk(state.timeChanges,m,m+count);
-        state.keyChanges=sk(state.keyChanges,m,m+count);
-        state.clefChanges=sk(state.clefChanges,m,m+count);
-        state.repeats=sk(state.repeats,m,m+count);
-        if(state.parts)state.parts=sk(state.parts,m,m+count);
+        applyToAllTracks(()=>{
+          if(m>=state.measures.length)return;
+          const c=Math.min(count,state.measures.length-m);
+          if(c<=0)return;
+          state.measures.splice(m,c);
+          function sk(map,fromI,toI){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);if(i<fromI)out[i]=map[k];else if(i>=toI)out[i-c]=map[k]}return out}
+          state.timeChanges=sk(state.timeChanges,m,m+c);
+          state.keyChanges=sk(state.keyChanges,m,m+c);
+          state.clefChanges=sk(state.clefChanges,m,m+c);
+          state.repeats=sk(state.repeats,m,m+c);
+          if(state.parts)state.parts=sk(state.parts,m,m+c);
+        });
         if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
         state.sel.s=0;
         pushHistory();closePanel();render();
@@ -1914,16 +2507,18 @@
     });
   });
 
-  // ⭐ +Mes : sans textes explicatifs
+  // ⭐ +Mes : affiche position d'insertion et total final
   document.getElementById('meas-add').addEventListener('click',()=>{
     let count=1,side='right';
+    function endTotal(){return state.measures.length+count}
     function controls(){
-      return '<div class="mes-active">Mesure active : <b id="add-active-mes">'+(state.sel.m+1)+'</b></div>'+
+      return '<div class="mes-active">Mesure active : <b id="add-active-mes">'+(state.sel.m+1)+'</b> · Total après : <b id="add-total-mes">'+endTotal()+'</b></div>'+
         '<div class="row-grid row-3" id="side-pick">'+
           '<button class="k" data-side="left">Gauche</button>'+
           '<button class="k" data-side="right">Droite</button>'+
           '<button class="k" data-side="end">Fin</button>'+
         '</div>'+
+        '<div class="stepper-label">Nombre de mesures à ajouter</div>'+
         '<div class="stepper">'+
           '<button class="k" id="cnt-d">−</button>'+
           '<div class="val"><b id="cnt-v">'+count+'</b></div>'+
@@ -1934,8 +2529,8 @@
       const rs=()=>document.querySelectorAll('#side-pick .k').forEach(b=>b.classList.toggle('active',b.dataset.side===side));
       document.querySelectorAll('#side-pick .k').forEach(b=>b.addEventListener('click',()=>{side=b.dataset.side;rs()}));
       rs();
-      document.getElementById('cnt-u').addEventListener('click',()=>{if(count<200){count++;document.getElementById('cnt-v').textContent=count}});
-      document.getElementById('cnt-d').addEventListener('click',()=>{if(count>1){count--;document.getElementById('cnt-v').textContent=count}});
+      document.getElementById('cnt-u').addEventListener('click',()=>{if(count<200){count++;document.getElementById('cnt-v').textContent=count;document.getElementById('add-total-mes').textContent=endTotal()}});
+      document.getElementById('cnt-d').addEventListener('click',()=>{if(count>1){count--;document.getElementById('cnt-v').textContent=count;document.getElementById('add-total-mes').textContent=endTotal()}});
     }
     openPanel({
       title:'Ajouter mesure(s)',
@@ -1953,36 +2548,37 @@
       },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        function sk(map,th,inc){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);const sh=inc?(i>=th):(i>th);out[sh?i+count:i]=map[k]}return out}
-        let ia;
-        const lastMeter=meterAt(state.measures.length-1);
-        if(side==='end'){
-          ia=state.measures.length;
-          for(let k=0;k<count;k++)state.measures.push(buildEmptyMeasure(lastMeter));
-        } else {
-          ia=(side==='left')?state.sel.m:state.sel.m+1;
-          const meter=meterAt(state.sel.m);
-          for(let k=0;k<count;k++)state.measures.splice(ia,0,buildEmptyMeasure(meter));
-          const inc=(side==='left');
-          const th=state.sel.m;
-          state.timeChanges=sk(state.timeChanges,th,inc);
-          state.keyChanges=sk(state.keyChanges,th,inc);
-          state.clefChanges=sk(state.clefChanges,th,inc);
-          state.repeats=sk(state.repeats,th,inc);
-          if(state.parts)state.parts=sk(state.parts,th,inc);
-        }
+        const selM=state.sel.m;
+        applyToAllTracks(()=>{
+          function sk(map,th,inc){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);const sh=inc?(i>=th):(i>th);out[sh?i+count:i]=map[k]}return out}
+          if(side==='end'){
+            const lastMeter=meterAt(state.measures.length-1);
+            for(let k=0;k<count;k++)state.measures.push(buildEmptyMeasure(lastMeter));
+          } else {
+            const ia=(side==='left')?selM:selM+1;
+            const meter=meterAt(selM);
+            for(let k=0;k<count;k++)state.measures.splice(ia,0,buildEmptyMeasure(meter));
+            const inc=(side==='left');
+            const th=selM;
+            state.timeChanges=sk(state.timeChanges,th,inc);
+            state.keyChanges=sk(state.keyChanges,th,inc);
+            state.clefChanges=sk(state.clefChanges,th,inc);
+            state.repeats=sk(state.repeats,th,inc);
+            if(state.parts)state.parts=sk(state.parts,th,inc);
+          }
+        });
         if(side==='end')state.sel={m:state.measures.length-count,s:0};
-        else state.sel={m:(side==='right'?state.sel.m+1:state.sel.m),s:0};
+        else state.sel={m:(side==='right'?selM+1:selM),s:0};
         pushHistory();closePanel();render();
       }
     });
   });
 
   function ensureRepeat(m){if(!state.repeats[m])state.repeats[m]={};return state.repeats[m]}
-  document.getElementById('btn-rep-start').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.start=!r.start;pushHistory();render()});
-  document.getElementById('btn-rep-end').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.end=!r.end;pushHistory();render()});
-  document.getElementById('btn-volta1').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===1)?0:1;pushHistory();render()});
-  document.getElementById('btn-volta2').addEventListener('click',()=>{const r=ensureRepeat(state.sel.m);r.volta=(r.volta===2)?0:2;pushHistory();render()});
+  document.getElementById('btn-rep-start').addEventListener('click',()=>{const m=state.sel.m;const nv=!(state.repeats[m]&&state.repeats[m].start);applyToAllTracks(()=>{ensureRepeat(m).start=nv;});pushHistory();render()});
+  document.getElementById('btn-rep-end').addEventListener('click',()=>{const m=state.sel.m;const nv=!(state.repeats[m]&&state.repeats[m].end);applyToAllTracks(()=>{ensureRepeat(m).end=nv;});pushHistory();render()});
+  document.getElementById('btn-volta1').addEventListener('click',()=>{const m=state.sel.m;const nv=(state.repeats[m]&&state.repeats[m].volta===1)?0:1;applyToAllTracks(()=>{ensureRepeat(m).volta=nv;});pushHistory();render()});
+  document.getElementById('btn-volta2').addEventListener('click',()=>{const m=state.sel.m;const nv=(state.repeats[m]&&state.repeats[m].volta===2)?0:2;applyToAllTracks(()=>{ensureRepeat(m).volta=nv;});pushHistory();render()});
   document.getElementById('btn-part').addEventListener('click',()=>{
     if(!state.parts)state.parts={};
     const cur=state.parts[state.sel.m]||'';
@@ -2063,7 +2659,7 @@
     }
     return count>0;
   }
-  function applySwingGlobal(matchFn,transformFn,labelForAlert){
+  function applySwingCore(matchFn,transformFn){
     let count=0;
     state.measures.forEach((meas,mi)=>{
       const beat=4/parseMeter(meterAt(mi)).den;
@@ -2078,6 +2674,11 @@
         i++;
       }
     });
+    return count;
+  }
+  function applySwingGlobal(matchFn,transformFn,labelForAlert){
+    let count=0;
+    applyToAllTracks(()=>{count+=applySwingCore(matchFn,transformFn);});
     if(count===0){alert(labelForAlert+' : aucune occurrence trouvee');return false}
     pushHistory();render();return true;
   }
@@ -2289,14 +2890,20 @@
     return result;
   }
   let newMeterGlobalTmp='4/4'; // utilise par rebuildRangeWithCap pour le beat des silences
-  function applyMeterChangeFromSel(newMeter,newUnit){
+  function meterChangeCore(newMeter,newUnit,endMOverride){
     const startM=state.sel.m;
     // Materialiser les alterations implicites avant re-barrage (sinon une note qui change de mesure perd son alteration)
     materializeAccidentals();
-    // Frontiere de fin : seulement le prochain CHANGEMENT DE RYTHMIQUE (signature)
+    // Frontiere de fin : soit imposee (plage X→Y), soit le prochain CHANGEMENT DE RYTHMIQUE.
     let endM=state.measures.length-1;
     for(let i=startM+1;i<state.measures.length;i++){
       if(state.timeChanges[i]!==undefined){endM=i-1;break}
+    }
+    let bounded=false, restoreMeter=null;
+    if(endMOverride!==undefined&&endMOverride!==null&&endMOverride<endM){
+      // Plage bornée : on capture le rythme effectif APRÈS la plage pour le restaurer.
+      restoreMeter=meterAt(endMOverride+1);
+      endM=endMOverride;bounded=true;
     }
     // Memoriser l'armure/cle de la 1ere mesure de la plage (a conserver)
     const keyAtStart=state.keyChanges[startM];
@@ -2338,10 +2945,16 @@
     } else {
       state.timeChanges[startM]=newMeter;
     }
+    // Plage bornée : restaurer le rythme d'origine juste après la plage re-barrée.
+    if(bounded&&restoreMeter){
+      const afterIdx=startM+newCount; // 1re mesure après la plage re-barrée
+      if(afterIdx<state.measures.length&&state.timeChanges[afterIdx]===undefined){
+        state.timeChanges[afterIdx]=restoreMeter;
+      }
+    }
     state.pieceUnit=newUnit;
     state.sel={m:startM,s:0};
     cleanupAccidentals();
-    pushHistory();render();
   }
   function tupletGroupDur(mi,si){
     const meas=state.measures[mi];const t=meas[si];if(!t||!t.tuplet)return 0;
@@ -2527,17 +3140,17 @@
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
         const startM=getStart();
-        // Cloner les mesures et les états associés
-        const copyMeas=[];const copyRepeats={};const copyTime={};const copyKey={};const copyClef={};
+        // Cloner les mesures et les états associés. Les REPRISES et VOLTAS (state.repeats) ne
+        // sont PAS copiées : elles sont propres à la structure du morceau d'origine.
+        const copyMeas=[];const copyTime={};const copyKey={};const copyClef={};
         for(let i=startM;i<=endM;i++){
           const off=i-startM;
           copyMeas.push(JSON.parse(JSON.stringify(state.measures[i])));
-          if(state.repeats[i])copyRepeats[off]=JSON.parse(JSON.stringify(state.repeats[i]));
           if(state.timeChanges[i])copyTime[off]=state.timeChanges[i];
           if(state.keyChanges[i]!==undefined)copyKey[off]=state.keyChanges[i];
           if(state.clefChanges[i])copyClef[off]=state.clefChanges[i];
         }
-        clipboardMes={measures:copyMeas,repeats:copyRepeats,timeChanges:copyTime,keyChanges:copyKey,clefChanges:copyClef};
+        clipboardMes={measures:copyMeas,repeats:{},timeChanges:copyTime,keyChanges:copyKey,clefChanges:copyClef};
         closePanel();
         updatePasteButton();
       }
@@ -2573,7 +3186,7 @@
     let disp=Math.max(1,tempoDisplayVal()+delta);
     let canon=Math.max(30,Math.min(300,tempoFromDisplay(disp)));
     state.tempo=canon;
-    if(audio.playing){stopPlayback(false);playSchedule()}else render();
+    if(audio.playing){replayFromCurrent();renderState();}else render();
   }
   document.getElementById('tempo-u').addEventListener('click',()=>changeTempo(1));
   document.getElementById('tempo-d').addEventListener('click',()=>changeTempo(-1));
@@ -2672,7 +3285,7 @@
   document.getElementById('ce-plus').addEventListener('click',()=>{state._chordAddPending=true;render();});
   document.getElementById('ce-minus').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;const l=chordList(sl);const ai=chordActiveIdx(sl);if(l.length<=1){const z=state.measures[state.sel.m][state.sel.s];const dur=z.dur,dot=z.dot;state.measures[state.sel.m][state.sel.s]={type:'rest',dur,dot};state.chordActive=0;state._chordAddPending=true;pushHistory();render();return}l.splice(ai,1);chordWrite(sl,l);state.chordActive=Math.max(0,Math.min(ai,l.length-1));state._chordAddPending=false;pushHistory();render();});
 
-  document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const baseName=(state.headers.T&&state.headers.T.trim())||state.openedFileName||'morceau';const fn=baseName.replace(/[^a-zA-Z0-9_\-]/g,'_')+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
+  document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const baseName=state.openedFileName||(state.headers.T&&state.headers.T.trim().split('\n')[0])||'morceau';const fn=sanitizeFilename(baseName)+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
   const fileInput=document.getElementById('file-input');
   document.getElementById('btn-open-file').addEventListener('click',()=>fileInput.click());
   // Mémoire du dernier fichier multi-morceaux ouvert (pour le bouton Liste)
@@ -2682,9 +3295,25 @@
     if(lastMultiTunes&&lastMultiTunes.length>1){chooseTune(lastMultiTunes,lastMultiFileName,lastMultiIndex)}
     else{alert('La liste est disponible après avoir ouvert un fichier contenant plusieurs morceaux.')}
   });updateListBtn();}
-  function loadTuneAbc(text,fileName){const ns=parseAbcText(text);if(!ns){alert('Impossible de lire ce morceau ABC');return false}if(!ns._hasTempo){delete ns.tempo;delete ns.tempoBeatUnit;delete ns.tempoBeatDotted;delete ns.tempoDotted}Object.assign(state,ns);if(!state.parts)state.parts={};if(fileName)state.openedFileName=fileName.replace(/\.[^.]+$/,'');cleanupAccidentals();state.sel={m:0,s:0};pushHistory();render();return true}
+  function applyParsed(ns){
+    // Assigne un résultat de parseAbcText au state, en gérant les pistes proprement
+    if(!ns._hasTempo){delete ns.tempo;delete ns.tempoBeatUnit;delete ns.tempoBeatDotted;delete ns.tempoDotted}
+    if(ns.tracks){state.tracks=ns.tracks.map(t=>makeTrack(t));state.activeTrack=0;}
+    // champs communs (hors champs de piste et hors tracks/activeTrack)
+    for(const k in ns){if(k==='tracks'||k==='activeTrack')continue;if(TRACK_FIELDS.indexOf(k)>=0)continue;if(k==='sel')continue;if(k[0]==='_')continue;state[k]=ns[k]}
+  }
+  function initLinksFromTieSlur(){
+    const saved=state.activeTrack;
+    for(let ti=0;ti<state.tracks.length;ti++){
+      state.activeTrack=ti;
+      state.measures.forEach(meas=>meas.forEach(s=>{if(s.type==='note'&&(s.tieToNext||s.slurToNext))s.linkToNext=true;}));
+    }
+    state.activeTrack=saved;
+    resolveLinks();
+  }
+  function loadTuneAbc(text,fileName){const ns=parseAbcText(text);if(!ns){alert('Impossible de lire ce morceau ABC');return false}applyParsed(ns);if(fileName)state.openedFileName=fileName.replace(/\.[^.]+$/,'');cleanupAccidentals();initLinksFromTieSlur();state.activeTrack=0;state.sel={m:0,s:0};pushHistory();render();return true}
   // Chargement d'un morceau pour APERCU (sans empiler l'historique ni changer openedFileName)
-  function previewTuneAbc(text){const ns=parseAbcText(text);if(!ns)return false;if(!ns._hasTempo){delete ns.tempo;delete ns.tempoBeatUnit;delete ns.tempoBeatDotted;delete ns.tempoDotted}Object.assign(state,ns);if(!state.parts)state.parts={};cleanupAccidentals();state.sel={m:0,s:0};render();return true}
+  function previewTuneAbc(text){const ns=parseAbcText(text);if(!ns)return false;applyParsed(ns);cleanupAccidentals();initLinksFromTieSlur();state.activeTrack=0;state.sel={m:0,s:0};render();return true}
   function chooseTune(tunes,fileName,initialIdx){
     const prevSnap=snapshot();           // etat initial, restaure si Annuler
     let selIdx=(typeof initialIdx==='number'&&initialIdx>=0&&initialIdx<tunes.length)?initialIdx:-1;
@@ -2766,9 +3395,9 @@
   }
   function keyXml(sig){return '<key><fifths>'+sig+'</fifths><mode>major</mode></key>'}
   function timeXml(meter){const{num,den}=parseMeter(meter);return '<time><beats>'+num+'</beats><beat-type>'+den+'</beat-type></time>'}
-  function pitchXml(slot,effAcc){
+  function pitchXml(slot,effAcc,octShift){
     const step=slot.note;
-    const oct=4+slot.octave;
+    const oct=4+slot.octave+(octShift||0);
     // effAcc: altération effective (en tenant compte armure + heritage de mesure)
     let alter=0;
     if(effAcc==='^')alter=1;
@@ -2801,13 +3430,34 @@
     if(composer){
       xml+='<identification><creator type="composer">'+escapeXml(composer)+'</creator></identification>\n';
     }
-    xml+='<part-list><score-part id="P1"><part-name>Voix</part-name></score-part></part-list>\n';
-    xml+='<part id="P1">\n';
+    // part-list : une score-part par piste
+    const tracks=(state.tracks&&state.tracks.length)?state.tracks:[null];
+    xml+='<part-list>';
+    tracks.forEach((tr,i)=>{
+      const id='P'+(i+1);
+      const name=(tr&&tr.name)?tr.name:'Voix';
+      xml+='<score-part id="'+id+'"><part-name>'+escapeXml(name)+'</part-name></score-part>';
+    });
+    xml+='</part-list>\n';
+    // Boucler sur les pistes en changeant temporairement activeTrack
+    const savedActive=state.activeTrack;
+    tracks.forEach((tr,i)=>{
+      state.activeTrack=i;
+      const id='P'+(i+1);
+      xml+=buildOnePartXml(id,DIV,i===0);
+    });
+    state.activeTrack=savedActive;
+    xml+='</score-partwise>\n';
+    return xml;
+  }
+  // Génère <part id=...>...</part> pour la piste active courante. includeTempo=true
+  // sur la 1ère piste seulement (tempo global).
+  function buildOnePartXml(partId,DIV,includeTempo){
+    let xml='<part id="'+partId+'">\n';
     let prevClef=null,prevKey=null,prevMeter=null;
     state.measures.forEach((meas,mi)=>{
       xml+='<measure number="'+(mi+1)+'">\n';
       const lC=clefAt(mi),lK=keyAt(mi),lM=meterAt(mi);
-      // Attributs : divisions au debut, puis clef/key/time si changement ou si mesure 0
       const isFirst=(mi===0);
       const hasClefChange=isFirst||lC!==prevClef;
       const hasKeyChange=isFirst||lK!==prevKey;
@@ -2820,58 +3470,54 @@
         if(hasClefChange)xml+=clefXml(lC);
         xml+='</attributes>\n';
       }
-      // Tempo sur la premiere mesure
-      if(isFirst){
+      if(isFirst&&includeTempo){
         const bpmTempo=state.tempoDotted?Math.round(state.tempo*2/3):state.tempo;
         const beatUnit=state.tempoDotted?'eighth':'quarter';
         const dot=state.tempoDotted?'<beat-unit-dot/>':'';
         xml+='<direction placement="above"><direction-type><metronome><beat-unit>'+beatUnit+'</beat-unit>'+dot+'<per-minute>'+bpmTempo+'</per-minute></metronome></direction-type><sound tempo="'+state.tempo+'"/></direction>\n';
       }
-      // Reprises
       const r=state.repeats[mi];
       if(r){
         if(r.start)xml+='<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>\n';
         if(r.volta)xml+='<barline location="left"><ending number="'+r.volta+'" type="start"/></barline>\n';
       }
-      // Notes
       meas.forEach((slot,si)=>{
-        // Duree MusicXML = effDur (avec tuplet) * DIV
         const dur=Math.max(1,Math.round(effDur(slot)*DIV));
         xml+='<note>';
         if(slot.type==='rest'){
           xml+='<rest/>';
         } else {
-          // Alteration effective (heritage + armure)
           const effAcc=effectiveAcc(meas,si,lK);
-          xml+=pitchXml(slot,effAcc);
+          xml+=pitchXml(slot,effAcc,lC==='treble8'?-1:0);
         }
         xml+='<duration>'+dur+'</duration>';
         xml+='<type>'+noteTypeXml(slot)+'</type>';
         if(slot.dot)xml+='<dot/>';
-        // <accidental> : a afficher selon les regles de notation (cf accToDrawFor)
         if(slot.type==='note'){
           const accDraw=accToDrawFor(meas,si,lK);
-          if(accDraw==='^')xml+='<accidental>sharp</accidental>';
-          else if(accDraw==='_')xml+='<accidental>flat</accidental>';
-          else if(accDraw==='=')xml+='<accidental>natural</accidental>';
+          if(accDraw){
+            if(accDraw==='^')xml+='<accidental>sharp</accidental>';
+            else if(accDraw==='_')xml+='<accidental>flat</accidental>';
+            else if(accDraw==='=')xml+='<accidental>natural</accidental>';
+          } else if(slot.acc){
+            if(slot.acc==='^')xml+='<accidental print-object="no">sharp</accidental>';
+            else if(slot.acc==='_')xml+='<accidental print-object="no">flat</accidental>';
+            else if(slot.acc==='=')xml+='<accidental print-object="no">natural</accidental>';
+          }
         }
-        // n-uplet
         if(slot.tuplet){
           xml+='<time-modification><actual-notes>'+slot.tuplet+'</actual-notes><normal-notes>2</normal-notes></time-modification>';
         }
-        // liaison (tie)
         if(slot.tieToNext){
           xml+='<tie type="start"/>';
         }
-        // notations (tie + tuplet + ornaments)
         let nota='';
         if(slot.tieToNext)nota+='<tied type="start"/>';
         if(slot.tuplet){
-          // start sur premier slot du groupe, stop sur dernier
-          const isFirst=(si===0||!meas[si-1]||meas[si-1].tupletId!==slot.tupletId);
-          const isLast=(si===meas.length-1||!meas[si+1]||meas[si+1].tupletId!==slot.tupletId);
-          if(isFirst)nota+='<tuplet type="start" bracket="yes"/>';
-          if(isLast)nota+='<tuplet type="stop"/>';
+          const isFirstT=(si===0||!meas[si-1]||meas[si-1].tupletId!==slot.tupletId);
+          const isLastT=(si===meas.length-1||!meas[si+1]||meas[si+1].tupletId!==slot.tupletId);
+          if(isFirstT)nota+='<tuplet type="start" bracket="yes"/>';
+          if(isLastT)nota+='<tuplet type="stop"/>';
         }
         if(slot.orn&&slot.orn.length){
           let orns='';
@@ -2885,12 +3531,11 @@
           if(orns)nota+='<ornaments>'+orns+'</ornaments>';
         }
         if(slot.chord){
-          nota+='<harmony>'+escapeXml(slot.chord)+'</harmony>'; // pas un vrai harmony, juste un texte simple
+          nota+='<harmony>'+escapeXml(slot.chord)+'</harmony>';
         }
         if(nota)xml+='<notations>'+nota+'</notations>';
         xml+='</note>\n';
       });
-      // Fin de mesure : volta stop / reprise fin
       if(r){
         if(r.volta)xml+='<barline location="right"><ending number="'+r.volta+'" type="stop"/></barline>\n';
         if(r.end)xml+='<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward"/></barline>\n';
@@ -2898,7 +3543,7 @@
       xml+='</measure>\n';
       prevClef=lC;prevKey=lK;prevMeter=lM;
     });
-    xml+='</part>\n</score-partwise>\n';
+    xml+='</part>\n';
     return xml;
   }
   // ============ Encodeur ZIP minimal (stored, sans compression) ============
@@ -3011,8 +3656,8 @@
       const blob=new Blob([zipBytes],{type:'application/vnd.recordare.musicxml'});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
-      const baseName=(state.headers.T&&state.headers.T.trim())||state.openedFileName||'morceau';
-      const fn=baseName.replace(/[^a-zA-Z0-9_\-]/g,'_')+'.mxl';
+      const baseName=state.openedFileName||(state.headers.T&&state.headers.T.trim().split('\n')[0])||'morceau';
+      const fn=sanitizeFilename(baseName)+'.mxl';
       a.href=url;a.download=fn;
       document.body.appendChild(a);a.click();document.body.removeChild(a);
       URL.revokeObjectURL(url);
@@ -3021,7 +3666,7 @@
     }
   });
 
-  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.openedFileName=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();pushHistory();render()}closePanel()}})});
+  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.openedFileName=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();pushHistory();render()}closePanel()}})});
 
   // Point 9 : Bouton Aide
   document.getElementById('btn-help').addEventListener('click',()=>{
@@ -3030,17 +3675,18 @@
       +'• 7 boutons Do…Si pour saisir une note<br>'
       +'• Durées : ronde, blanche, noire, croche, double, triple<br>'
       +'• Altérations ♯ ♭ ♮ et point pointé<br>'
-      +'• ⌒ liaison, ⌫ remplace par silence<br>'
+      +'• ⌒ liaison : un seul bouton. À la saisie de la note suivante, devient automatiquement un tie (même hauteur) ou un slur (hauteur différente). Posable sans note à droite → liaison en attente (pointillé bleu) · ⌫ remplace par silence<br>'
       +'• 3:2 ouvre le panneau n-uplet<br>'
       +'• ♫ Accord : empiler plusieurs notes (+ ajoute, − retire, ▲▼ note active). On peut mettre la même note à deux octaves ; les doublons exacts sont fusionnés à la sortie<br>'
       +'• Cm bouton accord d\'accompagnement (texte) avec notes Do…Si + #/b/m/Maj…<br>'
       +'• ~T ornements (trille, fermata, staccato, etc.)<br>'
-      +'• Transp. ↓↑ transpose tout le morceau<br>'
-      +'• ↶ ↷ annuler/refaire<br><br>'
+      +'• ↶ ↷ annuler/refaire · (la transposition est dans l\'onglet 👁 Œil)<br><br>'
       +'<b style="color:#0c447c;">Onglet Mesure</b><br>'
       +'• −Mes / +Mes ajouter ou supprimer des mesures<br>'
-      +'• Rythme, Armure, Clé s\'appliquent dès la mesure active<br>'
-      +'• 𝄆 𝄇 reprises, |1 |2 voltas<br>'
+      +'• Rythme, Armure et Clé s\'appliquent sur une plage « de la mesure X à la mesure Y ». Réglez chaque borne avec −10 −1 +1 +10 (le bouton-libellé actif est en bleu), ou cliquez directement une mesure dans la partition pour remplir la borne active. Armure et Clé ne changent PAS le son, seulement l\'affichage<br>'
+      +'• Changer de clé conserve la hauteur sonore des notes : leur position sur la portée se déplace selon la nouvelle clé (Sol/Fa). Sol-8 se lit comme Sol mais sonne une octave plus bas<br>'
+      +'• 𝄆 𝄇 reprises, |1 |2 voltas — appliquées à toutes les voix (cohérence globale)<br>'
+      +''
       +'• 📋 copier mesures de la mesure active à N<br>'
       +'• 📥 coller à partir de la mesure active<br>'
       +'• ↶ ↷ annuler/refaire<br><br>'
@@ -3054,16 +3700,24 @@
       +'• X numéro<br>'
       +'• Titre, Compositeur, Commentaire multi-lignes<br>'
       +'• ↵ Nouvelle ligne génère plusieurs T:/C:/N: dans le ABC<br><br>'
+      +'<b style="color:#0c447c;">Onglet Pistes</b><br>'
+      +'• Multi-voix : jusqu\'à 6 pistes (V:1 à V:6 en ABC), affichées en portées empilées<br>'
+      +'• Cliquer une piste dans le panneau ou sur la portée la rend active (cadre bleu) et permet de l\'éditer<br>'
+      +'• 👁 / ∅ : afficher ou masquer une piste (rendu uniquement, données préservées)<br>'
+      +'• ✎ : renommer · 🗑 : supprimer · + : ajouter une piste vierge (la clé se règle dans l\'onglet Mesure)<br>'
+      +'• Lecture : cochez « Lire » par piste (bouton Toutes / Aucune), réglez le volume de chaque piste ; le Play joue toutes les pistes cochées en même temps<br>'
+      +'• Pendant la lecture, vous pouvez passer sur l\'onglet Pistes pour ajuster voix et volumes sans couper le son ; le tempo se règle aussi en direct (reprise au point courant). Quitter vers un autre onglet arrête le son<br>'
+      +'• L\'export ABC émet automatiquement V:1, V:2… quand il y a plusieurs pistes<br><br>'
       +'<b style="color:#0c447c;">Onglet Fichier</b><br>'
-      +'• Ligne 1 : 📄 Nouveau · 📂 Ouvrir (.abc) · ☰ Liste<br>'
+      +'• Ligne 1 : 📄 Nouveau · 📂 Ouvrir (.abc) · ☰ Liste des morceaux du fichier<br>'
       +'• Ligne 2 : 💾 ABC · 💾 MXL (MusicXML compressé) · ⭐ mémo (mémoires locales)<br>'
       +'• ABC (code) affiche le code généré<br>'
-      +'• ☰ Liste devient actif (bleu) après l\'ouverture d\'un fichier contenant plusieurs morceaux ; le rouvrir réaffiche la liste positionnée sur le morceau en cours<br><br>'
+      +'• Le bouton ☰ Liste devient actif (bleu) après l\'ouverture d\'un fichier contenant plusieurs morceaux ; le rouvrir réaffiche la liste positionnée sur le morceau en cours<br><br>'
       +'<b style="color:#0c447c;">Onglet 👁 (Œil)</b><br>'
       +'• ⮂ Réorganiser rythme : fusionne les valeurs liées identiques (2 croches liées → noire) et les silences contigus ; appelé aussi automatiquement après chaque Décaler<br>'
       +'• Accords / Texte / Paroles : affiche ou masque ces éléments<br>'
       +'• Parties / N° mesures : affiche ou masque les repères P: et les numéros de mesure<br>'
-      +'• Transp. ↓↑, Armure → C, et conversions de swing<br><br>'
+      +'• Transp. ↓↑ et Armure → C agissent sur la voix active ou toutes les voix selon le sélecteur ; les conversions de swing (groove) agissent sur toutes les voix<br><br>'
       +'<b style="color:#0c447c;">Parties (P:)</b><br>'
       +'• Onglet Mesure → Partie P: nomme la partie qui commence à la mesure active (A, B, Refrain…)<br><br>'
       +'<b style="color:#0c447c;">Grâce notes</b><br>'
@@ -3074,7 +3728,7 @@
       +'• N-uplets joués en n notes pour le temps de 2<br>'
       +'• 7 dièses ou 7 bémols max à l\'armure<br>'
       +'</div>';
-    openPanel({title:'Aide',body:helpText,hideActions:true,extraButtons:['Fermer'],onExtra:()=>closePanel()});
+    openPanel({title:'Aide',body:helpText,hideActions:true,closeTop:true});
   });
 
   const panel=document.getElementById('panel');
@@ -3085,8 +3739,76 @@
   const panelCancel=document.getElementById('panel-cancel');
   let cOnOk=null,cOnExtra=null,cOnMeasureChange=null,cShowMes=false;
 
-  function openPanel({title,body,onMount,onOk,hideActions,extraButtons,onExtra,actionsClass,showMes,onMeasureChange,fullHeight,compact}){
+  // === Sélecteur de plage de mesures partagé (de la mesure X → à la mesure Y) ===
+  // Chaque ligne (« de la » / « à la ») a ses propres boutons −10 −1 +1 +10.
+  // Un bouton ne modifie QUE la valeur de SA ligne (jamais les deux), allume SA ligne en bleu,
+  // et positionne la vue sur la mesure de cette ligne. Le libellé est un simple texte.
+  // opts: {from, to, min, max, focus, onChange(from,to,focus)}. Renvoie {html, bind, getFrom, getTo}.
+  function makeRangeSelector(opts){
+    let from=opts.from, to=opts.to, active=opts.focus||'to'; // ligne « allumée » (bleue) — 'to' au départ
+    const min=opts.min!=null?opts.min:1, max=opts.max;
+    // Bornage min/max + alignement croisé : `driver` indique la borne qu'on vient de modifier ;
+    // elle « pousse » l'autre à l'identique si elle la dépasse (from au-delà de to, ou to en deçà de from).
+    function clamp(driver){
+      from=Math.max(min,Math.min(max,from));
+      to=Math.max(min,Math.min(max,to));
+      if(driver==='from'){ if(from>to)to=from; }
+      else if(driver==='to'){ if(to<from)from=to; }
+      else { if(to<from)to=from; } // pas de borne pilote (init/refresh) : sécurité
+    }
+    function html(){
+      function row(which,label,val){
+        return '<div class="rg-row" data-rg="'+which+'" style="display:grid;grid-template-columns:auto 30px 26px 1fr 26px 30px;gap:3px;align-items:center;margin-top:3px;">'
+          +'<button class="k rg-label" data-rg="'+which+'" style="font-size:11px;font-weight:700;padding:0 6px;height:26px;width:auto;text-align:left;white-space:nowrap;">'+label+'</button>'
+          +'<button class="k rg-step" data-rg="'+which+'" data-d="-10" style="height:26px;font-size:12px;padding:0;">−10</button>'
+          +'<button class="k rg-step" data-rg="'+which+'" data-d="-1" style="height:26px;font-size:14px;padding:0;">−</button>'
+          +'<div class="val" style="text-align:center;"><b class="rg-val" data-rg="'+which+'">'+val+'</b></div>'
+          +'<button class="k rg-step" data-rg="'+which+'" data-d="1" style="height:26px;font-size:14px;padding:0;">+</button>'
+          +'<button class="k rg-step" data-rg="'+which+'" data-d="10" style="height:26px;font-size:12px;padding:0;">+10</button>'
+          +'</div>';
+      }
+      clamp();
+      return '<div class="rg-wrap">'+row('from','De la mesure',from)+row('to','à la mesure',to)+'</div>';
+    }
+    function refresh(root){
+      clamp();
+      root.querySelectorAll('.rg-val').forEach(el=>{el.textContent=(el.dataset.rg==='from')?from:to;});
+      // Surbrillance : SEUL le bouton-libellé de la ligne active (« de la mesure » ou « à la mesure ») est bleu
+      root.querySelectorAll('.rg-label').forEach(b=>{
+        const on=(b.dataset.rg===active);
+        b.style.background=on?'#cfe5fa':'';b.style.borderColor=on?'#185fa5':'';b.style.color=on?'#0c447c':'';
+      });
+    }
+    function bind(root){
+      // Clic sur un libellé : rend sa ligne active (bleue) et positionne la vue, sans changer les valeurs
+      root.querySelectorAll('.rg-label').forEach(b=>b.addEventListener('click',()=>{
+        active=b.dataset.rg;
+        if(opts.onChange)opts.onChange(from,to,active);
+        refresh(root);
+      }));
+      root.querySelectorAll('.rg-step').forEach(b=>b.addEventListener('click',()=>{
+        const which=b.dataset.rg, d=parseInt(b.dataset.d,10);
+        if(which==='from')from+=d; else to+=d;
+        active=which;            // la ligne modifiée devient active → son libellé s'allume
+        clamp(which);
+        if(opts.onChange)opts.onChange(from,to,which);  // positionne la vue sur cette ligne
+        refresh(root);
+      }));
+      refresh(root);
+      // Hook : un clic sur une mesure de la partition met à jour la valeur de la ligne active.
+      state._rangePick=(measureIdx1based)=>{
+        if(active==='from')from=measureIdx1based; else to=measureIdx1based;
+        clamp(active);
+        if(opts.onChange)opts.onChange(from,to,active);
+        refresh(root);
+      };
+    }
+    return {html,bind,refresh,getFrom:()=>from,getTo:()=>to,getActive:()=>active,setFrom:v=>{from=v;clamp();},setTo:v=>{to=v;clamp();}};
+  }
+
+  function openPanel({title,body,onMount,onOk,hideActions,extraButtons,onExtra,actionsClass,showMes,onMeasureChange,fullHeight,compact,closeTop}){
     panelTitle.textContent=title;
+    {const ct=document.getElementById('panel-close-top');if(ct)ct.style.display=closeTop?'':'none';}
     cShowMes=!!showMes;
     panelMes.textContent=cShowMes?('Mes '+(state.sel.m+1)):'';
     document.getElementById('panel-nav').style.display='none';
@@ -3147,7 +3869,7 @@
     if(onMount)setTimeout(onMount,50);
     if(extraButtons)setTimeout(()=>{panelBody.querySelectorAll('[data-extra]').forEach(b=>{b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)})})},50);
   }
-  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
+  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
   function notifyPanelMeasureChanged(){
     if(!panel.classList.contains('open'))return;
     if(cShowMes)panelMes.textContent='Mes '+(state.sel.m+1);
@@ -3155,6 +3877,7 @@
   }
   panelOk.addEventListener('click',()=>{if(cOnOk)cOnOk();closePanel();render()});
   panelCancel.addEventListener('click',closePanel);
+  {const ct=document.getElementById('panel-close-top');if(ct)ct.addEventListener('click',closePanel);}
   // Stepper de navigation entre mesures dans le panel
   document.getElementById('panel-nav-prev').addEventListener('click',()=>{
     if(state.sel.m>0){state.sel.m--;state.sel.s=0;render()}
@@ -3196,19 +3919,22 @@
   {const pb=document.querySelector('[data-hdr="P"]');if(pb)pb.addEventListener('click',headerPromptSimple('P','Ordre des parties (P:, ex. (2A2B))'));}
 
 
-  // ⭐ Rythme : applique à partir de la mesure active uniquement
+  // ⭐ Rythme : applique sur une PLAGE de mesures (X→Y), sur toutes les voix
   document.querySelector('[data-hdr="M"]').addEventListener('click',()=>{
     function getCurrent(){const cur=meterAt(state.sel.m);const{num,den}=parseMeter(cur);return{n:num,d:den,uD:parseInt(state.pieceUnit.split('/')[1],10)}}
     let st=getCurrent();
     const dV=[1,2,4,8,16];
     const uDs=[1,2,4,8,16,32];
+    const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
+      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};st=getCurrent();const nv=document.getElementById('num-v');if(nv)nv.textContent=st.n;const dv=document.getElementById('den-v');if(dv)dv.textContent=st.d;const lv=document.getElementById('L-v');if(lv)lv.textContent=st.uD;renderScore();renderState();ensureSelectionVisible();}}});
     function controls(){
-      return '<div class="mes-active">Mesure active : <b>'+(state.sel.m+1)+'</b></div>'+
+      return rg.html()+
         '<div class="stepper-label">Numérateur</div><div class="stepper"><button class="k" id="num-d">−</button><div class="val"><b id="num-v">'+st.n+'</b></div><button class="k" id="num-u">+</button></div>'+
         '<div class="stepper-label">Dénominateur</div><div class="stepper"><button class="k" id="den-d">−</button><div class="val"><b id="den-v">'+st.d+'</b></div><button class="k" id="den-u">+</button></div>'+
         '<div class="stepper-label">Unité L:1/x</div><div class="stepper"><button class="k" id="L-d">−</button><div class="val"><b id="L-v">'+st.uD+'</b></div><button class="k" id="L-u">+</button></div>';
     }
     function rebind(){
+      rg.bind(document.getElementById('panel-body'));
       document.getElementById('num-u').addEventListener('click',()=>{st.n=Math.min(16,st.n+1);document.getElementById('num-v').textContent=st.n});
       document.getElementById('num-d').addEventListener('click',()=>{st.n=Math.max(1,st.n-1);document.getElementById('num-v').textContent=st.n});
       document.getElementById('den-u').addEventListener('click',()=>{const i=dV.indexOf(st.d);if(i<dV.length-1){st.d=dV[i+1];document.getElementById('den-v').textContent=st.d}});
@@ -3218,83 +3944,90 @@
     }
     openPanel({
       title:'Rythme',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
-      showMes:true,
       onMount:rebind,
-      onMeasureChange:()=>{
-        st=getCurrent();
-        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
-        rebind();
-        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
-          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
-        });
-      },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        applyMeterChangeFromSel(st.n+'/'+st.d,'1/'+st.uD);
-        closePanel();
+        const startMi=Math.min(rg.getFrom(),rg.getTo())-1;
+        const endMi=Math.max(rg.getFrom(),rg.getTo())-1;
+        state.sel={m:startMi,s:0};
+        const endOverride=(endMi<state.measures.length-1)?endMi:undefined;
+        applyToAllTracks(()=>meterChangeCore(st.n+'/'+st.d,'1/'+st.uD,endOverride));
+        pushHistory();closePanel();render();
       }
     });
   });
 
-  // ⭐ Armure : applique à partir de la mesure active
+  // ⭐ Armure : applique sur une PLAGE de mesures (X→Y), à son constant (réécriture d'affichage)
   document.querySelector('[data-hdr="K"]').addEventListener('click',()=>{
     let sig=keyAt(state.sel.m);
-    function controls(){return '<div class="mes-active">Mesure active : <b>'+(state.sel.m+1)+'</b></div>'+
-      '<div class="stepper-label">Armure</div><div class="stepper"><button class="k" id="sig-d">♭</button><div class="val"><b id="sig-v">'+keyHumanLabel(sig)+'</b></div><button class="k" id="sig-u">♯</button></div>'}
+    const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
+      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};sig=keyAt(m);const sv=document.getElementById('sig-v');if(sv)sv.textContent=keyMajMinLabel(sig);renderScore();renderState();ensureSelectionVisible();}}});
+    function controls(){
+      return rg.html()+
+        '<div class="stepper-label">Armure (Majeur / mineur)</div><div class="stepper"><button class="k" id="sig-d">♭</button><div class="val"><b id="sig-v" style="font-size:13px;">'+keyMajMinLabel(sig)+'</b></div><button class="k" id="sig-u">♯</button></div>';
+    }
     function rebind(){
-      document.getElementById('sig-u').addEventListener('click',()=>{sig=Math.min(7,sig+1);document.getElementById('sig-v').textContent=keyHumanLabel(sig)});
-      document.getElementById('sig-d').addEventListener('click',()=>{sig=Math.max(-7,sig-1);document.getElementById('sig-v').textContent=keyHumanLabel(sig)});
+      rg.bind(document.getElementById('panel-body'));
+      document.getElementById('sig-u').addEventListener('click',()=>{sig=Math.min(7,sig+1);document.getElementById('sig-v').textContent=keyMajMinLabel(sig)});
+      document.getElementById('sig-d').addEventListener('click',()=>{sig=Math.max(-7,sig-1);document.getElementById('sig-v').textContent=keyMajMinLabel(sig)});
     }
     openPanel({
       title:'Armure',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
-      showMes:true,
       onMount:rebind,
-      onMeasureChange:()=>{
-        sig=keyAt(state.sel.m);
-        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
-        rebind();
-        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
-          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
-        });
-      },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        // Preserver les hauteurs MIDI en gelant les alterations avant changement
-        const startMi=state.sel.m;
-        freezeAccidentalsFrom(startMi,sig);
-        if(state.sel.m===0){state.pieceKeySig=sig;delete state.keyChanges[0]}
-        else state.keyChanges[state.sel.m]=sig;
-        cleanupAccidentals();pushHistory();closePanel();render();
+        const startMi=Math.min(rg.getFrom(),rg.getTo())-1;
+        const endMi=Math.max(rg.getFrom(),rg.getTo())-1;
+        applyToAllTracks(()=>{
+          const sigAfter=keyAt(Math.min(endMi+1,state.measures.length-1));
+          const hadExplicitAfter=state.keyChanges[endMi+1]!==undefined;
+          respellRangeForKey(startMi,endMi,sig);
+          if(startMi===0){state.pieceKeySig=sig;delete state.keyChanges[0];}
+          else state.keyChanges[startMi]=sig;
+          for(let mi=startMi+1;mi<=endMi;mi++)delete state.keyChanges[mi];
+          if(endMi+1<state.measures.length&&!hadExplicitAfter&&sigAfter!==sig){
+            state.keyChanges[endMi+1]=sigAfter;
+          }
+          cleanupAccidentals();
+        });
+        state.sel={m:startMi,s:0};
+        pushHistory();closePanel();render();
       }
     });
   });
 
-  // ⭐ Clé : applique à partir de la mesure active
+  // ⭐ Clé : applique sur une PLAGE de mesures (X→Y), voix active uniquement. Son conservé.
   document.querySelector('[data-hdr="CLEF"]').addEventListener('click',()=>{
     let pick=clefAt(state.sel.m);
-    function controls(){return '<div class="mes-active">Mesure active : <b>'+(state.sel.m+1)+'</b></div>'+
-      '<div class="row-grid row-3" id="clef-pick"><button class="k clef-small" data-clef="treble">𝄞</button><button class="k" data-clef="treble8" style="font-size:28px;">Sol-8</button><button class="k clef-small" data-clef="bass">𝄢</button></div>'}
+    const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
+      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};pick=clefAt(m);const rf=document.querySelector('#clef-pick');if(rf)rf.querySelectorAll('.k').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));renderScore();renderState();ensureSelectionVisible();}}});
+    function controls(){return rg.html()+
+      '<div class="stepper-label">Clé</div>'+
+      '<div class="row-grid row-3" id="clef-pick"><button class="k clef-small" data-clef="treble">𝄞</button><button class="k clef-small" data-clef="treble8" title="Sol octaviée (sonne une octave plus bas)">𝄞<span style="font-size:0.5em;vertical-align:-1em;">8</span></button><button class="k clef-small" data-clef="bass">𝄢</button></div>'}
     function rebind(){
+      rg.bind(document.getElementById('panel-body'));
       const rf=()=>document.querySelectorAll('#clef-pick .k').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));
       rf();
       document.querySelectorAll('#clef-pick .k').forEach(b=>b.addEventListener('click',()=>{pick=b.dataset.clef;rf()}));
     }
     openPanel({
       title:'Clé',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
-      showMes:true,
       onMount:rebind,
-      onMeasureChange:()=>{
-        pick=clefAt(state.sel.m);
-        document.getElementById('panel-body').innerHTML=controls()+document.getElementById('panel-body').querySelector('.actions').outerHTML;
-        rebind();
-        document.getElementById('panel-body').querySelectorAll('[data-extra]').forEach(b=>{
-          b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)});
-        });
-      },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        if(state.sel.m===0){state.pieceClef=pick;delete state.clefChanges[0]}
-        else state.clefChanges[state.sel.m]=pick;
+        // Son conservé : on ne transpose pas les notes ; seul l'affichage change selon la clé.
+        // Plage X→Y : on pose la clé au début, on nettoie l'intérieur, et on restaure après.
+        const startMi=Math.min(rg.getFrom(),rg.getTo())-1;
+        const endMi=Math.max(rg.getFrom(),rg.getTo())-1;
+        const clefAfter=clefAt(Math.min(endMi+1,state.measures.length-1));
+        const hadAfter=state.clefChanges[endMi+1]!==undefined;
+        if(startMi===0){state.pieceClef=pick;delete state.clefChanges[0]}
+        else state.clefChanges[startMi]=pick;
+        for(let mi=startMi+1;mi<=endMi;mi++)delete state.clefChanges[mi];
+        if(endMi+1<state.measures.length&&!hadAfter&&clefAfter!==pick){
+          state.clefChanges[endMi+1]=clefAfter;
+        }
+        state.sel={m:startMi,s:0};
         cleanupAccidentals();pushHistory();closePanel();render();
       }
     });
@@ -3308,12 +4041,11 @@
       const r=sw.getBoundingClientRect();
       document.getElementById('dim-w').textContent=Math.round(r.width);
       document.getElementById('dim-h').textContent=Math.round(r.height);
-      // Calculer la capacite theorique a la taille courante
-      const pxPerUnit=1.8*(state.scoreScale||100)/100;
-      const viewW=r.width/pxPerUnit,viewH=r.height/pxPerUnit;
-      const mPL=Math.max(1,Math.floor((viewW-50-6)/100));
-      const lMax=Math.max(1,Math.floor((viewH-22-10)/52));
-      document.getElementById('svg-h').textContent=mPL+' mes/ligne \u00d7 '+lMax+' lignes = '+(mPL*lMax)+' mes/page';
+      // Mode ligne unique : afficher le nombre de mesures et la largeur de contenu
+      const nMes=(state.measures||[]).length;
+      const lc=state._layoutCache;
+      const cw=lc?lc.contentPxW:0;
+      document.getElementById('svg-h').textContent=nMes+' mes · ligne unique · contenu '+cw+'px';
     }
   }
   // Sélection d'une note/silence par clic sur la portée
@@ -3327,6 +4059,8 @@
     if(isNaN(mi)||isNaN(si))return;
     if(mi<0||mi>=state.measures.length)return;
     if(si<0||si>=state.measures[mi].length)return;
+    // Si un sélecteur de plage est ouvert : le clic remplit la valeur de la ligne active
+    if(state._rangePick){state._rangePick(mi+1);return;}
     state.sel={m:mi,s:si};
     render();
   });
@@ -3346,6 +4080,7 @@
     const m=parseInt(t.dataset.m,10);
     const s=parseInt(t.dataset.s,10);
     if(isNaN(m)||isNaN(s))return;
+    if(state._rangePick){if(m>=0&&m<state.measures.length)state._rangePick(m+1);return;}
     if(state.measures[m]&&state.measures[m][s]){
       state.sel={m,s};
       render();
