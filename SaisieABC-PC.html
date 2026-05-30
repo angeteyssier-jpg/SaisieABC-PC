@@ -182,7 +182,18 @@
     .oct-row .label b, .control-row .label b { font-size: 15px; }
     .panel { width: 230px; }
   }
-  #toast { position: fixed; left: 50%; bottom: 24px;
+  /* Sélecteur de voix pour panneau paroles */
+  .lyr-voice-tabs { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px; }
+  .lyr-voice-tabs .k { flex: 1; min-width: 44px; height: 30px !important; font-size: 12px !important; padding: 0 4px !important; }
+  .lyr-voice-tabs .k.active { background: #cfe5fa; border-color: #185fa5; color: #0c447c; }
+  .lyr-note-count { font-size: 11px; color: #185fa5; font-weight: 700; margin-bottom: 4px; }
+  .lyr-textarea { width: 100%; min-height: 160px; font-family: inherit; font-size: 13px;
+    padding: 6px 8px; border: 2px solid #b4b2a9; border-radius: 8px;
+    background: #ffffff; color: #1a1a1a; font-weight: 600; line-height: 1.4;
+    resize: vertical; }
+  .lyr-textarea:focus { border-color: #378add; outline: none; }
+  .lyr-hint { font-size: 11px; color: #5f5e5a; font-style: italic; margin: 4px 0 6px; line-height: 1.4; }
+
     transform: translateX(-50%) translateY(20px);
     background: #0c447c; color: #fff; padding: 10px 16px; border-radius: 10px;
     font-size: 14px; font-weight: 600; line-height: 1.35; max-width: 520px; width: max-content;
@@ -195,7 +206,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v0.99 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.14 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -217,7 +228,7 @@
       <button class="k primary" id="panel-ok">OK</button>
     </div>
   </div>
-  <input type="file" id="file-input" accept=".abc,text/plain" style="display:none;"/>
+  <input type="file" id="file-input" accept=".abc,.xml,.mxl,text/plain,application/xml,application/vnd.recordare.musicxml" style="display:none;"/>
 
   <!-- Layout PC : 2 colonnes -->
   <div class="pc-layout">
@@ -281,8 +292,9 @@
       </div>
 
       <div class="tab-panel" data-panel="mesure">
-        <div class="row-grid row-2">
+        <div class="row-grid row-3">
           <button class="k" id="meas-del">− Mes</button>
+          <button class="k" id="meas-clear" title="Vider la mesure (voix active)">⌧ Vider</button>
           <button class="k" id="meas-add">+ Mes</button>
         </div>
         <div class="row-grid row-3">
@@ -361,7 +373,7 @@
       <div class="tab-panel" data-panel="fichier">
         <div class="row-grid row-3">
           <button class="k" id="btn-new">📄 Nouveau</button>
-          <button class="k" id="btn-open-file" title="Ouvrir un fichier (.abc)" style="font-size:18px;">📂</button>
+          <button class="k" id="btn-open-file" title="Ouvrir un fichier (.abc, .xml, .mxl)" style="font-size:18px;">📂</button>
           <button class="k" id="btn-list" title="Liste des morceaux du fichier" style="font-size:18px;">☰</button>
         </div>
         <div class="row-grid row-3">
@@ -398,6 +410,9 @@
           <button class="k" id="btn-toggle-chords" style="font-size:14px;">Accords</button>
           <button class="k" id="btn-toggle-text" style="font-size:14px;">Texte</button>
           <button class="k" id="btn-toggle-lyrics" style="font-size:14px;">Paroles</button>
+        </div>
+        <div class="row-grid">
+          <button class="k" id="btn-edit-lyrics" style="font-size:14px;">✎ Saisie Paroles…</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-toggle-parts" style="font-size:14px;">Parties</button>
@@ -537,10 +552,12 @@
   function effDur(t){
     let d=t.dot?t.dur*1.5:t.dur;
     if(t.tuplet){
-      // Pour un n-uplet en 3:2 (n=3,5,6,7) : n notes occupent l'espace de 2 — facteur 2/n
-      // Variante : pour 3-uplet → 2/3, 5-uplet → 2/5, 6-uplet → 2/6, 7-uplet → 2/7
-      const ratio=2; // 3:2
-      d=d*ratio/t.tuplet;
+      // n-uplet : n notes (t.tuplet) occupent l'espace de `normal` figures de base.
+      // Ratio = normal/n. Pour les n-uplets standards, normal=2 (3:2, 5:2, 6:2, 7:2).
+      // Pour les exotiques (7:4, 5:4...), t.tupletNormal porte le vrai "normal".
+      // Rétro-compatibilité : si tupletNormal absent → 2.
+      const normal=(t.tupletNormal!==undefined&&t.tupletNormal>0)?t.tupletNormal:2;
+      d=d*normal/t.tuplet;
     }
     return d;
   }
@@ -823,6 +840,10 @@
   // Construit le corps ABC pour la voix courante (lit la piste active via les alias state.*)
   function buildVoiceBody(){
     let body='';
+    // Suivi du slur de phrasé À TRAVERS les mesures : on garde la dernière note rencontrée
+    // (toutes mesures confondues) pour décider de l'ouverture/fermeture des parenthèses.
+    let slurActive=false;     // un slur ABC '(' est-il ouvert et pas encore fermé ?
+    let prevNote=null;        // dernière note émise (cross-mesure)
     state.measures.forEach((m,mi)=>{
       if(state.parts&&state.parts[mi]){if(body&&!body.endsWith('\n'))body+='\n';body+='P:'+state.parts[mi]+'\n'}
       body+=buildBarSeparator(mi-1,mi);
@@ -832,17 +853,37 @@
       const gOf={};groups.forEach((g,gi)=>{g.forEach((idx)=>{gOf[idx]={gi}})});
       let lastTid=null;
       m.forEach((t,si)=>{
-        if(t.tuplet&&t.tupletId!==lastTid){body+='('+t.tuplet;lastTid=t.tupletId}
+        if(t.tuplet&&t.tupletId!==lastTid){
+          // Compter le nombre de notes du groupe (count) pour la forme complète (n:normal:count)
+          let cnt=0;for(let k=si;k<m.length&&m[k].tupletId===t.tupletId;k++)cnt++;
+          const normal=(t.tupletNormal!==undefined&&t.tupletNormal>0)?t.tupletNormal:2;
+          // Forme courte (n) si ratio standard n:2 et count=n ; sinon forme complète (n:normal:count)
+          if(normal===2&&cnt===t.tuplet)body+='('+t.tuplet;
+          else body+='('+t.tuplet+':'+normal+':'+cnt;
+          lastTid=t.tupletId;
+        }
         if(!t.tuplet)lastTid=null;
-        const prevSlur=si>0&&m[si-1]&&m[si-1].type==='note'&&m[si-1].slurToNext;
-        if(t.type==='note'&&t.slurToNext&&!prevSlur)body+='(';
+        // --- Slur de phrasé ---
+        // Ouvre '(' AVANT une note qui démarre une chaîne de slur (et qu'aucune n'est ouverte).
+        // Ferme ')' APRÈS la note qui termine la chaîne (la note précédente avait slurToNext,
+        // mais celle-ci ne l'a pas → fin du slur).
+        if(t.type==='note'){
+          const prevHadSlur=prevNote&&prevNote.slurToNext;
+          if(t.slurToNext&&!slurActive&&!prevHadSlur){ body+='('; slurActive=true; }
+        }
         body+=slotStr(t);
-        if(t.type==='note'&&prevSlur&&!t.slurToNext)body+=')';
+        if(t.type==='note'){
+          // Fin de chaîne : un slur est ouvert, et cette note ne continue pas (pas de slurToNext)
+          if(slurActive&&!t.slurToNext){ body+=')'; slurActive=false; }
+          prevNote=t;
+        }
         const isLast=(si===m.length-1);if(isLast)return;
         const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;
         if(!inSame)body+=' ';
       });
     });
+    // Sécurité : si un slur reste ouvert en fin de voix, le fermer pour ne pas laisser de '(' orphelin
+    if(slurActive)body+=')';
     const li=state.measures.length-1;
     if(state.repeats[li]?.end)body+=':|';else body+='|';
     return body;
@@ -870,7 +911,7 @@
       body=buildVoiceBody();
       const lyr=buildLyricLine();
       state.activeTrack=savedTrack;
-      return h+body+(lyr?('\n'+lyr):'');
+      return h+body+(lyr?('\n'+lyr+'\n'):'\n');
     }
     // Multi-voix : déclarer les voix en en-tête, puis émettre chaque corps
     let header='';
@@ -887,30 +928,110 @@
         if(ti.pieceKeySig!==t0.pieceKeySig||ti.pieceClef!==t0.pieceClef)body+='K:'+keyAbc(ti.pieceKeySig)+clefAbcSuffix(ti.pieceClef)+'\n';
       }
       body+=buildVoiceBody()+'\n';
+      // Paroles de CETTE voix juste après son corps (format ABC standard)
+      const lyrV=buildLyricLine();
+      if(lyrV)body+=lyrV+'\n';
     }
     state.activeTrack=savedTrack;
-    const lyr=buildLyricLine();
-    return h+body+(lyr?(lyr+'\n'):'');
+    return h+body;
   }
-  function buildLyricLine(){const syls=[];let any=false;state.measures.forEach(m=>m.forEach(s=>{if(s.type==='note'){if(s.lyric){any=true;syls.push(s.lyric.replace(/ /g,'~'))}else syls.push('*')}}));if(!any)return'';return'w:'+syls.join(' ')}
+  // ===== Gestion des COUPLETS (plusieurs lignes de paroles) =====
+  // Modèle : le couplet 1 reste dans slot.lyric (rétro-compatibilité totale) ;
+  //   les couplets 2,3,… sont stockés dans slot.verses (slot.verses[0] = couplet 2, etc.).
+  // Une syllabe peut être '' (note sautée) ou finir par '-' (liaison) ; ' ' interne → '~' en ABC.
+  function verseSyl(slot,v){ return v<=1 ? (slot.lyric||'') : ((slot.verses&&slot.verses[v-2])||''); }
+  function setVerseSyl(slot,v,syl){
+    if(v<=1){ if(syl)slot.lyric=syl; else delete slot.lyric; return; }
+    slot.verses=slot.verses||[];
+    while(slot.verses.length<v-1)slot.verses.push('');
+    slot.verses[v-2]=syl||'';
+  }
+  function cleanupVerses(slot){
+    if(slot.lyric==='')delete slot.lyric;
+    if(slot.verses){
+      while(slot.verses.length && !slot.verses[slot.verses.length-1])slot.verses.pop();
+      if(!slot.verses.length)delete slot.verses;
+    }
+  }
+  function countVersesInNotes(notes){
+    let max=1;
+    notes.forEach(s=>{ if(s.verses&&s.verses.length)max=Math.max(max,1+s.verses.length); });
+    return max;
+  }
+  function countVersesTrack(measures){
+    let max=1;
+    (measures||[]).forEach(m=>m.forEach(s=>{ if(s.type==='note'&&s.verses&&s.verses.length)max=Math.max(max,1+s.verses.length); }));
+    return max;
+  }
+  // Découpe UNE ligne de texte (un couplet) en syllabes selon les règles espace/tiret.
+  // '' = note sautée (décalage). La ligne ne doit plus contenir de saut de ligne ; tab→espace.
+  function parseLyricLineToSyls(line){
+    const syls=[];
+    line.split(' ').forEach(tok=>{
+      if(tok===''){syls.push('');return}              // espace = note sautée (décalage)
+      const trailingDash=tok.endsWith('-');
+      const body=trailingDash?tok.slice(0,-1):tok;
+      if(!body)return;                                 // tiret seul "-" : ignoré
+      const parts=body.split('-');
+      parts.forEach((p,i)=>{
+        if(!p)return;
+        const isLastPart=(i===parts.length-1);
+        const hasNext=(!isLastPart && parts[i+1]!=='') || (isLastPart && trailingDash);
+        syls.push(hasNext ? p+'-' : p);
+      });
+    });
+    return syls;
+  }
+
+  function buildLyricLine(){
+    // Génère les lignes ABC "w:" de la piste active : UNE ligne par couplet.
+    // Format ABC : syllabes séparées par espace ; '-' lie une syllabe à la note suivante ;
+    // '*' = note sans syllabe ; '~' = espace insécable dans une syllabe.
+    const notes=[];
+    state.measures.forEach(m=>m.forEach(s=>{if(s.type==='note')notes.push(s)}));
+    const nv=countVersesInNotes(notes);
+    const out=[];
+    for(let v=1;v<=nv;v++){
+      const syls=[];let any=false;
+      notes.forEach(s=>{
+        const l=verseSyl(s,v);
+        if(l){
+          any=true;
+          // notre modèle stocke le tiret de liaison collé ("bon-") → ABC veut "bon-" suivi d'un espace
+          // on remplace les espaces internes par ~ (insécable), on garde le - final
+          const hasDash=l.endsWith('-');
+          let core=hasDash?l.slice(0,-1):l;
+          core=core.replace(/ /g,'~');
+          syls.push(hasDash?(core+'-'):core);
+        } else syls.push('*');
+      });
+      // retirer les '*' superflus en fin de ligne
+      while(syls.length&&syls[syls.length-1]==='*')syls.pop();
+      if(any&&syls.length)out.push('w:'+syls.join(' '));
+    }
+    return out.join('\n');
+  }
 
   function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1];if(c==='bass'||c==='F')clef='bass';else if(c==='treble-8'||c==='treble_8')clef='treble8';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
-  // Repartit les syllabes des lignes w: sur les notes (dans l'ordre, hyphenation ABC standard)
+  // Repartit les syllabes des lignes w: sur les notes. CHAQUE ligne w: = UN couplet
+  // (l'indice de ligne donne le numéro de couplet ; chaque couplet repart de la 1re note).
   function assignLyrics(ns,lines){
     const notes=[];ns.measures.forEach(m=>m.forEach(s=>{if(s.type==='note')notes.push(s)}));
-    let ni=0;
-    lines.forEach(line=>{
+    lines.forEach((line,vi)=>{
+      const verse=vi+1;
+      let ni=0;
       // tokens : syllabes separees par espaces ; '-' colle a la note ; '_' tient ; '*' saute
       const toks=line.replace(/\\-/g,'\u0001').split(/\s+/).filter(x=>x.length);
       toks.forEach(tok=>{
         if(ni>=notes.length)return;
         if(tok==='*'){ni++;return}
         if(tok==='|'){return}
-        if(tok==='_'){if(notes[ni-1])notes[ni-1].lyric=(notes[ni-1].lyric||'')+'_';return}
+        if(tok==='_'){if(notes[ni-1]){const prev=verseSyl(notes[ni-1],verse);setVerseSyl(notes[ni-1],verse,(prev||'')+'_')}return}
         const syl=tok.replace(/\u0001/g,'-').replace(/~/g,' ');
-        notes[ni].lyric=syl;ni++;
+        setVerseSyl(notes[ni],verse,syl);ni++;
       });
     });
+    notes.forEach(cleanupVerses);
   }
   // Decoupe un fichier ABC multi-morceaux en blocs (chaque morceau commence par X:)
   function splitTunes(text){
@@ -999,7 +1120,7 @@
       // Ligne V: dans le corps -> change la voix courante
       const vline=t.match(/^V:\s*(\S+)(.*)$/);
       if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=(cc.indexOf('bass')>=0||cc==='f')?'bass':((cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0)?'treble8':(cc.indexOf('treble')>=0?'treble':voiceMeta[vid].clef))}const nm=t.match(/(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];continue}
-      const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){addBody(' [P:'+fv.trim()+'] ')}else if(fk==='w'||fk==='W'){ns._lyricLines=ns._lyricLines||[];ns._lyricLines.push(fv)}continue}
+      const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){addBody(' [P:'+fv.trim()+'] ')}else if(fk==='w'||fk==='W'){ns._lyricLinesByVoice=ns._lyricLinesByVoice||{};(ns._lyricLinesByVoice[curVoice]=ns._lyricLinesByVoice[curVoice]||[]).push(fv)}continue}
       const hf=t.match(/^([MLQK]):\s*(.*)$/);
       if(hf){const hk=hf[1],hv=hf[2].trim();const seenMusic=/[A-Ga-gz]/.test(bodyByVoice[curVoice]||'');
         if(!seenMusic){
@@ -1039,8 +1160,15 @@
     });
     if(!ns.tracks.length)ns.tracks.push(makeTrack({pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:ns.pieceKeySig,pieceClef:ns.pieceClef}));
     ns.activeTrack=0;
-    // Paroles : appliquées à la 1re piste (étape 1)
-    if(ns._lyricLines&&ns._lyricLines.length){const t0=ns.tracks[0];const tmp={measures:t0.measures};assignLyrics(tmp,ns._lyricLines)}
+    // Paroles : appliquées à CHAQUE voix (chaque w: va sur la piste de sa voix)
+    if(ns._lyricLinesByVoice){
+      finalVoices.forEach((vid,ti)=>{
+        const lines=ns._lyricLinesByVoice[vid];
+        if(lines&&lines.length&&ns.tracks[ti]){
+          assignLyrics({measures:ns.tracks[ti].measures}, lines);
+        }
+      });
+    }
     return ns;
   }
   function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingTuplet=null,slurDepth=0,lastNoteSlot=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='['&&body[i+1]&&/[\^_=A-Ga-g]/.test(body[i+1])){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);i=end+1;let dsOut='';while(i<body.length&&/[\d/]/.test(body[i])){dsOut+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}
@@ -1048,15 +1176,15 @@
         const chordNotes=[];let p=0;let firstDs='';while(p<inner.length){let a='';while(p<inner.length&&(inner[p]==='^'||inner[p]==='_'||inner[p]==='=')){if(inner[p]==='^')a=(a==='^'?'^^':'^');else if(inner[p]==='_')a=(a==='_'?'__':'_');else a='=';p++}if(p>=inner.length)break;const cc=inner[p];if(/[A-Ga-g]/.test(cc)){let nn=cc.toUpperCase();let oo=(cc===cc.toLowerCase())?1:0;p++;while(p<inner.length&&(inner[p]==="'"||inner[p]===',')){if(inner[p]==="'")oo++;else oo--;p++}let ids='';while(p<inner.length&&/[\d/]/.test(inner[p])){ids+=inner[p];p++}if(firstDs==='')firstDs=ids;chordNotes.push({note:nn,octave:oo,acc:a?(a.length>1?a[0]:a):''})}else p++}
         // durée : externe (après ]) prioritaire, sinon celle des notes internes
         const dsUse=dsOut||firstDs;const factor=parseDurationSpec(dsUse);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}
-        if(chordNotes.length){const first=chordNotes[0];const slot={type:'note',note:first.note,octave:first.octave,dur,dot};if(first.acc)slot.acc=first.acc;if(chordNotes.length>1)slot.stack=chordNotes.slice(1).map(x=>({note:x.note,octave:x.octave,acc:x.acc}));if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot)}continue}}if(c==='['){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);const noteRe=/(\^\^|__|\^|_|=)?([A-Ga-g])('+|,+)?(\d*\/*\d*)/g;const stackNotes=[];let mm;while((mm=noteRe.exec(inner))){let acc=mm[1]||'';let nn=mm[2].toUpperCase();let oct=(mm[2]===mm[2].toLowerCase())?1:0;const adj=mm[3]||'';for(const ch2 of adj){if(ch2==="'")oct++;else if(ch2===',')oct--}stackNotes.push({note:nn,octave:oct,acc:acc?(acc.length>1?acc[0]:acc):'',ds:mm[4]||''})}
+        if(chordNotes.length){const first=chordNotes[0];const slot={type:'note',note:first.note,octave:first.octave,dur,dot};if(first.acc)slot.acc=first.acc;if(chordNotes.length>1)slot.stack=chordNotes.slice(1).map(x=>({note:x.note,octave:x.octave,acc:x.acc}));if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot)}continue}}if(c==='['){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);const noteRe=/(\^\^|__|\^|_|=)?([A-Ga-g])('+|,+)?(\d*\/*\d*)/g;const stackNotes=[];let mm;while((mm=noteRe.exec(inner))){let acc=mm[1]||'';let nn=mm[2].toUpperCase();let oct=(mm[2]===mm[2].toLowerCase())?1:0;const adj=mm[3]||'';for(const ch2 of adj){if(ch2==="'")oct++;else if(ch2===',')oct--}stackNotes.push({note:nn,octave:oct,acc:acc?(acc.length>1?acc[0]:acc):'',ds:mm[4]||''})}
       if(stackNotes.length>0){i=end+1;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}
         // durée : celle après ] si présente, sinon celle de la 1re note interne
         const durSpec=ds||stackNotes[0].ds;const factor=parseDurationSpec(durSpec);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}
         const slot={type:'note',note:stackNotes[0].note,octave:stackNotes[0].octave,dur,dot};if(stackNotes[0].acc)slot.acc=stackNotes[0].acc;if(tie)slot.tieToNext=true;
         if(stackNotes.length>1)slot.stack=stackNotes.slice(1).map(s=>({note:s.note,octave:s.octave,acc:s.acc}));
-        if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}
+        if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}
         curMeasure.push(slot);continue}
-      i=end+1;continue}}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);if(/^[\^_<>@]/.test(ch)){const txt=ch.replace(/^[\^_<>@]/,'');if(txt)lastText=txt}else{if(ch)lastChord=ch}i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if(c==='~'){pendingOrn.push('~');i++;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&(!body[i+1]||!/[2-9]/.test(body[i+1]))){slurDepth++;i++;continue}if(c===')'){if(slurDepth>0)slurDepth--;if(lastNoteSlot)lastNoteSlot.slurToNext=false;i++;continue}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){let nd='';let k=i+1;while(k<body.length&&/[0-9]/.test(body[k])){nd+=body[k];k++}const n=parseInt(nd,10);let j=k,take=n;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);
+      i=end+1;continue}}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);if(/^[\^_<>@]/.test(ch)){const txt=ch.replace(/^[\^_<>@]/,'');if(txt)lastText=txt}else{if(ch)lastChord=ch}i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if(c==='~'){pendingOrn.push('~');i++;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&(!body[i+1]||!/[2-9]/.test(body[i+1]))){slurDepth++;i++;continue}if(c===')'){if(slurDepth>0)slurDepth--;if(lastNoteSlot)lastNoteSlot.slurToNext=false;i++;continue}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){let nd='';let k=i+1;while(k<body.length&&/[0-9]/.test(body[k])){nd+=body[k];k++}const n=parseInt(nd,10);let j=k,take=n,normal=2;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[1])normal=parseInt(nm[1],10);if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,normal:normal,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);
     // Chaque mesure dont la durée diffère de la capacité courante reçoit sa VRAIE métrique locale
     // (anacrouse, bouclage, changement de métrique non annoncé). Le moteur garde sa logique "mesure = capacité".
     // Dénominateur naturel : croche->/8, noire->/4, 7 croches->7/8, blanche->1/2, ronde->4/4.
@@ -1089,7 +1217,7 @@
 
   function expandForPlayback(){const out=[];const N=state.measures.length;if(N===0)return out;let i=0,pass=1,safety=0;const done={};const sectionStarted=new Set();while(i<N&&safety<5000){safety++;const r=state.repeats[i]||{};if(r.start&&!sectionStarted.has(i)){sectionStarted.add(i);pass=1}if(r.volta!==undefined&&r.volta!==pass){const skipV=r.volta;let j=i;while(j<N){const rj=state.repeats[j]||{};if(rj.volta!==skipV)break;j++}i=j;continue}out.push(i);if(r.end){let startIdx=0;for(let k=i;k>=0;k--){if(state.repeats[k]?.start){startIdx=k;break}}const key=startIdx+':'+i;if(!done[key]){done[key]=true;i=startIdx;pass=2;continue}pass=1}i++;if(out.length>5000)break}return out}
 
-  const SCORE_W=800,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=52;
+  const SCORE_W=800,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=60;
   // Référence verticale de chaque clé (en demi-pas de portée).
   // treble=2 (ligne du bas = Mi). bass=-3 : un Ré sous la portée en sol tombe sur la ligne du milieu en fa.
   // treble8 (Sol-8) : MÊME affichage que la clé de sol (têtes aux mêmes positions, conforme EasyABC) ;
@@ -1158,8 +1286,13 @@
     const pxPerUnit=1.8*(state.scoreScale||100)/100;
     const viewW=Math.max(200,cw/pxPerUnit);
     const viewH=Math.max(100,chRaw/pxPerUnit);
+    // Espacement vertical effectif : on agrandit l'inter-portée pour loger les couplets
+    // supplémentaires sous chaque système (1 ligne de paroles ~ 10px).
+    const LYRIC_ROW=10;
+    const nVerses=state.viewFlags.lyrics?countVersesTrack(state.measures):1;
+    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW;
     // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
-    const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SPACING));
+    const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SP));
     const SCORE_W=single?layout.totalUnits:viewW;
     const usableLineW=SCORE_W-LEFT_PAD-RIGHT_PAD;
     const N=single?layout.N:state.measures.length;
@@ -1202,7 +1335,7 @@
     linesShown=Math.max(1,pageLines.length);
     }
     const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
-    const scoreH=STAFF_TOP_Y+linesShown*STAFF_SPACING+10;
+    const scoreH=STAFF_TOP_Y+linesShown*STAFF_SP+10;
     let svg='<svg viewBox="0 0 '+SCORE_W+' '+scoreH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">';
     // === Scale de reference : on prend le scale des lignes "pleines" (le plus petit) ===
     // pour ne pas etaler les mesures de la derniere ligne incomplete sur toute la largeur.
@@ -1221,7 +1354,7 @@
     for(let line=0;line<linesShown;line++){
       const lineData=pageLines[line];
       if(!lineData||lineData.mIdxs.length===0)continue;
-      const staffTop=STAFF_TOP_Y+line*STAFF_SPACING;
+      const staffTop=STAFF_TOP_Y+line*STAFF_SP;
       const lsm=lineData.mIdxs[0];
       const isFirstDocLine=(pageStart===0&&line===0);
       // 5 lignes de portee
@@ -1509,7 +1642,17 @@
             if(state.viewFlags.measureNums)svg+='<text x="'+(xL+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
             if(state.viewFlags.parts&&state.parts&&state.parts[mIdx])svg+='<text x="'+(xL+2)+'" y="'+(staffTop-14)+'" font-size="11" font-weight="bold" fill="'+ink+'">'+escXml(state.parts[mIdx])+'</text>';
           }
-          if(t.type==='note'&&t.lyric&&state.viewFlags.lyrics){svg+='<text x="'+cx+'" y="'+(staffTop+4*LINE_GAP+12)+'" font-size="8" fill="'+ink+'" text-anchor="middle">'+escXml(t.lyric.replace(/_/g,''))+'</text>';}
+          if(t.type==='note'&&state.viewFlags.lyrics){
+            for(let v=1;v<=nVerses;v++){
+              const raw=verseSyl(t,v);
+              if(!raw)continue;
+              const lyricDisplay=raw.replace(/_/g,'').replace(/~/g,' ');
+              const showDash=raw.endsWith('-');
+              const ly=staffTop+4*LINE_GAP+13+(v-1)*LYRIC_ROW;
+              svg+='<text x="'+cx+'" y="'+ly+'" font-size="9" fill="'+ink+'" text-anchor="middle" font-family="sans-serif">'+escXml(lyricDisplay)+'</text>';
+              if(showDash)svg+='<text x="'+(cx+5)+'" y="'+ly+'" font-size="9" fill="'+dim+'" text-anchor="start" font-family="sans-serif">-</text>';
+            }
+          }
           // Zone cliquable invisible pour selectionner ce slot
           svg+='<rect x="'+(cx-sW/2)+'" y="'+(staffTop-12)+'" width="'+sW+'" height="'+(LINE_GAP*4+24)+'" fill="transparent" style="cursor:pointer" data-m="'+mIdx+'" data-s="'+si+'"/>';
         });
@@ -1630,7 +1773,10 @@
 
     const layout=computeSharedLayout(visibleIdx);
     // Échelle uniforme : on dimensionne chaque voix pour que toutes tiennent en hauteur (scroll vertical en secours)
-    const voiceUnitH=STAFF_TOP_Y+STAFF_SPACING+10; // = hauteur du viewBox d'une voix (1 ligne)
+    // On agrandit la hauteur unitaire selon le nombre max de couplets parmi les voix visibles
+    // (1 couplet supplémentaire ~ 10px), pour que les lignes de paroles empilées ne soient pas coupées.
+    const maxVersesVisible=state.viewFlags.lyrics?Math.max(1,...visibleIdx.map(i=>countVersesTrack((tracks[i]||{}).measures))):1;
+    const voiceUnitH=STAFF_TOP_Y+(STAFF_SPACING+Math.max(0,maxVersesVisible-1)*10)+10; // = hauteur du viewBox d'une voix (1 ligne)
     const availH=Math.max(120,cont.clientHeight||400);
     const numV=visibleIdx.length;
     const LABEL_PX=16,PAD_V=4,GAP=4;
@@ -1892,8 +2038,18 @@
           const a=slotMidiSet(meas,si,sig);
           const b=slotMidiSet(nx.meas,nx.idx,nx.sig);
           const same=a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
-          if(same){t.tieToNext=true;delete t.slurToNext;}
-          else{t.slurToNext=true;delete t.tieToNext;}
+          // Si l'import a fixé un type explicite, on le respecte (sauf incohérence évidente :
+          // un "tie" ne peut relier que des hauteurs identiques ; sinon on retombe sur slur).
+          if(t._linkKind==='tie'){
+            if(same){t.tieToNext=true;delete t.slurToNext;}
+            else{t.slurToNext=true;delete t.tieToNext;}
+          } else if(t._linkKind==='slur'){
+            t.slurToNext=true;delete t.tieToNext;
+          } else {
+            // Pas de type explicite (liaison ajoutée manuellement) → déduire par la hauteur
+            if(same){t.tieToNext=true;delete t.slurToNext;}
+            else{t.slurToNext=true;delete t.tieToNext;}
+          }
         }
       }
     }
@@ -2138,7 +2294,7 @@
     const newSlot={type:'note',note:n,octave:state.octave,dur,dot,acc};
     if(hadLink)newSlot.linkToNext=true;
     // Conserver l'appartenance au triolet
-    if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}
+    if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}
     // Conserver l'accord empilé existant
     if(sl.stack)newSlot.stack=sl.stack;
     state.measures[state.sel.m][state.sel.s]=newSlot;
@@ -2184,7 +2340,7 @@
       curM=nextM;curS=nextS;
     }
   }
-  function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}
+  function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}
   function setDurAtSelection(d){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dur=d;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(c)*60/state.tempo))}render()}
   function toggleDotAtSelection(){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dot=!sl.dot;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi)}render()}
   function toggleAccAtSelection(acc){const sl=selectedSlot();if(sl&&sl.type==='note'){
@@ -2256,6 +2412,9 @@
     if(tr.length<MAX_TRACKS){
       h+='<div style="margin-top:8px;"><button class="k" id="tk-add" style="width:100%;font-size:14px;">+ Ajouter une piste</button></div>';
     }
+    if(tr.length>=2){
+      h+='<div style="margin-top:6px;"><button class="k" id="tk-merge" style="width:100%;font-size:14px;">⚇ Réunir des voix…</button></div>';
+    }
     body.innerHTML=h;
     body.querySelectorAll('.tk-select').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);if(i!==state.activeTrack){state.activeTrack=i;state.sel={m:0,s:0};render();renderTracksPanel();}}));
     body.querySelectorAll('.tk-vis').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);state.tracks[i].visible=(state.tracks[i].visible===false);pushHistory();render();renderTracksPanel();}));
@@ -2280,6 +2439,17 @@
       state.tracks.push(nt);
       pushHistory();render();renderTracksPanel();
     });
+    const mergeBtn=document.getElementById('tk-merge');
+    if(mergeBtn)mergeBtn.addEventListener('click',()=>{
+      // Réunir à la demande : on travaille sur les pistes actuelles
+      openVoiceMergePanel(state.tracks.map(t=>t),(finalTracks)=>{
+        state.tracks=finalTracks;
+        state.activeTrack=Math.min(state.activeTrack,finalTracks.length-1);
+        state.sel={m:0,s:0};
+        cleanupAccidentals();initLinksFromTieSlur();
+        pushHistory();render();renderTracksPanel();
+      },true);
+    });
   }
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setActiveTab(t.dataset.tab)));
 
@@ -2302,7 +2472,7 @@
   document.getElementById('meas-next').addEventListener('click',()=>jumpMeasure(+1));
   document.getElementById('meas-start').addEventListener('click',jumpToStart);
   document.getElementById('meas-end').addEventListener('click',jumpToEnd);
-  document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}});
+  document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}});
   document.getElementById('btn-undo').addEventListener('click',undo);
   document.getElementById('btn-redo').addEventListener('click',redo);
   // Applique une mutation selon la portée choisie (voix active seule ou toutes les voix)
@@ -2332,6 +2502,150 @@
   bindToggle('btn-toggle-parts','parts');
   bindToggle('btn-toggle-measnums','measureNums');
   bindToggle('btn-measnums-mes','measureNums');
+
+  // ⭐ Panneau Saisie Paroles : textarea par voix, parsing tirets/espaces → slots notes
+  (function(){
+    const btn=document.getElementById('btn-edit-lyrics');
+    if(!btn)return;
+    btn.addEventListener('click',()=>{
+      // Voix courante dans le panneau (indice dans state.tracks)
+      let lyrTrack=state.activeTrack;
+
+      // Construit le texte des paroles de la piste `ti` : UNE ligne par couplet.
+      function lyricsToText(ti){
+        const saved=state.activeTrack;
+        state.activeTrack=ti;
+        const tr=state.tracks[ti];
+        const notes=[];
+        (tr.measures||[]).forEach(m=>m.forEach(s=>{if(s.type==='note')notes.push(s)}));
+        const nv=countVersesInNotes(notes);
+        const lines=[];
+        for(let v=1;v<=nv;v++){
+          const parts=notes.map(s=>verseSyl(s,v).replace(/_/g,'').replace(/~/g,' '));
+          // Retirer les notes vides en fin de ligne (sinon espaces parasites),
+          // mais conserver les vides en tête / au milieu qui matérialisent les décalages.
+          while(parts.length && parts[parts.length-1]==='') parts.pop();
+          lines.push(parts.join(' '));
+        }
+        // Retirer les couplets entièrement vides en fin
+        while(lines.length>1 && lines[lines.length-1].trim()==='') lines.pop();
+        state.activeTrack=saved;
+        return lines.join('\n');
+      }
+
+      // Parse le texte et assigne les syllabes aux notes de la piste `ti`.
+      // CHAQUE LIGNE (touche Entrée) = UN COUPLET. Au sein d'une ligne :
+      //   séparateur espace ou tiret ;
+      //   mot-mot  → 'mot-' sur note 1, 'mot' sur note 2 (tiret de liaison ABC) ;
+      //   mot      → syllabe autonome ;
+      //   espace en trop / en début de ligne → note sautée (DÉCALAGE).
+      function textToLyrics(ti, text){
+        const saved=state.activeTrack;
+        state.activeTrack=ti;
+        const tr=state.tracks[ti];
+
+        // Collecter les notes
+        const notes=[];
+        (tr.measures||[]).forEach(m=>m.forEach(s=>{if(s.type==='note')notes.push(s)}));
+        // Effacer toutes les paroles existantes (tous couplets)
+        notes.forEach(n=>{delete n.lyric;delete n.verses});
+
+        // Normaliser : CR retirés ; tab→espace. Les sauts de ligne séparent les COUPLETS.
+        const norm=text.replace(/\r/g,'').replace(/\t/g,' ');
+        const lines=norm.split('\n');
+        // Retirer les couplets vides en fin
+        while(lines.length>1 && lines[lines.length-1].trim()==='') lines.pop();
+        if(lines.length===1 && !lines[0].trim()){state.activeTrack=saved;return}
+
+        lines.forEach((line,vi)=>{
+          const verse=vi+1;
+          const syls=parseLyricLineToSyls(line);
+          for(let i=0;i<syls.length&&i<notes.length;i++){
+            // Syllabe vide ('') → note laissée sans parole pour ce couplet : décalage assuré
+            if(syls[i]!=='') setVerseSyl(notes[i],verse,syls[i]);
+          }
+        });
+        notes.forEach(cleanupVerses);
+        state.activeTrack=saved;
+      }
+
+      // Compte les notes d'une piste
+      function countNotes(ti){
+        const tr=state.tracks[ti];
+        let n=0;
+        (tr.measures||[]).forEach(m=>m.forEach(s=>{if(s.type==='note')n++}));
+        return n;
+      }
+
+      function buildVoiceTabsHtml(){
+        let h='<div class="lyr-voice-tabs" id="lyr-voice-tabs">';
+        state.tracks.forEach((tr,i)=>{
+          const name=tr.name||('V'+(i+1));
+          h+='<button class="k" data-lyrtrack="'+i+'">'+escXml(name)+'</button>';
+        });
+        h+='</div>';
+        return h;
+      }
+
+      function buildBody(){
+        const ti=lyrTrack;
+        const n=countNotes(ti);
+        const txt=lyricsToText(ti);
+        return buildVoiceTabsHtml()+
+          '<div class="lyr-note-count" id="lyr-note-count">Notes sur cette piste : <b>'+n+'</b></div>'+
+          '<p class="lyr-hint">Tapez les paroles : l\'application est instantanée. Espace = syllabe suivante ; un espace EN TROP (ou EN DÉBUT de ligne) saute une note et DÉCALE la suite. Tiret (bon-jour) = syllabes liées. <b>Entrée = nouveau couplet</b> (chaque ligne s\'aligne sur les mêmes notes ; affichés empilés sous la portée et exportés en w:/MusicXML). Videz le champ pour effacer.</p>'+
+          '<textarea class="lyr-textarea" id="lyr-textarea" spellcheck="false">'+escXml(txt)+'</textarea>';
+      }
+
+      function refreshTabHighlight(){
+        document.querySelectorAll('#lyr-voice-tabs .k').forEach(b=>{
+          b.classList.toggle('active',parseInt(b.dataset.lyrtrack,10)===lyrTrack);
+        });
+      }
+
+      // Application instantanée du texte aux paroles de la voix courante
+      function applyNow(){
+        const ta=document.getElementById('lyr-textarea');
+        if(!ta)return;
+        textToLyrics(lyrTrack, ta.value);
+        state.viewFlags.lyrics=true;
+        render();
+      }
+
+      openPanel({
+        title:'Saisie Paroles',
+        body:buildBody(),
+        hideActions:true,
+        extraButtons:['Fermer'],
+        onMount:()=>{
+          refreshTabHighlight();
+          const ta=document.getElementById('lyr-textarea');
+          if(ta){
+            // Application instantanée à chaque frappe
+            ta.addEventListener('input',()=>{ applyNow(); });
+            // À la fermeture/perte de focus, on fige dans l'historique
+            ta.addEventListener('blur',()=>{ pushHistory(); });
+          }
+          document.querySelectorAll('#lyr-voice-tabs .k').forEach(b=>{
+            b.addEventListener('click',()=>{
+              // Figer le texte courant dans l'historique avant de changer de voix
+              pushHistory();
+              lyrTrack=parseInt(b.dataset.lyrtrack,10);
+              const newTa=document.getElementById('lyr-textarea');
+              if(newTa)newTa.value=lyricsToText(lyrTrack);
+              const nc=document.getElementById('lyr-note-count');
+              if(nc)nc.innerHTML='Notes sur cette piste : <b>'+countNotes(lyrTrack)+'</b>';
+              refreshTabHighlight();
+              render();
+            });
+          });
+        },
+        onExtra:(w)=>{
+          if(w==='Fermer'){ pushHistory(); closePanel(); return; }
+        }
+      });
+    });
+  })();
 
   document.getElementById('btn-tuplet').addEventListener('click',()=>{
     const sl=selectedSlot();if(!sl)return;
@@ -2477,7 +2791,7 @@
       onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};renderScore();renderState();ensureSelectionVisible();}}});
     openPanel({
       title:'Suppr mesure(s)',
-      body:'<div class="mes-active">Supprimer une plage de mesures</div>'+rg.html(),
+      body:'<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div><div class="mes-active">Supprimer une plage de mesures</div>'+rg.html(),
       hideActions:true,
       extraButtons:['Annuler','Supprimer'],
       onMount:()=>{rg.bind(document.getElementById('panel-body'));},
@@ -2512,7 +2826,7 @@
     let count=1,side='right';
     function endTotal(){return state.measures.length+count}
     function controls(){
-      return '<div class="mes-active">Mesure active : <b id="add-active-mes">'+(state.sel.m+1)+'</b> · Total après : <b id="add-total-mes">'+endTotal()+'</b></div>'+
+      return '<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div><div class="mes-active">Mesure active : <b id="add-active-mes">'+(state.sel.m+1)+'</b> · Total après : <b id="add-total-mes">'+endTotal()+'</b></div>'+
         '<div class="row-grid row-3" id="side-pick">'+
           '<button class="k" data-side="left">Gauche</button>'+
           '<button class="k" data-side="right">Droite</button>'+
@@ -2574,6 +2888,31 @@
     });
   });
 
+  // ⭐ Vider mesure(s) : remplit de silences, VOIX ACTIVE uniquement (la grille mesures reste)
+  document.getElementById('meas-clear').addEventListener('click',()=>{
+    const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
+      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};renderScore();renderState();ensureSelectionVisible();}}});
+    openPanel({
+      title:'Vider mesure(s)',
+      body:'<div class="mes-active" style="color:#0c6b2f;">◆ S\'applique à la <b>voix active</b></div><div class="mes-active">Remplacer le contenu par des silences</div>'+rg.html(),
+      hideActions:true,
+      extraButtons:['Annuler','Vider'],
+      onMount:()=>{rg.bind(document.getElementById('panel-body'));},
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return}
+        const from=Math.min(rg.getFrom(),rg.getTo())-1;
+        const to=Math.max(rg.getFrom(),rg.getTo())-1;
+        // Voix active uniquement : on n'utilise PAS applyToAllTracks
+        for(let mi=from;mi<=to&&mi<state.measures.length;mi++){
+          const meter=meterAt(mi);
+          state.measures[mi]=buildEmptyMeasure(meter);
+        }
+        state.sel={m:from,s:0};
+        cleanupAccidentals();pushHistory();closePanel();render();
+      }
+    });
+  });
+
   function ensureRepeat(m){if(!state.repeats[m])state.repeats[m]={};return state.repeats[m]}
   document.getElementById('btn-rep-start').addEventListener('click',()=>{const m=state.sel.m;const nv=!(state.repeats[m]&&state.repeats[m].start);applyToAllTracks(()=>{ensureRepeat(m).start=nv;});pushHistory();render()});
   document.getElementById('btn-rep-end').addEventListener('click',()=>{const m=state.sel.m;const nv=!(state.repeats[m]&&state.repeats[m].end);applyToAllTracks(()=>{ensureRepeat(m).end=nv;});pushHistory();render()});
@@ -2619,6 +2958,7 @@
           const merged=Object.assign({},a,{dur:cv.dur,dot:cv.dot});
           if(b.tieToNext)merged.tieToNext=true;else delete merged.tieToNext;
           if(b.lyric&&!merged.lyric)merged.lyric=b.lyric;
+          if(b.verses&&!merged.verses)merged.verses=b.verses.slice();
           if(a._selMark||b._selMark)merged._selMark=true;
           meas.splice(i,2,merged);
           count++;changed=true;break;
@@ -3113,7 +3453,7 @@
       const startM=getStart();
       if(endM<startM)endM=startM;
       if(endM>=state.measures.length)endM=state.measures.length-1;
-      return '<div class="mes-active">Mesure active : <b>'+(startM+1)+'</b></div>'+
+      return '<div class="mes-active" style="color:#0c6b2f;">◆ S\'applique à la <b>voix active</b></div><div class="mes-active">Mesure active : <b>'+(startM+1)+'</b></div>'+
         '<div class="stepper-label">Copier jusqu\'à la mesure</div>'+
         '<div class="stepper">'+
           '<button class="k" id="end-d">−</button>'+
@@ -3175,6 +3515,7 @@
     Object.keys(clipboardMes.keyChanges).forEach(off=>{state.keyChanges[startM+parseInt(off,10)]=clipboardMes.keyChanges[off]});
     Object.keys(clipboardMes.clefChanges).forEach(off=>{state.clefChanges[startM+parseInt(off,10)]=clipboardMes.clefChanges[off]});
     pushHistory();render();
+    flash('Collé sur la voix active ('+n+' mesure'+(n>1?'s':'')+')');
   });
 
   function changeVolume(delta){state.volume=Math.max(0,Math.min(100,state.volume+delta));ensureAudio();render()}
@@ -3306,7 +3647,14 @@
     const saved=state.activeTrack;
     for(let ti=0;ti<state.tracks.length;ti++){
       state.activeTrack=ti;
-      state.measures.forEach(meas=>meas.forEach(s=>{if(s.type==='note'&&(s.tieToNext||s.slurToNext))s.linkToNext=true;}));
+      state.measures.forEach(meas=>meas.forEach(s=>{
+        if(s.type==='note'){
+          // Mémoriser le type EXPLICITE de liaison issu de l'import (tie vs slur)
+          // pour que resolveLinks ne le ré-interprète pas à tort (ex. tie → slur parasite).
+          if(s.tieToNext){s.linkToNext=true;s._linkKind='tie';}
+          else if(s.slurToNext){s.linkToNext=true;s._linkKind='slur';}
+        }
+      }));
     }
     state.activeTrack=saved;
     resolveLinks();
@@ -3374,7 +3722,757 @@
       });
     }});
   }
-  fileInput.addEventListener('change',(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{const text=ev.target.result;const tunes=splitTunes(text);if(tunes.length>1){chooseTune(tunes,f.name)}else{lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();loadTuneAbc(text,f.name)}fileInput.value=''};r.readAsText(f)});
+  // ===== Réunion de voix (pistes) en accords =====
+  // Fusionne la piste `src` DANS la piste `dst` : pour chaque mesure, les notes de src
+  // sont empilées sur la note de dst qui occupe la même position temporelle.
+  // Règle de durée (déjà établie) : la durée d'un slot résultant reste celle de dst
+  // (on ne change pas la grille de dst ; on ajoute seulement des hauteurs au stack).
+  // Les notes de src qui tombent entre deux notes de dst sont rattachées à la note de dst
+  // active à cet instant (celle dont l'intervalle [offset, offset+durée) contient l'instant).
+  function mergeTrackInto(dstTrack, srcTrack) {
+    const nMes = Math.max(dstTrack.measures.length, srcTrack.measures.length);
+    for (let mi = 0; mi < nMes; mi++) {
+      const dstMeas = dstTrack.measures[mi] || [];
+      const srcMeas = srcTrack.measures[mi] || [];
+      if (!dstTrack.measures[mi]) dstTrack.measures[mi] = dstMeas;
+      // Offsets de début de chaque slot dst
+      const dstOffsets = []; let acc = 0;
+      for (const s of dstMeas) { dstOffsets.push(acc); acc += effDur(s); }
+      // Pour chaque note de src, trouver le slot dst actif à son offset de début
+      let sOff = 0;
+      for (const sSlot of srcMeas) {
+        const sDur = effDur(sSlot);
+        if (sSlot.type === 'note') {
+          // Trouver le slot dst dont l'intervalle contient sOff
+          let target = -1;
+          for (let k = 0; k < dstMeas.length; k++) {
+            const a = dstOffsets[k], b = a + effDur(dstMeas[k]);
+            if (sOff >= a - 1e-6 && sOff < b - 1e-6) { target = k; break; }
+          }
+          if (target < 0 && dstMeas.length) target = dstMeas.length - 1;
+          if (target >= 0) {
+            const d = dstMeas[target];
+            if (d.type === 'rest') {
+              // dst est un silence : le remplacer par la note de src (conserve la durée du silence)
+              const nd = { type: 'note', note: sSlot.note, octave: sSlot.octave, dur: d.dur, dot: d.dot };
+              if (sSlot.acc) nd.acc = sSlot.acc;
+              if (d.tuplet) { nd.tuplet = d.tuplet; nd.tupletId = d.tupletId; if (d.tupletNormal !== undefined) nd.tupletNormal = d.tupletNormal; }
+              dstMeas[target] = nd;
+            } else {
+              // dst est une note : empiler la hauteur de src (et celles de son stack) si non déjà présentes
+              d.stack = d.stack || [];
+              const present = new Set([d.note + ':' + d.octave + ':' + (d.acc||'')]);
+              d.stack.forEach(x => present.add(x.note + ':' + x.octave + ':' + (x.acc||'')));
+              const addNote = (nn) => {
+                const key = nn.note + ':' + nn.octave + ':' + (nn.acc||'');
+                if (!present.has(key)) { const o = { note: nn.note, octave: nn.octave }; if (nn.acc) o.acc = nn.acc; d.stack.push(o); present.add(key); }
+              };
+              addNote(sSlot);
+              if (sSlot.stack) sSlot.stack.forEach(addNote);
+              if (!d.stack.length) delete d.stack;
+            }
+          }
+        }
+        sOff += sDur;
+      }
+    }
+    return dstTrack;
+  }
+
+  // ===== Parseur MusicXML (score.xml extrait d'un .mxl ou .xml direct) =====
+  function parseMusicXml(xmlText, fileName) {
+    let doc;
+    try { doc = new DOMParser().parseFromString(xmlText, 'application/xml'); }
+    catch(e) { alert('Erreur lecture XML : ' + e.message); return false; }
+    const err = doc.querySelector('parsererror');
+    if (err) { alert('XML invalide : ' + err.textContent.slice(0,200)); return false; }
+
+    // --- Helpers XML ---
+    function txt(el, tag) { const c = el.querySelector(tag); return c ? c.textContent.trim() : ''; }
+    function num(el, tag, def) { const v = txt(el, tag); return v ? parseFloat(v) : def; }
+
+    // --- En-têtes globaux ---
+    const headers = { X:'1', T:'', C:'', N:'', H:'', F:'', Z:'', P:'' };
+    const workTitle = txt(doc, 'work-title');
+    const movTitle  = txt(doc, 'movement-title');
+    headers.T = workTitle || movTitle || '';
+    doc.querySelectorAll('creator').forEach(c => {
+      if (c.getAttribute('type') === 'composer') headers.C = c.textContent.trim();
+    });
+
+    // --- Tempo global (1ère direction sound) ---
+    let globalTempo = 80, globalBeatUnit = 1, globalBeatDotted = false;
+    const firstSound = doc.querySelector('sound[tempo]');
+    if (firstSound) globalTempo = parseFloat(firstSound.getAttribute('tempo')) || 80;
+    const firstMM = doc.querySelector('metronome');
+    if (firstMM) {
+      const bu = txt(firstMM, 'beat-unit') || 'quarter';
+      const dotted = !!firstMM.querySelector('beat-unit-dot');
+      const pm = parseFloat(txt(firstMM, 'per-minute')) || globalTempo;
+      const unitMap = { whole:4, half:2, quarter:1, eighth:0.5, '16th':0.25, '32nd':0.125 };
+      const uq = (unitMap[bu] || 1) * (dotted ? 1.5 : 1);
+      globalTempo = pm * uq;           // canonique en noires/min
+      globalBeatUnit = unitMap[bu] || 1;
+      globalBeatDotted = dotted;
+    }
+
+    // --- Parts : une piste par <part> ---
+    const partEls = Array.from(doc.querySelectorAll('score-partwise > part, part'));
+    if (!partEls.length) { alert('Aucune partie trouvée dans ce MusicXML.'); return false; }
+
+    // map part-id → name
+    const partNames = {};
+    doc.querySelectorAll('score-part').forEach(sp => {
+      const id = sp.getAttribute('id') || '';
+      const n = txt(sp, 'part-name') || id;
+      partNames[id] = n;
+    });
+
+    const tracks = [];
+
+    partEls.forEach((partEl, pi) => {
+      const partId = partEl.getAttribute('id') || ('P' + (pi + 1));
+      const partName = partNames[partId] || ('V' + (pi + 1));
+
+      const measureEls = partEl.querySelectorAll('measure');
+
+      // Détecter toutes les voix distinctes présentes dans cette part (ordre d'apparition)
+      const voiceOrder = [];
+      partEl.querySelectorAll('note').forEach(n => {
+        const v = n.querySelector('voice');
+        const vid = v ? v.textContent.trim() : '1';
+        if (!voiceOrder.includes(vid)) voiceOrder.push(vid);
+      });
+      if (!voiceOrder.length) voiceOrder.push('1');
+
+      // Une piste par voix de la part. Nom : "Part" si une seule voix, sinon "Part vN".
+      voiceOrder.forEach((targetVoice, vidx) => {
+        const trackName = (voiceOrder.length === 1) ? partName : (partName + ' v' + targetVoice);
+
+      // État de lecture de la part (recalculé pour chaque voix : attributs = communs à la part)
+      let divisions = 4;            // durée d'une noire en <duration>
+      let keySig = 0;
+      let clef = 'treble';
+      let meter = '4/4';
+      let pieceMeter = null, pieceKeySig = null, pieceClef = null, pieceUnit = null;
+      const timeChanges = {}, keyChanges = {}, clefChanges = {}, repeats = {};
+      const measures = [];
+      // État tie/slur AU NIVEAU DE LA VOIX (pas de la mesure) pour gérer les liaisons
+      // qui traversent les barres de mesure.
+      const tieKeys = new Set();
+      let lastNoteSlot = null;   // dernière note ajoutée (toutes mesures confondues)
+      let slurOpen = false;
+
+      measureEls.forEach((mEl, mi) => {
+        // --- Attributs ---
+        const attrEl = mEl.querySelector('attributes');
+        if (attrEl) {
+          const div = num(attrEl, 'divisions', 0);
+          if (div > 0) divisions = div;
+
+          const fifthsEl = attrEl.querySelector('fifths');
+          if (fifthsEl) {
+            const f5 = parseInt(fifthsEl.textContent, 10);
+            keySig = Math.max(-7, Math.min(7, f5));
+            if (pieceMeter === null || mi === 0) {
+              if (pi === 0 || pi > 0) {} // always set
+            }
+            if (mi === 0) pieceKeySig = keySig;
+            else keyChanges[mi] = keySig;
+          }
+
+          const timeEl = attrEl.querySelector('time');
+          if (timeEl) {
+            const beats = txt(timeEl, 'beats');
+            const beatType = txt(timeEl, 'beat-type');
+            if (beats && beatType) {
+              const m = beats + '/' + beatType;
+              if (mi === 0) { pieceMeter = m; meter = m; }
+              else { timeChanges[mi] = m; meter = m; }
+            }
+          }
+
+          const clefEl = attrEl.querySelector('clef');
+          if (clefEl) {
+            const sign = txt(clefEl, 'sign').toUpperCase();
+            const octChg = parseInt(txt(clefEl, 'clef-octave-change') || '0', 10);
+            if (sign === 'F') clef = 'bass';
+            else if (sign === 'G' && octChg === -1) clef = 'treble8';
+            else clef = 'treble';
+            if (mi === 0) pieceClef = clef;
+            else clefChanges[mi] = clef;
+          }
+        }
+
+        // Unité ABC : si 4/4 ou 2/4 → 1/8, sinon 1/16
+        if (pieceMeter === null) pieceMeter = '4/4';
+        if (pieceClef === null) pieceClef = 'treble';
+        if (pieceKeySig === null) pieceKeySig = 0;
+
+        // --- Reprises / barlines ---
+        mEl.querySelectorAll('barline').forEach(bl => {
+          const loc = bl.getAttribute('location') || '';
+          const rp = bl.querySelector('repeat');
+          if (rp) {
+            const dir = rp.getAttribute('direction');
+            if (!repeats[mi]) repeats[mi] = {};
+            if (dir === 'forward') repeats[mi].start = true;
+            if (dir === 'backward') repeats[mi].end = true;
+          }
+          const ending = bl.querySelector('ending');
+          if (ending && ending.getAttribute('type') === 'start') {
+            const n = parseInt(ending.getAttribute('number') || '1', 10);
+            if (!repeats[mi]) repeats[mi] = {};
+            repeats[mi].volta = n;
+          }
+        });
+
+        // --- Notes ---
+        // La <duration> MusicXML est en "divisions" (fractions de noire selon <divisions>)
+        // effDur en noires = xmlDur / divisions
+        const slots = [];
+
+        // Convertit une durée brute (en noires) vers {dur, dot} de notre modèle
+        function toDurDot(durQ) {
+          let dur = durQ, dot = false;
+          const trial = durQ * 2 / 3;
+          if (trial >= 0.125 - 1e-6 && trial <= 4 + 1e-6) {
+            const l2 = Math.log2(trial);
+            if (Math.abs(Math.round(l2) - l2) < 1e-6) { dur = trial; dot = true; }
+          }
+          if (!dot) {
+            const l2 = Math.log2(durQ);
+            const rounded = Math.pow(2, Math.round(l2));
+            if (Math.abs(rounded - durQ) < 0.01) dur = rounded;
+          }
+          return { dur, dot };
+        }
+        // Extrait les infos d'une note <note> (hauteur, altération, paroles, liaisons)
+        function extractNoteInfo(nEl) {
+          const pitchEl = nEl.querySelector('pitch');
+          if (!pitchEl) return null;
+          const step = txt(pitchEl, 'step').toUpperCase();
+          const alter = num(pitchEl, 'alter', 0);
+          const octXml = num(pitchEl, 'octave', 4);
+          const octInternal = octXml - 4 + (clef === 'treble8' ? 1 : 0);
+          let acc = '';
+          if (alter === 1) acc = '^';
+          else if (alter === -1) acc = '_';
+          else if (alter === 2) acc = '^^';
+          else if (alter === -2) acc = '__';
+          else if (alter === 0) {
+            const accidentalEl = nEl.querySelector('accidental');
+            if (accidentalEl && accidentalEl.textContent.trim() === 'natural') acc = '=';
+          }
+          let lyric = '';
+          const verses = {};
+          nEl.querySelectorAll('lyric').forEach(lyricEl => {
+            let vnum = parseInt(lyricEl.getAttribute('number') || '1', 10);
+            if (!vnum || vnum < 1) vnum = 1;
+            const syllabic = txt(lyricEl, 'syllabic');
+            const textEl = lyricEl.querySelector('text');
+            const sylText = textEl ? textEl.textContent.trim() : '';
+            if (!sylText) return;
+            verses[vnum] = (syllabic === 'begin' || syllabic === 'middle') ? sylText + '-' : sylText;
+          });
+          lyric = verses[1] || '';
+          let tieStop = false, tieStart = false;
+          nEl.querySelectorAll('tie').forEach(t => {
+            const tp = t.getAttribute('type');
+            if (tp === 'stop') tieStop = true;
+            if (tp === 'start') tieStart = true;
+          });
+
+          // --- Ornements / articulations / slur (dans <notations>) ---
+          const orn = [];
+          let slurStart = false, slurStop = false;
+          const notationsEl = nEl.querySelector('notations');
+          if (notationsEl) {
+            // Slurs
+            notationsEl.querySelectorAll('slur').forEach(s => {
+              const tp = s.getAttribute('type');
+              if (tp === 'start') slurStart = true;
+              if (tp === 'stop') slurStop = true;
+            });
+            // Ornements
+            const ornEl = notationsEl.querySelector('ornaments');
+            if (ornEl) {
+              if (ornEl.querySelector('trill-mark')) orn.push('T');
+              if (ornEl.querySelector('turn, delayed-turn, inverted-turn')) orn.push('M');
+              if (ornEl.querySelector('mordent, inverted-mordent')) orn.push('P');
+            }
+            // Articulations
+            const artEl = notationsEl.querySelector('articulations');
+            if (artEl) {
+              if (artEl.querySelector('accent, strong-accent')) orn.push('L');
+              if (artEl.querySelector('staccato, staccatissimo')) orn.push('.');
+            }
+            // Point d'orgue (fermata) — peut être hors articulations
+            if (notationsEl.querySelector('fermata')) orn.push('H');
+            // Technique : coups d'archet
+            const techEl = notationsEl.querySelector('technical');
+            if (techEl) {
+              if (techEl.querySelector('up-bow')) orn.push('u');
+              if (techEl.querySelector('down-bow')) orn.push('v');
+            }
+          }
+          // Fermata peut aussi être directement sous <note>
+          if (!orn.includes('H') && nEl.querySelector('fermata')) orn.push('H');
+
+          return { step, alter, octXml, octInternal, acc, lyric, verses, tieStop, tieStart, orn, slurStart, slurStop };
+        }
+
+        // Map du <type> MusicXML vers durée nominale en noires
+        const TYPE_DUR = { 'whole':4, 'half':2, 'quarter':1, 'eighth':0.5, '16th':0.25, '32nd':0.125, '64th':0.0625 };
+
+        // Parse un <harmony> MusicXML en symbole d'accord texte (ex. "Cm7", "G/B")
+        function parseHarmony(hEl) {
+          const rootEl = hEl.querySelector('root');
+          const kindEl = hEl.querySelector('kind');
+          if (!rootEl) return '';
+          let s = txt(rootEl, 'root-step');
+          const ra = num(rootEl, 'root-alter', 0);
+          if (ra === 1) s += '#'; else if (ra === -1) s += 'b';
+          // Type d'accord → suffixe usuel
+          const kind = kindEl ? kindEl.textContent.trim() : '';
+          const kindText = kindEl ? (kindEl.getAttribute('text') || '') : '';
+          const KIND_MAP = {
+            'major': '', 'minor': 'm', 'augmented': 'aug', 'diminished': 'dim',
+            'dominant': '7', 'major-seventh': 'Maj7', 'minor-seventh': 'm7',
+            'diminished-seventh': 'dim7', 'augmented-seventh': 'aug7',
+            'half-diminished': 'm7b5', 'major-sixth': '6', 'minor-sixth': 'm6',
+            'dominant-ninth': '9', 'major-ninth': 'Maj9', 'minor-ninth': 'm9',
+            'suspended-second': 'sus2', 'suspended-fourth': 'sus4',
+            'dominant-11th': '11', 'dominant-13th': '13', 'power': '5'
+          };
+          if (kindText) s += kindText;
+          else if (KIND_MAP[kind] !== undefined) s += KIND_MAP[kind];
+          // Basse (slash chord)
+          const bassEl = hEl.querySelector('bass');
+          if (bassEl) {
+            let b = txt(bassEl, 'bass-step');
+            const ba = num(bassEl, 'bass-alter', 0);
+            if (ba === 1) b += '#'; else if (ba === -1) b += 'b';
+            if (b) s += '/' + b;
+          }
+          return s;
+        }
+        // Pré-scan : associer chaque <harmony> à la première <note> de la voix cible qui le suit.
+        // (Les symboles d'accord sont attachés à la voix en cours d'extraction.)
+        const harmonyForNote = new Map();
+        {
+          let pendingHarmony = '';
+          Array.from(mEl.children).forEach(child => {
+            if (child.tagName === 'harmony') {
+              const h = parseHarmony(child);
+              if (h) pendingHarmony = h;
+            } else if (child.tagName === 'note') {
+              const v = child.querySelector('voice');
+              const vid = v ? v.textContent.trim() : '1';
+              if (vid === targetVoice && pendingHarmony && !child.querySelector('chord')) {
+                harmonyForNote.set(child, pendingHarmony);
+                pendingHarmony = '';
+              }
+            }
+          });
+        }
+
+        // Regrouper les notes voix 1 en "événements" : chaque événement = une note seule
+        // ou un accord (note de tête + notes <chord/> suivantes).
+        const events = [];   // { durQ (curseur), notes:[{nEl, info}], isRest, tuplet... }
+        const noteEls = Array.from(mEl.querySelectorAll('note'));
+        noteEls.forEach(nEl => {
+          const voiceEl = nEl.querySelector('voice');
+          const voice = voiceEl ? voiceEl.textContent.trim() : '1';
+          if (voice !== targetVoice) return;
+          if (nEl.querySelector('grace')) return;
+
+          const isChordNote = !!nEl.querySelector('chord');
+          const isRest = !!nEl.querySelector('rest');
+          const xmlDur = num(nEl, 'duration', divisions);
+          const durQ = xmlDur / divisions;
+
+          if (isChordNote && events.length > 0 && !events[events.length - 1].isRest) {
+            // Note simultanée : rattacher à l'événement (accord) précédent.
+            const ev = events[events.length - 1];
+            const info = extractNoteInfo(nEl);
+            if (info) ev.notes.push({ nEl, info, durQ });
+            ev.durChordMax = Math.max(ev.durChordMax, durQ);
+          } else {
+            // Nouvel événement : c'est la note "porteuse" du curseur temporel.
+            // --- Détection n-uplet ---
+            // <time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes>
+            // <type> donne la durée nominale visuelle (croche, noire...)
+            let tupletActual = 0, tupletNormal = 0, nominalDurQ = 0;
+            const tmEl = nEl.querySelector('time-modification');
+            if (tmEl) {
+              tupletActual = parseInt(txt(tmEl, 'actual-notes') || '0', 10);
+              tupletNormal = parseInt(txt(tmEl, 'normal-notes') || '0', 10);
+            }
+            const typeStr = txt(nEl, 'type');
+            if (typeStr && TYPE_DUR[typeStr] !== undefined) {
+              nominalDurQ = TYPE_DUR[typeStr];
+              if (nEl.querySelector('dot')) nominalDurQ *= 1.5;
+            }
+            // Marqueurs de début/fin de groupe n-uplet (notations/tuplet)
+            let tupStart = false, tupStop = false;
+            nEl.querySelectorAll('notations tuplet, tuplet').forEach(t => {
+              const tp = t.getAttribute('type');
+              if (tp === 'start') tupStart = true;
+              if (tp === 'stop') tupStop = true;
+            });
+            events.push({
+              cursorDurQ: durQ, durChordMax: durQ,
+              notes: [{ nEl, info: isRest ? null : extractNoteInfo(nEl), durQ }],
+              isRest,
+              tupletActual, tupletNormal, nominalDurQ, tupStart, tupStop,
+              harmony: harmonyForNote.get(nEl) || ''
+            });
+          }
+        });
+
+        // Construire les slots à partir des événements
+        // Gestion n-uplet : un groupe partage un tupletId. On l'ouvre au tupStart et le ferme au tupStop.
+        let curTupletId = null, curTupletN = 0, curTupletNormal = 2;
+        events.forEach(ev => {
+          // Détecter appartenance à un n-uplet : actual>normal (ex. 3 dans l'espace de 2)
+          const inTuplet = ev.tupletActual > 0 && ev.tupletNormal > 0 && ev.tupletActual > ev.tupletNormal;
+
+          if (ev.isRest) {
+            const { dur, dot } = toDurDot(ev.cursorDurQ);
+            const restSlot = { type: 'rest', dur, dot };
+            // Un silence peut faire partie d'un n-uplet
+            if (inTuplet) {
+              if (ev.tupStart || curTupletId === null) { curTupletId = nextTupletId++; curTupletN = ev.tupletActual; curTupletNormal = ev.tupletNormal; }
+              restSlot.tuplet = curTupletN;
+              restSlot.tupletId = curTupletId;
+              if (curTupletNormal !== 2) restSlot.tupletNormal = curTupletNormal;
+              // durée nominale de la figure
+              if (ev.nominalDurQ > 0) { const nd = toDurDot(ev.nominalDurQ); restSlot.dur = nd.dur; restSlot.dot = nd.dot; }
+              if (ev.tupStop) { curTupletId = null; curTupletN = 0; curTupletNormal = 2; }
+            }
+            slots.push(restSlot);
+            return;
+          }
+          const chordDurQ = ev.cursorDurQ;
+          let { dur, dot } = toDurDot(chordDurQ);
+
+          // Première note = tête du slot ; les autres → stack
+          const head = ev.notes[0].info;
+          if (!head) return;
+
+          // --- N-uplet : on utilise la durée NOMINALE de la figure (issue du <type>).
+          // Notre effDur applique le ratio normal/n (normal stocké dans tupletNormal si ≠ 2).
+          // Standards 3:2, 5:2, 6:2, 7:2 → normal=2 (implicite). Exotiques 7:4, 5:4… → normal explicite.
+          let slotTuplet = 0, slotTupletId = null, slotTupletNormal = 2;
+          if (inTuplet) {
+            if (ev.tupStart || curTupletId === null) { curTupletId = nextTupletId++; curTupletN = ev.tupletActual; curTupletNormal = ev.tupletNormal; }
+            slotTuplet = curTupletN;
+            slotTupletId = curTupletId;
+            slotTupletNormal = curTupletNormal;
+            if (ev.nominalDurQ > 0) { const nd = toDurDot(ev.nominalDurQ); dur = nd.dur; dot = nd.dot; }
+          }
+
+          const slot = { type: 'note', note: head.step, octave: head.octInternal, dur, dot };
+          if (head.acc) slot.acc = head.acc;
+          if (head.lyric) slot.lyric = head.lyric;
+          // Couplets 2,3,… (slot.verses[0] = couplet 2)
+          if (head.verses) {
+            const vnums = Object.keys(head.verses).map(n => parseInt(n, 10)).filter(n => n >= 2);
+            if (vnums.length) {
+              const maxV = Math.max.apply(null, vnums);
+              const arr = [];
+              for (let v = 2; v <= maxV; v++) arr.push(head.verses[v] || '');
+              while (arr.length && !arr[arr.length - 1]) arr.pop();
+              if (arr.length) slot.verses = arr;
+            }
+          }
+          if (slotTuplet) { slot.tuplet = slotTuplet; slot.tupletId = slotTupletId; if (slotTupletNormal !== 2) slot.tupletNormal = slotTupletNormal; }
+          // Symbole d'accord (harmony)
+          if (ev.harmony) slot.chord = ev.harmony;
+          // Ornements / articulations
+          if (head.orn && head.orn.length) slot.orn = head.orn.slice();
+
+          // Notes empilées (accord)
+          if (ev.notes.length > 1) {
+            slot.stack = [];
+            for (let k = 1; k < ev.notes.length; k++) {
+              const ni = ev.notes[k].info;
+              if (!ni) continue;
+              const stackNote = { note: ni.step, octave: ni.octInternal };
+              if (ni.acc) stackNote.acc = ni.acc;
+              slot.stack.push(stackNote);
+            }
+            if (!slot.stack.length) delete slot.stack;
+          }
+
+          // Liaisons de tenue (tie) : on traite la tête de l'accord (notre modèle lie au niveau du slot).
+          // On marque tieToNext sur la DERNIÈRE note ajoutée (lastNoteSlot), qui peut appartenir
+          // à la mesure précédente — c'est ce qui permet aux liaisons de traverser les barres.
+          const tieKey = head.step + head.octXml + head.alter;
+          if (head.tieStop && tieKeys.has(tieKey)) {
+            if (lastNoteSlot && lastNoteSlot.type === 'note') lastNoteSlot.tieToNext = true;
+            tieKeys.delete(tieKey);
+          }
+          if (head.tieStart) tieKeys.add(tieKey);
+
+          // Liaison de phrasé (slur) : en MusicXML, le slur va de la note "start" à la note "stop".
+          // Dans notre modèle, chaque note de la chaîne (sauf la dernière) porte slurToNext.
+          // IMPORTANT : notre modèle n'a qu'UN lien par note (linkToNext). Si la note démarre
+          // aussi une liaison de tenue (tieStart), le tie est prioritaire (lien sonore réel) :
+          // on ne pose pas slurToNext dessus, ce qui évite des liaisons de phrasé parasites.
+          if (head.slurStart) slurOpen = true;
+          if (slurOpen && !head.slurStop && !head.tieStart) slot.slurToNext = true;
+          if (head.slurStop) slurOpen = false;
+
+          slots.push(slot);
+          lastNoteSlot = slot;   // mémoriser pour le prochain tie/slur (y compris inter-mesure)
+
+          // Fermer le groupe n-uplet après cette note
+          if (inTuplet && ev.tupStop) { curTupletId = null; curTupletN = 0; curTupletNormal = 2; }
+        });
+
+        if (slots.length > 0) measures.push(slots);
+        else {
+          // mesure vide → soupir (déduit de la métrique)
+          const { num: n, den: d } = parseMeter(meter);
+          const beatD = 4 / d;
+          const cap = n * beatD;
+          const rests = [];
+          let rem = cap;
+          const UNITS = [4, 2, 1, 0.5, 0.25, 0.125];
+          for (const u of UNITS) while (rem >= u - 1e-6) { rests.push({ type:'rest', dur: u, dot: false }); rem -= u; }
+          measures.push(rests.length ? rests : [{ type:'rest', dur: beatD, dot: false }]);
+        }
+      });
+
+      // Déduire pieceUnit
+      const { num: mn, den: md } = parseMeter(pieceMeter || '4/4');
+      pieceUnit = (mn / md < 0.75) ? '1/16' : '1/8';
+
+      tracks.push(makeTrack({
+        name: trackName,
+        measures,
+        pieceMeter: pieceMeter || '4/4',
+        pieceUnit,
+        pieceKeySig: pieceKeySig || 0,
+        pieceClef: pieceClef || 'treble',
+        timeChanges,
+        keyChanges,
+        clefChanges,
+        repeats
+      }));
+      });  // fin boucle voix
+    });
+
+    if (!tracks.length) { alert('Aucune piste importée.'); return false; }
+
+    // Fonction d'application finale au state (après éventuelle réunion de voix)
+    function applyTracks(finalTracks) {
+      state.headers = headers;
+      state.tracks = finalTracks;
+      state.activeTrack = 0;
+      state.tempo = globalTempo;
+      state.tempoBeatUnit = globalBeatUnit;
+      state.tempoBeatDotted = globalBeatDotted;
+      state.tempoDotted = (globalBeatUnit === 1 && globalBeatDotted);
+      state.openedFileName = fileName ? fileName.replace(/\.[^.]+$/, '') : null;
+      state.sel = { m: 0, s: 0 };
+      state.octave = 0;
+      lastMultiTunes = null; lastMultiFileName = null; lastMultiIndex = -1; updateListBtn();
+      cleanupAccidentals();
+      initLinksFromTieSlur();
+      pushHistory();
+      render();
+      const nTracks = finalTracks.length;
+      const nNotes = finalTracks.reduce((a, t) => a + t.measures.reduce((b, m) => b + m.filter(s => s.type === 'note').length, 0), 0);
+      flash('MusicXML importé : ' + nTracks + ' piste' + (nTracks > 1 ? 's' : '') + ', ' + nNotes + ' notes');
+    }
+
+    if (tracks.length <= MAX_TRACKS) {
+      applyTracks(tracks);
+      return true;
+    }
+
+    // --- Trop de voix : proposer de réunir ---
+    // L'utilisateur coche les voix à réunir ; les voix cochées sont fusionnées (accords)
+    // dans la PREMIÈRE voix cochée. On répète jusqu'à ≤ MAX_TRACKS.
+    openVoiceMergePanel(tracks, applyTracks);
+    return true;
+  }
+
+  // Panneau de réunion de voix.
+  // `tracks` : pistes à considérer. `onDone(finalTracks)` appliqué à la fin.
+  // `manual` : true = réunion à la demande (pas de limite imposée, bouton « Terminer »).
+  function openVoiceMergePanel(tracks, onDone, manual) {
+    // Travail sur une copie : chaque entrée = { track, merged:false }
+    let working = tracks.map(t => t);
+    const checked = new Set();   // indices cochés (à réunir ensemble)
+
+    function controls() {
+      let h = manual
+        ? '<small>Cochez les voix à réunir (elles seront empilées en accords sur la première cochée), puis « Réunir ». Cliquez « Terminer » quand c\'est fini.</small>'
+        : ('<small>Ce morceau contient <b>' + working.length + '</b> voix, le maximum est <b>' + MAX_TRACKS + '</b>.<br>'
+          + 'Cochez les voix à réunir (elles seront empilées en accords sur la première cochée), puis « Réunir ». '
+          + 'Répétez jusqu\'à ' + MAX_TRACKS + ' voix ou moins.</small>');
+      h += '<div class="save-list" id="vm-list" style="max-height:calc(100vh - 360px);">';
+      working.forEach((t, i) => {
+        const nNotes = t.measures.reduce((a, m) => a + m.filter(s => s.type === 'note').length, 0);
+        const on = checked.has(i);
+        h += '<div class="item" data-vm="' + i + '" style="' + (on ? 'background:#d3e6fa;outline:2px solid #378add;outline-offset:-2px;' : '') + '">'
+          + '<span><input type="checkbox" ' + (on ? 'checked' : '') + ' style="margin-right:8px;"/>'
+          + escXml(t.name || ('V' + (i + 1))) + '</span>'
+          + '<span style="font-size:11px;color:#5f5e5a;">' + nNotes + ' notes</span></div>';
+      });
+      h += '</div>';
+      h += '<div class="mes-active" style="margin-top:6px;">Voix actuelles : <b>' + working.length + '</b> / ' + MAX_TRACKS + '</div>';
+      return h;
+    }
+    function rebindList() {
+      document.querySelectorAll('#vm-list .item[data-vm]').forEach(el => {
+        el.addEventListener('click', () => {
+          const i = parseInt(el.dataset.vm, 10);
+          if (checked.has(i)) checked.delete(i); else checked.add(i);
+          refreshBody();
+        });
+      });
+    }
+    function refreshBody() {
+      const body = document.getElementById('panel-body');
+      const actions = body.querySelector('.actions');
+      body.innerHTML = controls() + (actions ? actions.outerHTML : '');
+      rebindList();
+      // re-bind extra buttons
+      body.querySelectorAll('[data-extra]').forEach(b => {
+        b.addEventListener('click', () => { if (cOnExtra) cOnExtra(b.dataset.extra); });
+      });
+    }
+    openPanel({
+      title: 'Réunir des voix', body: controls(), hideActions: true,
+      extraButtons: manual ? ['Réunir la sélection', 'Terminer'] : ['Réunir la sélection', 'Ouvrir tel quel'],
+      actionsClass: 'two', fullHeight: true,
+      onMount: rebindList,
+      onExtra: (w) => {
+        if (w === 'Ouvrir tel quel') {
+          onDone(working.slice(0, MAX_TRACKS));
+          closePanel();
+          return;
+        }
+        if (w === 'Terminer') {
+          onDone(working);
+          closePanel();
+          return;
+        }
+        if (w === 'Réunir la sélection') {
+          if (checked.size < 2) { alert('Cochez au moins deux voix à réunir.'); return; }
+          const idxs = [...checked].sort((a, b) => a - b);
+          const dst = working[idxs[0]];
+          for (let k = 1; k < idxs.length; k++) mergeTrackInto(dst, working[idxs[k]]);
+          const toRemove = new Set(idxs.slice(1));
+          working = working.filter((_, i) => !toRemove.has(i));
+          checked.clear();
+          if (!manual && working.length <= MAX_TRACKS) {
+            onDone(working);
+            closePanel();
+            return;
+          }
+          refreshBody();
+        }
+      }
+    });
+  }
+
+  // Charge un fichier ArrayBuffer MXL (ZIP) → extrait score.xml → parseMusicXml
+  async function loadMxlFile(buffer, fileName) {
+    try {
+      // Lire le ZIP minimal : trouver score.xml (ou le rootfile) dans le ZIP
+      const bytes = new Uint8Array(buffer);
+      // Signature ZIP : PK\x03\x04
+      if (bytes[0] !== 0x50 || bytes[1] !== 0x4B) {
+        // Pas un ZIP → tenter comme XML direct
+        const text = new TextDecoder('utf-8').decode(bytes);
+        return parseMusicXml(text, fileName);
+      }
+      // Extraire tous les fichiers du ZIP (method=0 stored ou 8 deflate via DecompressionStream)
+      function readUint16LE(b, o) { return b[o] | (b[o+1]<<8); }
+      function readUint32LE(b, o) { return (b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0; }
+      let i = 0;
+      let scoreXmlData = null;
+      while (i < bytes.length - 4) {
+        const sig = readUint32LE(bytes, i);
+        if (sig !== 0x04034B50) break; // Local File Header signature
+        const method   = readUint16LE(bytes, i + 8);
+        const compSize = readUint32LE(bytes, i + 18);
+        const nameLen  = readUint16LE(bytes, i + 26);
+        const extraLen = readUint16LE(bytes, i + 28);
+        const nameBytes = bytes.slice(i + 30, i + 30 + nameLen);
+        const name = new TextDecoder('utf-8').decode(nameBytes);
+        const dataStart = i + 30 + nameLen + extraLen;
+        const compData = bytes.slice(dataStart, dataStart + compSize);
+        i = dataStart + compSize;
+        // On cherche score.xml ou tout .xml qui n'est pas container.xml
+        if (name.endsWith('.xml') && !name.includes('container')) {
+          if (method === 0) {
+            // Stored : directement utilisable
+            scoreXmlData = new TextDecoder('utf-8').decode(compData);
+          } else if (method === 8) {
+            // Deflate : utiliser DecompressionStream
+            try {
+              const ds = new DecompressionStream('deflate-raw');
+              const writer = ds.writable.getWriter();
+              const reader = ds.readable.getReader();
+              writer.write(compData);
+              writer.close();
+              const chunks = [];
+              let done = false;
+              while (!done) {
+                const { value, done: d } = await reader.read();
+                if (value) chunks.push(value);
+                done = d;
+              }
+              const total = chunks.reduce((a, c) => a + c.length, 0);
+              const out = new Uint8Array(total);
+              let off = 0;
+              for (const c of chunks) { out.set(c, off); off += c.length; }
+              scoreXmlData = new TextDecoder('utf-8').decode(out);
+            } catch(e) {
+              alert('Décompression MXL échouée : ' + e.message); return false;
+            }
+          }
+          break;
+        }
+      }
+      if (!scoreXmlData) { alert('score.xml introuvable dans le fichier MXL.'); return false; }
+      return parseMusicXml(scoreXmlData, fileName);
+    } catch(e) {
+      alert('Erreur lecture MXL : ' + e.message); return false;
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const name = f.name.toLowerCase();
+    if (name.endsWith('.mxl')) {
+      const r = new FileReader();
+      r.onload = (ev) => { loadMxlFile(ev.target.result, f.name); fileInput.value = ''; };
+      r.readAsArrayBuffer(f);
+    } else if (name.endsWith('.xml')) {
+      const r = new FileReader();
+      r.onload = (ev) => { parseMusicXml(ev.target.result, f.name); fileInput.value = ''; };
+      r.readAsText(f);
+    } else {
+      // ABC par défaut
+      const r = new FileReader();
+      r.onload = (ev) => {
+        const text = ev.target.result;
+        const tunes = splitTunes(text);
+        if (tunes.length > 1) { chooseTune(tunes, f.name); }
+        else { lastMultiTunes=null; lastMultiFileName=null; lastMultiIndex=-1; updateListBtn(); loadTuneAbc(text, f.name); }
+        fileInput.value = '';
+      };
+      r.readAsText(f);
+    }
+  });
 
   const STORAGE_KEY='abc-editor-saves';
   function getSaves(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(_){return[]}}
@@ -3418,6 +4516,123 @@
     if(d>=0.25)return '16th';
     return '32nd';
   }
+  // Génère <harmony>...</harmony> à partir d'un symbole texte (ex. "Cm7", "G/B").
+  function harmonyXml(sym){
+    if(!sym)return'';
+    const m=sym.match(/^([A-G])([#b]?)(.*)$/);
+    if(!m)return'';
+    const step=m[1];const alt=m[2];let rest=m[3]||'';
+    let bass='';const slash=rest.indexOf('/');
+    if(slash>=0){bass=rest.slice(slash+1);rest=rest.slice(0,slash)}
+    // Déduire le kind MusicXML depuis le suffixe
+    const KIND={'':'major','m':'minor','min':'minor','-':'minor','aug':'augmented','+':'augmented',
+      'dim':'diminished','°':'diminished','7':'dominant','Maj7':'major-seventh','maj7':'major-seventh',
+      'M7':'major-seventh','m7':'minor-seventh','min7':'minor-seventh','dim7':'diminished-seventh',
+      'm7b5':'half-diminished','6':'major-sixth','m6':'minor-sixth','9':'dominant-ninth',
+      'Maj9':'major-ninth','m9':'minor-ninth','sus2':'suspended-second','sus4':'suspended-fourth',
+      '11':'dominant-11th','13':'dominant-13th','5':'power'};
+    const kind=KIND[rest]!==undefined?KIND[rest]:'major';
+    let x='<harmony>';
+    x+='<root><root-step>'+step+'</root-step>';
+    if(alt==='#')x+='<root-alter>1</root-alter>';else if(alt==='b')x+='<root-alter>-1</root-alter>';
+    x+='</root>';
+    x+='<kind'+(KIND[rest]!==undefined?'':' text="'+escapeXml(rest)+'"')+'>'+kind+'</kind>';
+    if(bass){
+      const bm=bass.match(/^([A-G])([#b]?)/);
+      if(bm){x+='<bass><bass-step>'+bm[1]+'</bass-step>';if(bm[2]==='#')x+='<bass-alter>1</bass-alter>';else if(bm[2]==='b')x+='<bass-alter>-1</bass-alter>';x+='</bass>'}
+    }
+    x+='</harmony>\n';
+    return x;
+  }
+  // Génère un <note>...</note>. isChordNote=true → ajoute <chord/> (note empilée d'un accord).
+  // prevNote = note de tête précédente (cross-mesure) pour détecter tie/slur stop.
+  function oneNoteXml(slot,si,meas,lK,lC,dur,isChordNote,prevNote){
+    let xml='<note>';
+    if(isChordNote)xml+='<chord/>';
+    if(slot.type==='rest'){
+      xml+='<rest/>';
+    } else {
+      const effAcc=effectiveAcc(meas,si,lK);
+      xml+=pitchXml(slot,effAcc,lC==='treble8'?-1:0);
+    }
+    xml+='<duration>'+dur+'</duration>';
+    xml+='<voice>1</voice>';
+    xml+='<type>'+noteTypeXml(slot)+'</type>';
+    if(slot.dot)xml+='<dot/>';
+    if(slot.type==='note'&&!isChordNote){
+      const accDraw=accToDrawFor(meas,si,lK);
+      if(accDraw){
+        if(accDraw==='^')xml+='<accidental>sharp</accidental>';
+        else if(accDraw==='_')xml+='<accidental>flat</accidental>';
+        else if(accDraw==='=')xml+='<accidental>natural</accidental>';
+      } else if(slot.acc){
+        if(slot.acc==='^')xml+='<accidental print-object="no">sharp</accidental>';
+        else if(slot.acc==='_')xml+='<accidental print-object="no">flat</accidental>';
+        else if(slot.acc==='=')xml+='<accidental print-object="no">natural</accidental>';
+      }
+    } else if(isChordNote&&slot.acc){
+      if(slot.acc==='^')xml+='<accidental>sharp</accidental>';
+      else if(slot.acc==='_')xml+='<accidental>flat</accidental>';
+      else if(slot.acc==='=')xml+='<accidental>natural</accidental>';
+    }
+    if(slot.tuplet){
+      const normal=(slot.tupletNormal!==undefined&&slot.tupletNormal>0)?slot.tupletNormal:2;
+      xml+='<time-modification><actual-notes>'+slot.tuplet+'</actual-notes><normal-notes>'+normal+'</normal-notes></time-modification>';
+    }
+    // Liaisons de tenue : la note précédente (même dans la mesure d'avant) avait tieToNext
+    // ET même hauteur → cette note = stop. Utilise prevNote (cross-mesure), pas meas[si-1].
+    let tieStopHere=false;
+    if(slot.type==='note'&&!isChordNote&&prevNote&&prevNote.type==='note'&&prevNote.tieToNext){
+      if(prevNote.note===slot.note&&prevNote.octave===slot.octave)tieStopHere=true;
+    }
+    if(tieStopHere)xml+='<tie type="stop"/>';
+    if(slot.tieToNext)xml+='<tie type="start"/>';
+    let nota='';
+    if(tieStopHere)nota+='<tied type="stop"/>';
+    if(slot.tieToNext)nota+='<tied type="start"/>';
+    // Liaisons de phrasé (slur) : slurToNext → start ; précédente avait slurToNext → stop.
+    // Numéro de slur partagé = 1 (chaînes simples). Détection cross-mesure via prevNote.
+    if(slot.type==='note'&&!isChordNote){
+      const prevSlur=prevNote&&prevNote.type==='note'&&prevNote.slurToNext;
+      if(prevSlur)nota+='<slur type="stop" number="1"/>';
+      if(slot.slurToNext)nota+='<slur type="start" number="1"/>';
+    }
+    if(slot.tuplet&&!isChordNote){
+      const isFirstT=(si===0||!meas[si-1]||meas[si-1].tupletId!==slot.tupletId);
+      const isLastT=(si===meas.length-1||!meas[si+1]||meas[si+1].tupletId!==slot.tupletId);
+      if(isFirstT)nota+='<tuplet type="start" bracket="yes"/>';
+      if(isLastT)nota+='<tuplet type="stop"/>';
+    }
+    if(slot.orn&&slot.orn.length&&!isChordNote){
+      let orns='';
+      slot.orn.forEach(o=>{
+        if(o==='~'||o==='T')orns+='<trill-mark/>';
+        else if(o==='M')orns+='<turn/>';
+        else if(o==='P')orns+='<mordent/>';
+        else if(o==='H')nota+='<fermata/>';
+        else if(o==='.')nota+='<articulations><staccato/></articulations>';
+        else if(o==='L')nota+='<articulations><accent/></articulations>';
+        else if(o==='u')nota+='<technical><up-bow/></technical>';
+        else if(o==='v')nota+='<technical><down-bow/></technical>';
+      });
+      if(orns)nota+='<ornaments>'+orns+'</ornaments>';
+    }
+    if(nota)xml+='<notations>'+nota+'</notations>';
+    // Paroles (uniquement sur la note de tête, pas les notes empilées) : un <lyric number> par couplet
+    if(slot.type==='note'&&!isChordNote){
+      const emitLyric=(raw,vnum)=>{
+        if(!raw)return'';
+        const hasDash=raw.endsWith('-');
+        const syl=(hasDash?raw.slice(0,-1):raw).replace(/~/g,' ');
+        const syllabic=hasDash?'begin':'single';
+        return '<lyric number="'+vnum+'"><syllabic>'+syllabic+'</syllabic><text>'+escapeXml(syl)+'</text></lyric>';
+      };
+      xml+=emitLyric(slot.lyric,1);
+      if(slot.verses)slot.verses.forEach((v,idx)=>{xml+=emitLyric(v,idx+2)});
+    }
+    xml+='</note>\n';
+    return xml;
+  }
   function buildMusicXml(){
     const DIV=480; // divisions par noire (multiple riche pour gerer les n-uplets)
     let xml='<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n';
@@ -3455,6 +4670,7 @@
   function buildOnePartXml(partId,DIV,includeTempo){
     let xml='<part id="'+partId+'">\n';
     let prevClef=null,prevKey=null,prevMeter=null;
+    let prevNoteXm=null;   // dernière note émise (toutes mesures confondues) pour tie/slur inter-mesure
     state.measures.forEach((meas,mi)=>{
       xml+='<measure number="'+(mi+1)+'">\n';
       const lC=clefAt(mi),lK=keyAt(mi),lM=meterAt(mi);
@@ -3483,58 +4699,21 @@
       }
       meas.forEach((slot,si)=>{
         const dur=Math.max(1,Math.round(effDur(slot)*DIV));
-        xml+='<note>';
-        if(slot.type==='rest'){
-          xml+='<rest/>';
-        } else {
-          const effAcc=effectiveAcc(meas,si,lK);
-          xml+=pitchXml(slot,effAcc,lC==='treble8'?-1:0);
+        // Symbole d'accord : <harmony> est un élément FRÈRE placé AVANT la note
+        if(slot.type==='note'&&slot.chord){
+          xml+=harmonyXml(slot.chord);
         }
-        xml+='<duration>'+dur+'</duration>';
-        xml+='<type>'+noteTypeXml(slot)+'</type>';
-        if(slot.dot)xml+='<dot/>';
-        if(slot.type==='note'){
-          const accDraw=accToDrawFor(meas,si,lK);
-          if(accDraw){
-            if(accDraw==='^')xml+='<accidental>sharp</accidental>';
-            else if(accDraw==='_')xml+='<accidental>flat</accidental>';
-            else if(accDraw==='=')xml+='<accidental>natural</accidental>';
-          } else if(slot.acc){
-            if(slot.acc==='^')xml+='<accidental print-object="no">sharp</accidental>';
-            else if(slot.acc==='_')xml+='<accidental print-object="no">flat</accidental>';
-            else if(slot.acc==='=')xml+='<accidental print-object="no">natural</accidental>';
-          }
-        }
-        if(slot.tuplet){
-          xml+='<time-modification><actual-notes>'+slot.tuplet+'</actual-notes><normal-notes>2</normal-notes></time-modification>';
-        }
-        if(slot.tieToNext){
-          xml+='<tie type="start"/>';
-        }
-        let nota='';
-        if(slot.tieToNext)nota+='<tied type="start"/>';
-        if(slot.tuplet){
-          const isFirstT=(si===0||!meas[si-1]||meas[si-1].tupletId!==slot.tupletId);
-          const isLastT=(si===meas.length-1||!meas[si+1]||meas[si+1].tupletId!==slot.tupletId);
-          if(isFirstT)nota+='<tuplet type="start" bracket="yes"/>';
-          if(isLastT)nota+='<tuplet type="stop"/>';
-        }
-        if(slot.orn&&slot.orn.length){
-          let orns='';
-          slot.orn.forEach(o=>{
-            if(o==='~')orns+='<trill-mark/>';else if(o==='T')orns+='<trill-mark/>';
-            else if(o==='M')orns+='<turn/>';
-            else if(o==='H')nota+='<fermata/>';
-            else if(o==='.')nota+='<articulations><staccato/></articulations>';
-            else if(o==='L')nota+='<articulations><accent/></articulations>';
+        // Note de tête (on passe prevNoteXm pour détecter tie/slur stop inter-mesure)
+        xml+=oneNoteXml(slot,si,meas,lK,lC,dur,false,prevNoteXm);
+        // Notes empilées (accord) : chaque note du stack avec <chord/>
+        if(slot.type==='note'&&slot.stack&&slot.stack.length){
+          slot.stack.forEach(sn=>{
+            const stackSlot={type:'note',note:sn.note,octave:sn.octave,dur:slot.dur,dot:slot.dot,acc:sn.acc,tuplet:slot.tuplet,tupletId:slot.tupletId,tupletNormal:slot.tupletNormal};
+            xml+=oneNoteXml(stackSlot,si,meas,lK,lC,dur,true,null);
           });
-          if(orns)nota+='<ornaments>'+orns+'</ornaments>';
         }
-        if(slot.chord){
-          nota+='<harmony>'+escapeXml(slot.chord)+'</harmony>';
-        }
-        if(nota)xml+='<notations>'+nota+'</notations>';
-        xml+='</note>\n';
+        // Mémoriser la note de tête pour la suivante (cross-mesure)
+        if(slot.type==='note')prevNoteXm=slot;
       });
       if(r){
         if(r.volta)xml+='<barline location="right"><ending number="'+r.volta+'" type="stop"/></barline>\n';
@@ -3709,7 +4888,9 @@
       +'• Pendant la lecture, vous pouvez passer sur l\'onglet Pistes pour ajuster voix et volumes sans couper le son ; le tempo se règle aussi en direct (reprise au point courant). Quitter vers un autre onglet arrête le son<br>'
       +'• L\'export ABC émet automatiquement V:1, V:2… quand il y a plusieurs pistes<br><br>'
       +'<b style="color:#0c447c;">Onglet Fichier</b><br>'
-      +'• Ligne 1 : 📄 Nouveau · 📂 Ouvrir (.abc) · ☰ Liste des morceaux du fichier<br>'
+      +'• Ligne 1 : 📄 Nouveau · 📂 Ouvrir (.abc, .xml, .mxl) · ☰ Liste des morceaux du fichier<br>'
+      +'• Import MusicXML : ouvrir un .xml ou .mxl importe les notes, accords, n-uplets (y compris exotiques 5:4, 7:4…), liaisons de phrasé (slur), ornements/articulations, symboles d\'accords (Cm7, G/B…), paroles, armures, clés, métriques, répétitions et tempo<br>'
+      +'• Voix multiples : chaque &lt;part&gt; et chaque voix (backup) devient une piste distincte, sans rien modifier du fichier. Si le total dépasse 6 voix, l\'éditeur propose de les réunir (empilage en accords). Bouton « ⚇ Réunir des voix… » dans l\'onglet Pistes pour réunir à tout moment<br>'
       +'• Ligne 2 : 💾 ABC · 💾 MXL (MusicXML compressé) · ⭐ mémo (mémoires locales)<br>'
       +'• ABC (code) affiche le code généré<br>'
       +'• Le bouton ☰ Liste devient actif (bleu) après l\'ouverture d\'un fichier contenant plusieurs morceaux ; le rouvrir réaffiche la liste positionnée sur le morceau en cours<br><br>'
@@ -3928,7 +5109,7 @@
     const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
       onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};st=getCurrent();const nv=document.getElementById('num-v');if(nv)nv.textContent=st.n;const dv=document.getElementById('den-v');if(dv)dv.textContent=st.d;const lv=document.getElementById('L-v');if(lv)lv.textContent=st.uD;renderScore();renderState();ensureSelectionVisible();}}});
     function controls(){
-      return rg.html()+
+      return '<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div>'+rg.html()+
         '<div class="stepper-label">Numérateur</div><div class="stepper"><button class="k" id="num-d">−</button><div class="val"><b id="num-v">'+st.n+'</b></div><button class="k" id="num-u">+</button></div>'+
         '<div class="stepper-label">Dénominateur</div><div class="stepper"><button class="k" id="den-d">−</button><div class="val"><b id="den-v">'+st.d+'</b></div><button class="k" id="den-u">+</button></div>'+
         '<div class="stepper-label">Unité L:1/x</div><div class="stepper"><button class="k" id="L-d">−</button><div class="val"><b id="L-v">'+st.uD+'</b></div><button class="k" id="L-u">+</button></div>';
@@ -3963,7 +5144,7 @@
     const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
       onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};sig=keyAt(m);const sv=document.getElementById('sig-v');if(sv)sv.textContent=keyMajMinLabel(sig);renderScore();renderState();ensureSelectionVisible();}}});
     function controls(){
-      return rg.html()+
+      return '<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div>'+rg.html()+
         '<div class="stepper-label">Armure (Majeur / mineur)</div><div class="stepper"><button class="k" id="sig-d">♭</button><div class="val"><b id="sig-v" style="font-size:13px;">'+keyMajMinLabel(sig)+'</b></div><button class="k" id="sig-u">♯</button></div>';
     }
     function rebind(){
@@ -4001,7 +5182,7 @@
     let pick=clefAt(state.sel.m);
     const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
       onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};pick=clefAt(m);const rf=document.querySelector('#clef-pick');if(rf)rf.querySelectorAll('.k').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));renderScore();renderState();ensureSelectionVisible();}}});
-    function controls(){return rg.html()+
+    function controls(){return '<div class="mes-active" style="color:#0c6b2f;">◆ S\'applique à la <b>voix active</b></div>'+rg.html()+
       '<div class="stepper-label">Clé</div>'+
       '<div class="row-grid row-3" id="clef-pick"><button class="k clef-small" data-clef="treble">𝄞</button><button class="k clef-small" data-clef="treble8" title="Sol octaviée (sonne une octave plus bas)">𝄞<span style="font-size:0.5em;vertical-align:-1em;">8</span></button><button class="k clef-small" data-clef="bass">𝄢</button></div>'}
     function rebind(){
