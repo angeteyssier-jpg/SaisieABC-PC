@@ -145,6 +145,11 @@
   .panel .stepper .val { text-align: center; font-family: inherit;
     font-size: 17px; color: #0c447c; font-weight: 700; }
   .panel .stepper-label { font-size: 10px; color: #1a1a1a; font-weight: 700; margin-bottom: 0; margin-top: 1px; text-align: center; }
+  /* Fenêtre Rythme compacte : libellé + (− valeur +) sur une seule ligne, hauteur réduite */
+  .panel .rythme-compact .stepper-inline { display: grid; grid-template-columns: 1fr 34px 46px 34px; gap: 5px; align-items: center; margin-top: 4px; }
+  .panel .rythme-compact .si-label { font-size: 11px; font-weight: 700; color: #1a1a1a; white-space: nowrap; }
+  .panel .rythme-compact .stepper-inline .k { height: 24px !important; font-size: 15px !important; padding: 0 !important; }
+  .panel .rythme-compact .stepper-inline .val { text-align: center; font-weight: 700; }
   .panel small { display: block; color: #5f5e5a; font-size: 12px;
     margin-bottom: 8px; font-style: italic; font-weight: 600; }
   .panel .save-list { max-height: calc(100vh - 360px); min-height: 120px; overflow-y: auto;
@@ -187,7 +192,7 @@
   .lyr-voice-tabs .k { flex: 1; min-width: 44px; height: 30px !important; font-size: 12px !important; padding: 0 4px !important; }
   .lyr-voice-tabs .k.active { background: #cfe5fa; border-color: #185fa5; color: #0c447c; }
   .lyr-note-count { font-size: 11px; color: #185fa5; font-weight: 700; margin-bottom: 4px; }
-  .lyr-textarea { width: 100%; min-height: 160px; font-family: inherit; font-size: 13px;
+  .lyr-textarea { width: 100%; min-height: 240px; font-family: inherit; font-size: 13px;
     padding: 6px 8px; border: 2px solid #b4b2a9; border-radius: 8px;
     background: #ffffff; color: #1a1a1a; font-weight: 600; line-height: 1.4;
     resize: vertical; }
@@ -206,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.14 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.37 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -235,11 +240,6 @@
 
     <!-- COLONNE GAUCHE : référence mesure + nav + onglets + contrôles -->
     <div class="pc-left">
-      <div class="ctx-card">
-        <div>Mes <b id="meas-pos">1</b> · slot <b id="slot-pos">1</b></div>
-        <div class="line-small">Rythmique : <b id="info-meter">4/4</b> · Armure : <b id="info-key">C maj : 0</b> · Clé : <b id="info-clef">Sol</b></div>
-      </div>
-
       <div class="nav-bar">
         <button class="k" id="cur-prev">←</button>
         <button class="k" id="meas-prev">⟪</button>
@@ -256,20 +256,28 @@
         <button class="tab" data-tab="play" title="Play" aria-label="Play" style="font-size:20px;">▶</button>
         <button class="tab" data-tab="titre" title="Titre" aria-label="Titre" style="font-size:20px;">✎</button>
         <button class="tab" data-tab="fichier" title="Fichier" aria-label="Fichier" style="font-size:20px;">📂</button>
+        <button class="tab" data-tab="partition" title="Modifier la partition" aria-label="Modifier la partition"><svg width="20" height="20" viewBox="0 0 24 24" style="vertical-align:middle;" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
         <button class="tab" data-tab="vue" title="Vue" aria-label="Vue">👁</button>
       </div>
 
       <div class="tab-panel active" data-panel="notes">
+        <div class="row-grid row-4" id="chord-row-edit" title="Gestion des accords (notes empilées)">
+          <button class="k" id="ce-minus" title="Retirer la note active de l'accord">−</button>
+          <button class="k" id="ce-plus" title="Ajouter une note à l'accord">+</button>
+          <button class="k" id="ce-up" title="Note du dessus">▲</button>
+          <button class="k" id="ce-down" title="Note du dessous">▼</button>
+        </div>
         <div class="oct-row">
           <button class="k" id="oct-down">▽</button>
           <div class="label">Oct <b id="oct-val">0</b></div>
           <button class="k" id="oct-up">△</button>
         </div>
         <div class="row-grid row-7" id="notes-row"></div>
-        <div class="row-grid row-6" id="dur-row"></div>
+        <div class="row-grid row-7" id="dur-row"></div>
         <div class="row-grid row-5" id="alt-row"></div>
         <div class="row-grid row-3">
-          <button class="k" id="btn-link" title="Liaison — tie si la note suivante est de même hauteur, sinon slur (liaison de phrasé). Posable même sans note à droite (liaison en attente).">⌒ liaison</button>
+          <button class="k" id="btn-tie" title="Tie (liaison de prolongation, même hauteur) — sélectionnez une note puis posez la suivante. Posable même sans note à droite (liaison en attente).">⌒ tie</button>
+          <button class="k" id="btn-slur" title="Slur (liaison de phrasé, hauteurs différentes) — sélectionnez une note puis posez la suivante. Posable même sans note à droite (liaison en attente).">⌣ slur</button>
           <button class="k" id="btn-del">⌫</button>
         </div>
         <div class="row-grid row-4" id="chord-row-normal">
@@ -277,13 +285,6 @@
           <button class="k" id="btn-chord">Cm</button>
           <button class="k" id="btn-orn">~ tr</button>
           <button class="k" id="btn-stack">♫ Accord</button>
-        </div>
-        <div class="row-grid row-5" id="chord-row-edit" style="display:none;">
-          <button class="k" id="ce-minus" title="Retirer la note active">−</button>
-          <button class="k" id="ce-plus" title="Ajouter une note">+</button>
-          <button class="k" id="ce-up" title="Note du dessus">▲</button>
-          <button class="k" id="ce-down" title="Note du dessous">▼</button>
-          <button class="k" id="ce-fin">Fin</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-undo">↶</button>
@@ -368,6 +369,10 @@
           <button class="k" data-hdr="Z" style="font-size:13px;">Transcr. <span id="hdr-z-val" style="color:#185fa5;">·</span></button>
           <button class="k" data-hdr="P" style="font-size:13px;">Parties <span id="hdr-p-val" style="color:#185fa5;">·</span></button>
         </div>
+        <div class="row-grid row-2" style="margin-top:auto;">
+          <button class="k" data-hdr="W" style="font-size:13px;" title="Couplets supplémentaires (texte libre, non aligné sous les notes)">Couplets+ <span id="hdr-w-val">—</span></button>
+          <button class="k" id="btn-edit-lyrics" style="font-size:13px;">✎ Saisie Paroles…</button>
+        </div>
       </div>
 
       <div class="tab-panel" data-panel="fichier">
@@ -387,12 +392,9 @@
         </div>
       </div>
 
-      <div class="tab-panel" data-panel="vue">
-        <div class="control-row">
-          <button class="k" id="size-d">−</button>
-          <div class="label">Taille <b id="size-v">100</b></div>
-          <button class="k" id="size-u">+</button>
-        </div>
+      <div class="tab-panel" data-panel="partition">
+        <div class="row-grid"><button class="k" id="btn-groove" style="font-size:15px;">⮂ Changer le groove…</button></div>
+        <div style="border-top:1px solid #d8d6ce;margin:8px 0 4px;"></div>
         <div class="row-grid row-2" style="margin-bottom:5px;">
           <button class="k" id="btn-scope-one" style="font-size:13px;" title="Transposer / Armure → C : voix active seulement">Voix active</button>
           <button class="k" id="btn-scope-all" style="font-size:13px;" title="Transposer / Armure → C : toutes les voix">Toutes</button>
@@ -405,14 +407,33 @@
         <div class="row-grid">
           <button class="k" id="btn-disarm" style="font-size:16px;">Armure → C majeur</button>
         </div>
-        <div class="row-grid"><button class="k" id="btn-groove" style="font-size:15px;">⮂ Changer le groove…</button></div>
+        <div style="border-top:1px solid #d8d6ce;margin:8px 0 4px;"></div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-undo-part">↶ Annuler</button>
+          <button class="k" id="btn-redo-part">↷ Refaire</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="vue">
+        <div class="control-row">
+          <button class="k" id="zoom-d">−</button>
+          <div class="label">Zoom <b id="zoom-v">100</b></div>
+          <button class="k" id="zoom-u">+</button>
+        </div>
+        <div class="control-row">
+          <button class="k" id="size-d">−</button>
+          <div class="label" title="Largeur des mesures (étirement horizontal)">Largeur <b id="size-v">100</b></div>
+          <button class="k" id="size-u">+</button>
+        </div>
+        <div class="control-row">
+          <button class="k" id="lyr-y-d" title="Remonter les paroles (plus près de la portée)">−</button>
+          <div class="label">Paroles&nbsp;↕ <b id="lyr-y-v">0</b></div>
+          <button class="k" id="lyr-y-u" title="Descendre les paroles (plus loin de la portée)">+</button>
+        </div>
         <div class="row-grid row-3">
           <button class="k" id="btn-toggle-chords" style="font-size:14px;">Accords</button>
           <button class="k" id="btn-toggle-text" style="font-size:14px;">Texte</button>
           <button class="k" id="btn-toggle-lyrics" style="font-size:14px;">Paroles</button>
-        </div>
-        <div class="row-grid">
-          <button class="k" id="btn-edit-lyrics" style="font-size:14px;">✎ Saisie Paroles…</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-toggle-parts" style="font-size:14px;">Parties</button>
@@ -436,7 +457,7 @@
 <script>
 (function(){
   const NOTES=[{label:'Do',sub:'C',n:'C'},{label:'Ré',sub:'D',n:'D'},{label:'Mi',sub:'E',n:'E'},{label:'Fa',sub:'F',n:'F'},{label:'Sol',sub:'G',n:'G'},{label:'La',sub:'A',n:'A'},{label:'Si',sub:'B',n:'B'}];
-  const DURATIONS=[{label:'𝅝',d:4},{label:'𝅗𝅥',d:2},{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125}];
+  const DURATIONS=[{label:'𝅝',d:4},{label:'𝅗𝅥',d:2},{label:'♩',d:1},{label:'♪',d:0.5},{label:'♬',d:0.25},{label:'𝅘𝅥𝅰',d:0.125},{label:'𝅘𝅥𝅱',d:0.0625}];
   const SHARP_NOTES=['F','C','G','D','A','E','B'];
   const FLAT_NOTES=['B','E','A','D','G','C','F'];
   const ORNAMENTS=[{code:'T',label:'tr'},{code:'M',label:'∼ (gruppetto)'},{code:'P',label:'∿ pincé'},{code:'H',label:'𝄐 point d\'orgue'},{code:'L',label:'> accent'},{code:'.',label:'• staccato'},{code:'u',label:'⋁ levé'},{code:'v',label:'⊓ tiré'},{code:'O',label:'⊕ coda'}];
@@ -470,7 +491,7 @@
     visible:(opts.visible!==undefined)?opts.visible:true,
     instrument:(opts.instrument!==undefined)?opts.instrument:0
   }}
-  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
+  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
   // Aliasing : state.<champ> lit/écrit la piste active
   TRACK_FIELDS.forEach(f=>{Object.defineProperty(state,f,{
     get(){const tr=state.tracks[state.activeTrack]||state.tracks[0];return tr?tr[f]:undefined},
@@ -566,19 +587,53 @@
   function buildEmptyMeasure(meter){const{num,den}=parseMeter(meter);const beatDur=4/den;const slots=[];for(let i=0;i<num;i++)slots.push({type:'rest',dur:beatDur,dot:false});return slots}
   function rebuildMeasures(){const count=Math.max(state.measures.length,9);state.measures=[];state.timeChanges={};state.keyChanges={};state.clefChanges={};state.repeats={};state.parts={};for(let i=0;i<count;i++)state.measures.push(buildEmptyMeasure(state.pieceMeter));state.sel={m:0,s:0}}
 
-  function splitDurationByBeat(offset,amount,beat){const eps=1e-6;const out=[];let cur=+offset.toFixed(6);let rem=+amount.toFixed(6);const distToBeat=((cur%beat)===0)?0:(beat-(cur%beat));if(distToBeat>eps&&rem>eps){const toFill=Math.min(distToBeat,rem);const subs=[4,2,1,0.5,0.25,0.125].filter(u=>u<=beat/2+eps);let used=0;for(const u of subs)while(toFill-used>=u-eps){out.push({dur:u,dot:false});used=+(used+u).toFixed(6)}cur=+(cur+used).toFixed(6);rem=+(rem-used).toFixed(6)}while(rem>=beat-eps){out.push({dur:(beat===1.5)?1:beat,dot:(beat===1.5)});rem=+(rem-beat).toFixed(6);cur=+(cur+beat).toFixed(6)}if(rem>eps){const subs=[4,2,1,0.5,0.25,0.125].filter(u=>u<=beat/2+eps);let leftover=rem;for(const u of subs)while(leftover>=u-eps){out.push({dur:u,dot:false});leftover=+(leftover-u).toFixed(6)}}return out}
+  function splitDurationByBeat(offset,amount,beat){
+    const eps=1e-6;const out=[];let cur=+offset.toFixed(6);let rem=+amount.toFixed(6);
+    // Sous-valeurs disponibles, incluant la quadruple croche (1/64 = 0.0625).
+    const SUBS=[4,2,1,0.5,0.25,0.125,0.0625].filter(u=>u<=beat/2+eps);
+    // Décompose une durée en figures (par défaut du plus GROS au plus petit) ;
+    // si ascending=true, on renvoie du plus PETIT au plus gros (pour la levée avant le temps).
+    function decompose(d,ascending){
+      const pieces=[];let leftover=+d.toFixed(6);
+      for(const u of SUBS)while(leftover>=u-eps){pieces.push({dur:u,dot:false});leftover=+(leftover-u).toFixed(6)}
+      if(ascending)pieces.reverse();
+      return pieces;
+    }
+    // 1) Combler jusqu'au prochain temps (levée) : silences du plus court au plus long.
+    const distToBeat=((cur%beat)===0)?0:(beat-(cur%beat));
+    if(distToBeat>eps&&rem>eps){
+      const toFill=Math.min(distToBeat,rem);
+      decompose(toFill,/*ascending*/true).forEach(p=>out.push(p));
+      cur=+(cur+toFill).toFixed(6);rem=+(rem-toFill).toFixed(6);
+    }
+    // 2) Temps entiers
+    while(rem>=beat-eps){out.push({dur:(beat===1.5)?1:beat,dot:(beat===1.5)});rem=+(rem-beat).toFixed(6);cur=+(cur+beat).toFixed(6)}
+    // 3) Reliquat après les temps : du plus gros au plus petit (lecture naturelle vers la barre).
+    if(rem>eps){decompose(rem,/*ascending*/false).forEach(p=>out.push(p))}
+    return out;
+  }
   function rebalanceMeasure(m,anchorIdx,oldEffDur){const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const cap=measureCapacity(meter);const meas=state.measures[m];const anchor=meas[anchorIdx];let newDur=effDur(anchor);let beforeUsed=0;for(let i=0;i<anchorIdx;i++)beforeUsed+=effDur(meas[i]);if(beforeUsed+newDur>cap+1e-6){const fits=cap-beforeUsed;const overflow=newDur-fits;anchor.tieToNext=true;const fitsPieces=splitDurationByBeat(beforeUsed,fits,beat);if(fitsPieces.length>0){anchor.dur=fitsPieces[0].dur;anchor.dot=fitsPieces[0].dot;const extras=fitsPieces.slice(1).map(p=>{const c=Object.assign({},anchor,{dur:p.dur,dot:p.dot});c.tieToNext=true;return c});state.measures[m]=meas.slice(0,anchorIdx+1).concat(extras)}const nextM=m+1;if(nextM>=state.measures.length)state.measures.push(buildEmptyMeasure(meterAt(m)));const contPieces=splitDurationByBeat(0,overflow,4/parseMeter(meterAt(nextM)).den);const contSlots=contPieces.map((p,i)=>{const c=Object.assign({},anchor,{dur:p.dur,dot:p.dot});delete c.tieToNext;if(i<contPieces.length-1)c.tieToNext=true;return c});_consumeFromHead(nextM,overflow,contSlots);return}const delta=+(newDur-oldEffDur).toFixed(6);const eps=1e-6;if(Math.abs(delta)<eps)return;if(delta<0){const freeAmount=-delta;const offsetAfterAnchor=beforeUsed+newDur;const pieces=splitDurationByBeat(offsetAfterAnchor,freeAmount,beat);const newSlots=pieces.map(p=>{const copy=Object.assign({},anchor,{dur:p.dur,dot:p.dot});delete copy.tieToNext;return copy});const tail=meas.slice(anchorIdx+1);state.measures[m]=meas.slice(0,anchorIdx+1).concat(newSlots,tail);truncateMeasureToCapacity(m,cap);return}let need=delta;let cursor=anchorIdx+1;while(need>eps&&cursor<meas.length){const slot=meas[cursor];const dur=effDur(slot);if(dur<=need+eps){need=+(need-dur).toFixed(6);meas.splice(cursor,1)}else{const remaining=+(dur-need).toFixed(6);let off=0;for(let i=0;i<cursor;i++)off+=effDur(meas[i]);const pieces=splitDurationByBeat(off+need,remaining,beat);const newCopies=pieces.map(p=>Object.assign({},slot,{dur:p.dur,dot:p.dot}));meas.splice(cursor,1,...newCopies);need=0}}truncateMeasureToCapacity(m,cap)}
   function _consumeFromHead(m,amount,replacementSlots){const meter=meterAt(m);const beat=4/parseMeter(meter).den;const meas=state.measures[m];const eps=1e-6;let need=amount;let cursor=0;while(need>eps&&cursor<meas.length){const slot=meas[cursor];const dur=effDur(slot);if(dur<=need+eps){need=+(need-dur).toFixed(6);meas.splice(cursor,1)}else{const remaining=+(dur-need).toFixed(6);const off=need;const pieces=splitDurationByBeat(off,remaining,beat);const newCopies=pieces.map(p=>Object.assign({},slot,{dur:p.dur,dot:p.dot}));meas.splice(cursor,1,...newCopies);need=0}}state.measures[m]=replacementSlots.concat(state.measures[m]);truncateMeasureToCapacity(m,measureCapacity(meter))}
   function truncateMeasureToCapacity(m,cap){const eps=1e-6;const meas=state.measures[m];let used=0;for(let i=0;i<meas.length;i++){const d=effDur(meas[i]);if(used+d>cap+eps){state.measures[m]=meas.slice(0,i);const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));state.measures[m]=state.measures[m].concat(tail);return}used+=d}if(used<cap-eps){const meter=meterAt(m);const{den}=parseMeter(meter);const beat=4/den;const tail=splitDurationByBeat(used,cap-used,beat).map(p=>({type:'rest',dur:p.dur,dot:p.dot}));state.measures[m]=meas.concat(tail)}}
 
   function unitMultiplier(){const m=state.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;const denom=parseInt(m[1],10);return denom/4}
-  function effDToAbc(d){const v=d*unitMultiplier();const e=1e-9;if(Math.abs(v-1)<e)return'';if(Math.abs(v-2)<e)return'2';if(Math.abs(v-3)<e)return'3';if(Math.abs(v-4)<e)return'4';if(Math.abs(v-6)<e)return'6';if(Math.abs(v-8)<e)return'8';if(Math.abs(v-0.5)<e)return'/2';if(Math.abs(v-0.25)<e)return'/4';if(Math.abs(v-0.125)<e)return'/8';if(Math.abs(v-1.5)<e)return'3/2';if(Math.abs(v-0.75)<e)return'3/4';if(Math.abs(v-0.375)<e)return'3/8';const denom=16;const numer=Math.round(v*denom);function gcd(a,b){return b?gcd(b,a%b):a}const g=gcd(numer,denom);const a=numer/g,b=denom/g;if(b===1)return String(a);if(a===1)return'/'+b;return a+'/'+b}
+  function effDToAbc(d){const v=d*unitMultiplier();const e=1e-9;if(Math.abs(v-1)<e)return'';if(Math.abs(v-2)<e)return'2';if(Math.abs(v-3)<e)return'3';if(Math.abs(v-4)<e)return'4';if(Math.abs(v-6)<e)return'6';if(Math.abs(v-8)<e)return'8';if(Math.abs(v-0.5)<e)return'/2';if(Math.abs(v-0.25)<e)return'/4';if(Math.abs(v-0.125)<e)return'/8';if(Math.abs(v-0.0625)<e)return'/16';if(Math.abs(v-1.5)<e)return'3/2';if(Math.abs(v-0.75)<e)return'3/4';if(Math.abs(v-0.375)<e)return'3/8';if(Math.abs(v-0.1875)<e)return'3/16';const denom=32;const numer=Math.round(v*denom);function gcd(a,b){return b?gcd(b,a%b):a}const g=gcd(numer,denom);const a=numer/g,b=denom/g;if(b===1)return String(a);if(a===1)return'/'+b;return a+'/'+b}
   function nominalDur(t){return t.dot?t.dur*1.5:t.dur}
   function noteToken(note,octave,acc){let s=acc||'';let n=note;if(octave>=1)n=n.toLowerCase();s+=n;if(octave>=2)s+="'".repeat(octave-1);else if(octave<=-1)s+=",".repeat(-octave);return s}
   function slotStr(t){let s='';if(t.chord)s+='"'+t.chord+'"';if(t.text)s+='"^'+t.text+'"';if(t.orn&&t.orn.length)t.orn.forEach(o=>{if(o==='~')s+='~';else if('TMPHLRuv'.includes(o))s+=o;else if(o==='.')s+='.';else s+='!'+o+'!'});const durStr=effDToAbc(nominalDur(t));if(t.type==='note'){if(t.stack&&t.stack.length){s+='['+noteToken(t.note,t.octave,t.acc||'')+durStr;t.stack.forEach(x=>{s+=noteToken(x.note,x.octave,x.acc||'')+durStr});s+=']'}else{s+=noteToken(t.note,t.octave,t.acc||'')+durStr}}else{s+='z'+durStr}if(t.tieToNext)s+='-';return s}
   function keyAbc(sig){if(sig===0)return'C';if(sig>0)return['C','G','D','A','E','B','F#','C#'][sig];return['C','F','Bb','Eb','Ab','Db','Gb','Cb'][-sig]}
-  function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';return''}
-  function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';return'Sol'}
+  function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';if(c==='alto')return' clef=alto';if(c==='tenor')return' clef=tenor';return''}
+  function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';if(c==='alto')return'Ut 3 (alto)';if(c==='tenor')return'Ut 4 (ténor)';return'Sol'}
+  // Décode un jeton de clé ABC (valeur de clef=…) vers notre code interne. def=valeur si non reconnu.
+  function clefFromAbcToken(cc,def){cc=(cc||'').toLowerCase();
+    if(cc.indexOf('bass')>=0||cc==='f')return'bass';
+    if(cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0||cc==='treble8')return'treble8';
+    if(cc==='alto'||cc==='c'||cc==='alto3')return'alto';
+    if(cc==='tenor'||cc==='alto4')return'tenor';
+    if(cc.indexOf('treble')>=0)return'treble';
+    return def;}
+  // Code interne → nom de clé ABC pour l'en-tête V:
+  function clefToAbcName(c){return c==='bass'?'bass':c==='treble8'?'treble-8':c==='alto'?'alto':c==='tenor'?'tenor':'treble'}
   function keyHumanLabel(sig){if(sig===0)return'C maj : 0';if(sig>0)return KEY_NAMES_MAJOR[sig]+' maj : '+sig+' ♯';return KEY_NAMES_MAJOR_FLAT[-sig]+' maj : '+Math.abs(sig)+' ♭'}
   // Étiquette « X maj / Y min » avec le mineur relatif et le nombre d'altérations
   function keyMajMinLabel(sig){
@@ -593,11 +648,20 @@
       meas.forEach((slot,si)=>{
         if(slot.type!=='note')return;
         if(!slot.acc)return;
-        // Chercher l'alteration explicite anterieure dans la mesure sur meme note+octave
+        // Chercher l'alteration explicite anterieure dans la mesure sur meme note+octave.
+        // Important : inspecter AUSSI les notes empilees des accords anterieurs (et non les seules
+        // tetes), car une alteration portee par une note d'accord cree un contexte (altération
+        // cachée) pour les notes suivantes de meme hauteur — y compris une tete d'accord.
         let priorAcc=null;
-        for(let k=si-1;k>=0;k--){
+        for(let k=si-1;k>=0&&priorAcc===null;k--){
           const p=meas[k];
-          if(p.type==='note'&&p.note===slot.note&&p.octave===slot.octave&&p.acc){priorAcc=p.acc;break}
+          if(p.type!=='note')continue;
+          if(p.note===slot.note&&p.octave===slot.octave&&p.acc){priorAcc=p.acc;break}
+          if(p.stack&&p.stack.length){
+            for(const sn of p.stack){
+              if(sn.note===slot.note&&sn.octave===slot.octave&&sn.acc){priorAcc=sn.acc;break}
+            }
+          }
         }
         // Si une alteration anterieure existe, le contexte est cette alteration (pas l'armure)
         // Le slot courant doit garder son acc si different de ce contexte.
@@ -772,25 +836,56 @@
   function transposePiece(semitones){
     // Choix simple : monter -> dieses, descendre -> bemols (ignore l'armure)
     const preferFlats=(semitones<0);
-    // Etape 1 : figer toutes les alterations effectives
+    // Etape 1 : figer toutes les alterations effectives (tête ET notes d'accord).
+    // Règle des altérations cachées : une altération posée sur N'IMPORTE quelle note (tête ou
+    // note d'accord) se propage à toutes les notes suivantes de même nom+octave jusqu'à la barre.
+    // On parcourt donc chaque mesure dans l'ordre en tenant une mémoire (note_octave -> altération
+    // effective), alimentée par toutes les notes explicitement altérées, têtes comme empilées.
     state.measures.forEach((meas,mi)=>{
       const sig=keyAt(mi);
-      meas.forEach((slot,si)=>{
+      const keyAccForNote=(name)=>{
+        if(sig>0&&SHARP_NOTES.slice(0,sig).includes(name))return '^';
+        if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(name))return '_';
+        return '';
+      };
+      const memo={}; // note+'_'+octave -> altération effective courante dans la mesure
+      const freezeOne=(o)=>{
+        const key=o.note+'_'+o.octave;
+        let eff;
+        if(o.acc!==undefined&&o.acc!==''){
+          // altération explicite écrite : elle s'applique et devient le nouveau contexte
+          eff=o.acc;
+        } else if(memo[key]!==undefined){
+          // altération cachée héritée d'une note antérieure de même hauteur dans la mesure
+          eff=memo[key];
+        } else {
+          // sinon : altération de l'armure pour ce nom de note
+          eff=keyAccForNote(o.note);
+        }
+        memo[key]=eff;       // mémoriser pour les notes suivantes
+        o.acc=eff||'';       // figer l'altération effective absolue
+      };
+      meas.forEach((slot)=>{
         if(slot.type!=='note')return;
-        const eff=effectiveAcc(meas,si,sig);
-        slot.acc=eff||'';
+        // L'ordre intra-temps : la tête puis les notes empilées (elles partagent le même instant ;
+        // l'altération d'une note d'accord vaut aussi pour les notes suivantes de même hauteur).
+        freezeOne(slot);
+        if(slot.stack&&slot.stack.length)slot.stack.forEach(freezeOne);
       });
     });
     // Etape 2-3 : transposer chaque note (en lisant uniquement slot.acc, plus l'armure)
     const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+    const transOne=(o)=>{
+      let oldMidi=60+baseSemi[o.note]+o.octave*12;
+      if(o.acc==='^')oldMidi+=1;else if(o.acc==='_')oldMidi-=1;
+      const out=midiToNote(oldMidi+semitones,preferFlats);
+      o.note=out.note;o.octave=out.octave;o.acc=out.acc;
+    };
     state.measures.forEach((meas)=>{
       meas.forEach((slot)=>{
         if(slot.type!=='note')return;
-        let oldMidi=60+baseSemi[slot.note]+slot.octave*12;
-        if(slot.acc==='^')oldMidi+=1;else if(slot.acc==='_')oldMidi-=1;
-        const newMidi=oldMidi+semitones;
-        const out=midiToNote(newMidi,preferFlats);
-        slot.note=out.note;slot.octave=out.octave;slot.acc=out.acc;
+        transOne(slot);
+        if(slot.stack&&slot.stack.length)slot.stack.forEach(transOne);
       });
     });
     // Etape 4 : ajuster slot.acc pour que chaque note conserve sa hauteur MIDI
@@ -807,26 +902,21 @@
       };
       // Memoire : derniere alteration effective par (note,octave) dans la mesure
       const memo={};
+      const resolveAcc=(o)=>{
+        const key=o.note+'_'+o.octave;
+        const wantAcc=o.acc||'';
+        const ctx=(memo[key]!==undefined)?memo[key]:keyAccForNote(o.note);
+        if(wantAcc===ctx){ o.acc=''; }
+        else if(wantAcc===''&&ctx!==''){ o.acc='='; }
+        else { o.acc=wantAcc; }
+        memo[key]=wantAcc;
+      };
       meas.forEach((slot,si)=>{
         if(slot.type!=='note')return;
-        const key=slot.note+'_'+slot.octave;
-        // Alteration absolue voulue (issue de midiToNote a l'etape precedente)
-        const wantAcc=slot.acc||'';
-        // Contexte herite : si une note (memetom+memeoctave) a deja ete vue dans la mesure, c'est sa derniere alteration ; sinon, l'armure
-        const ctx=(memo[key]!==undefined)?memo[key]:keyAccForNote(slot.note);
-        // Alteration a afficher
-        if(wantAcc===ctx){
-          // Deja produit par le contexte : rien a afficher
-          slot.acc='';
-        } else if(wantAcc===''&&ctx!==''){
-          // Vouloir naturel alors que le contexte donne diese/bemol : poser becarre explicite
-          slot.acc='=';
-        } else {
-          // Vouloir une alteration explicite differente du contexte
-          slot.acc=wantAcc;
-        }
-        // Mettre a jour la memoire : alteration effective a partir de maintenant pour (note,octave)
-        memo[key]=wantAcc;
+        resolveAcc(slot);
+        // Les notes empilées partagent le même contexte de mesure (même temps) : on les résout
+        // juste après la tête, dans l'ordre, en alimentant la même mémoire d'altérations.
+        if(slot.stack&&slot.stack.length)slot.stack.forEach(resolveAcc);
       });
     });
     // Etape 5 : nettoyage standard (au cas ou)
@@ -898,6 +988,7 @@
     if(state.headers.F&&state.headers.F.trim())h+='F:'+state.headers.F.trim()+'\n';
     if(state.headers.Z&&state.headers.Z.trim())h+='Z:'+state.headers.Z.trim()+'\n';
     if(state.headers.P&&state.headers.P.trim())h+='P:'+state.headers.P.trim()+'\n';
+    if(state.headers.W&&state.headers.W.trim())state.headers.W.split('\n').forEach(l=>{if(l.trim())h+='W:'+l+'\n'});
     // Champs M/L/Q/K du morceau : ceux de la piste 1 (référence)
     const savedTrack=state.activeTrack;
     state.activeTrack=0;
@@ -915,7 +1006,7 @@
     }
     // Multi-voix : déclarer les voix en en-tête, puis émettre chaque corps
     let header='';
-    for(let i=0;i<nTracks;i++){const tr=state.tracks[i];const id=String(i+1);const clName=(tr.pieceClef==='bass')?'bass':(tr.pieceClef==='treble8'?'treble-8':'treble');header+='V:'+id+' clef='+clName;if(tr.name)header+=' name="'+tr.name.replace(/"/g,'')+'"';header+='\n'}
+    for(let i=0;i<nTracks;i++){const tr=state.tracks[i];const id=String(i+1);const clName=clefToAbcName(tr.pieceClef);header+='V:'+id+' clef='+clName;if(tr.name)header+=' name="'+tr.name.replace(/"/g,'')+'"';header+='\n'}
     h+=header;
     for(let i=0;i<nTracks;i++){
       state.activeTrack=i;
@@ -1012,7 +1103,7 @@
     return out.join('\n');
   }
 
-  function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1];if(c==='bass'||c==='F')clef='bass';else if(c==='treble-8'||c==='treble_8')clef='treble8';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
+  function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1].toLowerCase();if(c==='bass'||c==='f')clef='bass';else if(c==='treble-8'||c==='treble_8'||c==='treble8')clef='treble8';else if(c==='alto'||c==='c'||c==='alto3')clef='alto';else if(c==='tenor'||c==='alto4')clef='tenor';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
   // Repartit les syllabes des lignes w: sur les notes. CHAQUE ligne w: = UN couplet
   // (l'indice de ligne donne le numéro de couplet ; chaque couplet repart de la 1re note).
   function assignLyrics(ns,lines){
@@ -1103,7 +1194,7 @@
     return out;
   }
 
-  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};
     // --- multi-voix ---
     const voiceOrder=[];            // ordre d'apparition des voix
     const voiceMeta={};             // id -> {clef,name}
@@ -1115,11 +1206,11 @@
     function addBody(s){bodyByVoice[curVoice]=(bodyByVoice[curVoice]||'')+s}
     let inBody=false,sawL=false;
     for(const line of cleaned){const t=line.trim();
-      if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='R'){ns.headers.R=v}else if(k==='H'){ns.headers.H=ns.headers.H?(ns.headers.H+'\n'+v):v}else if(k==='F'){ns.headers.F=v}else if(k==='Z'){ns.headers.Z=v}else if(k==='P'){ns.headers.P=v}else if(k==='M')ns.pieceMeter=v;else if(k==='L'){ns.pieceUnit=v;sawL=true}else if(k==='V'){const vm=v.match(/^(\S+)(.*)$/);if(vm){const vid=vm[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=v.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=(cc.indexOf('bass')>=0||cc==='f')?'bass':((cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0)?'treble8':(cc.indexOf('treble')>=0?'treble':undefined))}const nm=v.match(/(?:name|nm)\s*=\s*"([^"]*)"/i)||v.match(/(?:name|nm)\s*=\s*(\S+)/i);if(nm)voiceMeta[vid].name=nm[1]}}else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=v.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}
+      if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='R'){ns.headers.R=v}else if(k==='H'){ns.headers.H=ns.headers.H?(ns.headers.H+'\n'+v):v}else if(k==='F'){ns.headers.F=v}else if(k==='Z'){ns.headers.Z=v}else if(k==='W'){ns.headers.W=ns.headers.W?(ns.headers.W+'\n'+v):v}else if(k==='P'){ns.headers.P=v}else if(k==='M')ns.pieceMeter=v;else if(k==='L'){ns.pieceUnit=v;sawL=true}else if(k==='V'){const vm=v.match(/^(\S+)(.*)$/);if(vm){const vid=vm[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=v.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,undefined)}const nm=v.match(/(?:name|nm)\s*=\s*"([^"]*)"/i)||v.match(/(?:name|nm)\s*=\s*(\S+)/i);if(nm)voiceMeta[vid].name=nm[1]}}else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=v.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}
       // --- corps ---
       // Ligne V: dans le corps -> change la voix courante
       const vline=t.match(/^V:\s*(\S+)(.*)$/);
-      if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=(cc.indexOf('bass')>=0||cc==='f')?'bass':((cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0)?'treble8':(cc.indexOf('treble')>=0?'treble':voiceMeta[vid].clef))}const nm=t.match(/(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];continue}
+      if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,voiceMeta[vid].clef)}const nm=t.match(/(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];continue}
       const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){addBody(' [P:'+fv.trim()+'] ')}else if(fk==='w'||fk==='W'){ns._lyricLinesByVoice=ns._lyricLinesByVoice||{};(ns._lyricLinesByVoice[curVoice]=ns._lyricLinesByVoice[curVoice]||[]).push(fv)}continue}
       const hf=t.match(/^([MLQK]):\s*(.*)$/);
       if(hf){const hk=hf[1],hv=hf[2].trim();const seenMusic=/[A-Ga-gz]/.test(bodyByVoice[curVoice]||'');
@@ -1175,16 +1266,16 @@
         // découper les notes internes de l'accord (avec leur durée propre)
         const chordNotes=[];let p=0;let firstDs='';while(p<inner.length){let a='';while(p<inner.length&&(inner[p]==='^'||inner[p]==='_'||inner[p]==='=')){if(inner[p]==='^')a=(a==='^'?'^^':'^');else if(inner[p]==='_')a=(a==='_'?'__':'_');else a='=';p++}if(p>=inner.length)break;const cc=inner[p];if(/[A-Ga-g]/.test(cc)){let nn=cc.toUpperCase();let oo=(cc===cc.toLowerCase())?1:0;p++;while(p<inner.length&&(inner[p]==="'"||inner[p]===',')){if(inner[p]==="'")oo++;else oo--;p++}let ids='';while(p<inner.length&&/[\d/]/.test(inner[p])){ids+=inner[p];p++}if(firstDs==='')firstDs=ids;chordNotes.push({note:nn,octave:oo,acc:a?(a.length>1?a[0]:a):''})}else p++}
         // durée : externe (après ]) prioritaire, sinon celle des notes internes
-        const dsUse=dsOut||firstDs;const factor=parseDurationSpec(dsUse);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}
+        const dsUse=dsOut||firstDs;const factor=parseDurationSpec(dsUse);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.0625&&trial<=4){dur=trial;dot=true}
         if(chordNotes.length){const first=chordNotes[0];const slot={type:'note',note:first.note,octave:first.octave,dur,dot};if(first.acc)slot.acc=first.acc;if(chordNotes.length>1)slot.stack=chordNotes.slice(1).map(x=>({note:x.note,octave:x.octave,acc:x.acc}));if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot)}continue}}if(c==='['){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);const noteRe=/(\^\^|__|\^|_|=)?([A-Ga-g])('+|,+)?(\d*\/*\d*)/g;const stackNotes=[];let mm;while((mm=noteRe.exec(inner))){let acc=mm[1]||'';let nn=mm[2].toUpperCase();let oct=(mm[2]===mm[2].toLowerCase())?1:0;const adj=mm[3]||'';for(const ch2 of adj){if(ch2==="'")oct++;else if(ch2===',')oct--}stackNotes.push({note:nn,octave:oct,acc:acc?(acc.length>1?acc[0]:acc):'',ds:mm[4]||''})}
       if(stackNotes.length>0){i=end+1;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}
         // durée : celle après ] si présente, sinon celle de la 1re note interne
-        const durSpec=ds||stackNotes[0].ds;const factor=parseDurationSpec(durSpec);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}
+        const durSpec=ds||stackNotes[0].ds;const factor=parseDurationSpec(durSpec);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.0625&&trial<=4){dur=trial;dot=true}
         const slot={type:'note',note:stackNotes[0].note,octave:stackNotes[0].octave,dur,dot};if(stackNotes[0].acc)slot.acc=stackNotes[0].acc;if(tie)slot.tieToNext=true;
         if(stackNotes.length>1)slot.stack=stackNotes.slice(1).map(s=>({note:s.note,octave:s.octave,acc:s.acc}));
         if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}
         curMeasure.push(slot);continue}
-      i=end+1;continue}}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);if(/^[\^_<>@]/.test(ch)){const txt=ch.replace(/^[\^_<>@]/,'');if(txt)lastText=txt}else{if(ch)lastChord=ch}i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if(c==='~'){pendingOrn.push('~');i++;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&(!body[i+1]||!/[2-9]/.test(body[i+1]))){slurDepth++;i++;continue}if(c===')'){if(slurDepth>0)slurDepth--;if(lastNoteSlot)lastNoteSlot.slurToNext=false;i++;continue}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){let nd='';let k=i+1;while(k<body.length&&/[0-9]/.test(body[k])){nd+=body[k];k++}const n=parseInt(nd,10);let j=k,take=n,normal=2;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[1])normal=parseInt(nm[1],10);if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,normal:normal,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.125&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);
+      i=end+1;continue}}if(c==='"'){const end=body.indexOf('"',i+1);if(end<0){i++;continue}const ch=body.substring(i+1,end);if(/^[\^_<>@]/.test(ch)){const txt=ch.replace(/^[\^_<>@]/,'');if(txt)lastText=txt}else{if(ch)lastChord=ch}i=end+1;continue}if(c==='!'){const end=body.indexOf('!',i+1);if(end<0){i++;continue}const name=body.substring(i+1,end);const km={'trill':'T','turn':'P','fermata':'H','accent':'L','staccato':'.','upbow':'u','downbow':'v','coda':'O'};const code=km[name]||name;pendingOrn.push(code);i=end+1;continue}if(c==='~'){pendingOrn.push('~');i++;continue}if('.TMHLuv'.includes(c)&&(i===0||!/[A-Ga-gz0-9]/.test(body[i-1]))){const next=body[i+1];if(next&&/[\^_=A-Ga-gz]/.test(next)){pendingOrn.push(c);i++;continue}}if(c==='('&&(!body[i+1]||!/[2-9]/.test(body[i+1]))){slurDepth++;i++;continue}if(c===')'){if(slurDepth>0)slurDepth--;if(lastNoteSlot)lastNoteSlot.slurToNext=false;i++;continue}if(c==='('&&body[i+1]&&/[2-9]/.test(body[i+1])){let nd='';let k=i+1;while(k<body.length&&/[0-9]/.test(body[k])){nd+=body[k];k++}const n=parseInt(nd,10);let j=k,take=n,normal=2;if(body[j]===':'){j++;const nm=body.substring(j).match(/^(\d+)?(?::(\d+))?/);if(nm){j+=(nm[0]||'').length;if(nm[1])normal=parseInt(nm[1],10);if(nm[2])take=parseInt(nm[2],10)}}pendingTuplet={n:n,normal:normal,remaining:take,id:nextTupletId++};i=j;continue}if(c===':'||c==='|'){let j=i,bar='';while(j<body.length&&(body[j]==='|'||body[j]===':')){bar+=body[j];j++}const endRep=/:\|/.test(bar);const startRep=/\|:/.test(bar);if(curMeasure.length>0){if(endRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].end=true}flush()}if(startRep){if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].start=true}if(j<body.length&&/[1-9]/.test(body[j])){const v=parseInt(body[j],10);if(!ns.repeats[mIdx])ns.repeats[mIdx]={};ns.repeats[mIdx].volta=v;j++}i=j;continue}let acc='';while(i<body.length&&(body[i]==='^'||body[i]==='_'||body[i]==='=')){if(body[i]==='^')acc=(acc==='^'?'^^':'^');else if(body[i]==='_')acc=(acc==='_'?'__':'_');else if(body[i]==='=')acc='=';i++}if(i>=body.length)break;const ch=body[i];if(/[A-Ga-g]/.test(ch)){let note=ch.toUpperCase();let oct=(ch===ch.toLowerCase())?1:0;i++;while(i<body.length&&(body[i]==="'"||body[i]===',')){if(body[i]==="'")oct++;else oct--;i++}let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}const factor=parseDurationSpec(ds);const qD=factor/uM();let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.0625&&trial<=4){dur=trial;dot=true}const slot={type:'note',note,octave:oct,dur,dot};if(acc)slot.acc=acc.length>1?acc[0]:acc;if(tie)slot.tieToNext=true;if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingOrn.length){slot.orn=pendingOrn.slice();pendingOrn=[]}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}if(slurDepth>0)slot.slurToNext=true;lastNoteSlot=slot;curMeasure.push(slot);continue}if(ch==='z'||ch==='Z'){i++;let ds='';while(i<body.length&&/[\d/]/.test(body[i])){ds+=body[i];i++}const factor=parseDurationSpec(ds);const qD=(ch==='Z')?measureCapacity(ns.pieceMeter):(factor/uM());let dur=qD,dot=false;const trial=qD*2/3;if(Math.abs(Math.round(Math.log2(trial))-Math.log2(trial))<1e-6&&trial>=0.0625&&trial<=4){dur=trial;dot=true}const slot={type:'rest',dur,dot};if(lastChord){slot.chord=lastChord;lastChord=null}if(lastText){slot.text=lastText;lastText=null}if(pendingTuplet&&pendingTuplet.remaining>0){slot.tuplet=pendingTuplet.n;slot.tupletId=pendingTuplet.id;if(pendingTuplet.normal&&pendingTuplet.normal!==2)slot.tupletNormal=pendingTuplet.normal;pendingTuplet.remaining--;if(pendingTuplet.remaining===0)pendingTuplet=null}curMeasure.push(slot);continue}i++}if(curMeasure.length>0)measures.push(curMeasure);
     // Chaque mesure dont la durée diffère de la capacité courante reçoit sa VRAIE métrique locale
     // (anacrouse, bouclage, changement de métrique non annoncé). Le moteur garde sa logique "mesure = capacité".
     // Dénominateur naturel : croche->/8, noire->/4, 7 croches->7/8, blanche->1/2, ronde->4/4.
@@ -1218,18 +1309,27 @@
   function expandForPlayback(){const out=[];const N=state.measures.length;if(N===0)return out;let i=0,pass=1,safety=0;const done={};const sectionStarted=new Set();while(i<N&&safety<5000){safety++;const r=state.repeats[i]||{};if(r.start&&!sectionStarted.has(i)){sectionStarted.add(i);pass=1}if(r.volta!==undefined&&r.volta!==pass){const skipV=r.volta;let j=i;while(j<N){const rj=state.repeats[j]||{};if(rj.volta!==skipV)break;j++}i=j;continue}out.push(i);if(r.end){let startIdx=0;for(let k=i;k>=0;k--){if(state.repeats[k]?.start){startIdx=k;break}}const key=startIdx+':'+i;if(!done[key]){done[key]=true;i=startIdx;pass=2;continue}pass=1}i++;if(out.length>5000)break}return out}
 
   const SCORE_W=800,STAFF_TOP_Y=22,LINE_GAP=7,LEFT_PAD=50,RIGHT_PAD=6,MEASURES_PER_LINE=5,STAFF_SPACING=60;
-  // Référence verticale de chaque clé (en demi-pas de portée).
-  // treble=2 (ligne du bas = Mi). bass=-3 : un Ré sous la portée en sol tombe sur la ligne du milieu en fa.
-  // treble8 (Sol-8) : MÊME affichage que la clé de sol (têtes aux mêmes positions, conforme EasyABC) ;
-  // le « 8 » sous la clé indique seulement que le SON est une octave plus bas (géré à la lecture/export).
-  function clefRefStep(c){if(c==='bass')return -3;return 2}
+  // Référence verticale de chaque clé (= indice de pas posé sur la LIGNE DU BAS de la portée).
+  // treble=2 (Mi du bas). bass=-3 (Sol grave). alto (ut 3e) : Do médian (step 0) sur la ligne du
+  // milieu → ligne du bas = step -4. tenor (ut 4e) : Do médian sur la 4e ligne → ligne du bas = step -6.
+  // treble8 (Sol-8) : MÊME affichage que la clé de sol ; le « 8 » indique que le SON est une octave
+  // plus bas (géré à la lecture/export). Les clés d'ut ne transposent PAS le son.
+  function clefRefStep(c){if(c==='bass')return -3;if(c==='alto')return -4;if(c==='tenor')return -6;return 2}
   // Décalage SONORE dû à la clé : Sol-8 (treble8) sonne une octave plus bas (−12 demi-tons).
-  // N'affecte que la lecture/preview, jamais le modèle ni l'affichage.
+  // N'affecte que la lecture/preview, jamais le modèle ni l'affichage. (alto/tenor : aucun décalage.)
   function clefSoundShift(clef){return clef==='treble8'?-12:0;}
   function noteY(staffTop,step,c){const r=clefRefStep(c);const bl=staffTop+4*LINE_GAP;return bl-(step-r)*(LINE_GAP/2)}
   function stepIndex(note,oct){const m={C:0,D:1,E:2,F:3,G:4,A:5,B:6};return m[note]+7*oct}
   const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
-  function keySigAccidentals(sig,c){const out=[];if(sig>0){const m=c==='bass'?BSS:TSS;for(let i=0;i<sig;i++)out.push({sym:'♯',step:m[SHARP_NOTES[i]]})}else if(sig<0){const m=c==='bass'?BFS:TFS;for(let i=0;i<-sig;i++)out.push({sym:'♭',step:m[FLAT_NOTES[i]]})}return out}
+  // Clés d'ut : positions des altérations d'armure (indices de pas), dérivées du placement standard.
+  const ASS={F:3,C:0,G:4,D:1,A:-2,E:2,B:-1},AFS={B:-1,E:2,A:-2,D:1,G:-3,C:0,F:3};            // alto (ut 3e)
+  const NSS={F:-4,C:0,G:-3,D:1,A:-2,E:2,B:-1},NFS={B:-1,E:2,A:-2,D:1,G:-3,C:0,F:-4};          // tenor (ut 4e)
+  function keySigAccidentals(sig,c){const out=[];
+    const SH=(c==='bass')?BSS:(c==='alto')?ASS:(c==='tenor')?NSS:TSS;
+    const FL=(c==='bass')?BFS:(c==='alto')?AFS:(c==='tenor')?NFS:TFS;
+    if(sig>0){for(let i=0;i<sig;i++)out.push({sym:'♯',step:SH[SHARP_NOTES[i]]})}
+    else if(sig<0){for(let i=0;i<-sig;i++)out.push({sym:'♭',step:FL[FLAT_NOTES[i]]})}
+    return out}
   function computeBeamGroups(meas,meter){const gu=beamGroupUnit(meter),eps=1e-6;const groups=[];let cg=null,offset=0;function flush(){if(cg&&cg.length>=2)groups.push(cg);cg=null}for(let i=0;i<meas.length;i++){const t=meas[i];const eD=effDur(t);const gi=Math.floor((offset+eps)/gu);const bm=(t.type==='note')&&(t.dur<=0.5+eps);const cr=(offset+eD)>(gi*gu+gu+eps);if(bm&&!cr){if(cg&&cg.startGroup===gi)cg.push(i);else{flush();cg=[i];cg.startGroup=gi}}else flush();offset=+(offset+eD).toFixed(6)}flush();return groups}
   function staccatoDot(t,cx,headY,stemUp,color){
     if(!t.orn||!t.orn.includes('.'))return'';
@@ -1238,11 +1338,11 @@
     return '<circle cx="'+cx+'" cy="'+(headY+dy)+'" r="1.3" fill="'+color+'"/>';
   }
   function escXml(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-  function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(accToDraw===undefined)?t.acc:accToDraw;if(aD==='^')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+='<ellipse cx="'+cx+'" cy="'+y+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';let sy=y,sx=cx;if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?y-19:y+19;svg+='<line x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx-7)+' '+(fy-4)+' '+(sx-4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';
+  function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(accToDraw===undefined)?t.acc:accToDraw;if(aD==='^')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.0625+1e-6)fc=4;else if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+='<ellipse cx="'+cx+'" cy="'+y+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';let sy=y,sx=cx;if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?y-19:y+19;svg+='<line x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx-7)+' '+(fy-4)+' '+(sx-4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';
     // Têtes de notes empilées (accord) : même durée, partagent la hampe
     if(t.stack&&t.stack.length){t.stack.forEach(sn=>{const st2=stepIndex(sn.note,sn.octave);const y2=noteY(staffTop,st2,c);if(st2>=rs+10)for(let s=rs+10;s<=st2;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(st2<=rs-2)for(let s=rs-2;s>=st2;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const a2=sn.acc;if(a2==='^')svg+='<text x="'+(cx-7)+'" y="'+(y2+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(a2==='_')svg+='<text x="'+(cx-7)+'" y="'+(y2+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(a2==='=')svg+='<text x="'+(cx-7)+'" y="'+(y2+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';svg+='<ellipse cx="'+cx+'" cy="'+y2+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+y2+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y2+'" r="1.2" fill="'+color+'"/>'})}
     return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
-  function drawRest(t,cx,color,staffTop){let svg='';const y=staffTop+2*LINE_GAP;const eD=nominalDur(t);if(eD>=4)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+LINE_GAP)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=2)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+2*LINE_GAP-3.5)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=1)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄽</text>';else if(eD>=0.5)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄾</text>';else svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄿</text>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y}}
+  function drawRest(t,cx,color,staffTop){let svg='';const y=staffTop+2*LINE_GAP;const eD=nominalDur(t);if(eD>=4)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+LINE_GAP)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=2)svg+='<rect x="'+(cx-4.5)+'" y="'+(staffTop+2*LINE_GAP-3.5)+'" width="9" height="3.5" fill="'+color+'"/>';else if(eD>=1)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄽</text>';else if(eD>=0.5)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄾</text>';else if(eD>=0.25)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝄿</text>';else if(eD>=0.125)svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝅀</text>';else svg+='<text x="'+(cx-4)+'" y="'+(staffTop+3*LINE_GAP)+'" font-size="18" font-family="serif" fill="'+color+'">𝅁</text>';if(t.dot)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';return{svg,headY:y}}
 
   // === Cout d'une mesure / d'un en-tete de ligne (niveau module : reutilises par le layout partage) ===
   function measureCost(mIdx){
@@ -1255,9 +1355,15 @@
     const r=state.repeats[mIdx];
     if(r){if(r.start)cost+=6;if(r.end)cost+=8;}
     if(mIdx>0){
+      // Largeur réservée pour clé/armure/rythme dessinés en début de mesure (doit suivre le rendu).
       if(clefAt(mIdx)!==clefAt(mIdx-1))cost+=14;
-      if(keyAt(mIdx)!==keyAt(mIdx-1))cost+=Math.abs(keyAt(mIdx))*7+5;
-      if(meterAt(mIdx)!==meterAt(mIdx-1))cost+=14;
+      if(keyAt(mIdx)!==keyAt(mIdx-1)){
+        const oldA=keySigAccidentals(keyAt(mIdx-1),clefAt(mIdx)).length;
+        const newA=keySigAccidentals(keyAt(mIdx),clefAt(mIdx)).length;
+        // bécarres d'annulation (~oldA) + altérations nouvelles (~newA), 6px chacun, + marge
+        cost+=(oldA+newA)*6+6;
+      }
+      if(meterAt(mIdx)!==meterAt(mIdx-1))cost+=12;
     }
     return cost;
   }
@@ -1269,14 +1375,48 @@
     return cost;
   }
   // layout optionnel {single:true,N,widthUnits[],firstX,totalUnits} : mode "une ligne par voix" (Lot 5)
+  // Décalage temporel (en noires) du slot sélectionné depuis le début de SA mesure, dans la voix active.
+  function selTimeOffsetInMeasure(){
+    const sv=state.activeTrack;
+    const m=state.sel.m, s=state.sel.s;
+    const tr=state.tracks[state.activeTrack];
+    const meas=tr&&tr.measures&&tr.measures[m];
+    if(!meas)return 0;
+    let off=0;
+    for(let i=0;i<s&&i<meas.length;i++)off+=effDur(meas[i]);
+    return off;
+  }
+  // Dans une mesure donnée (voix en cours de rendu), index du slot dont l'INTERVALLE de durée
+  // contient le décalage temporel voulu : [début, début+durée). Ainsi une note longue d'une autre
+  // voix reste surlignée tant que le curseur de la voix active reste dans sa durée. -1 si hors mesure.
+  function slotIndexAtTime(meas,targetOff){
+    if(!meas)return -1;
+    const eps=1e-6;let off=0;
+    for(let i=0;i<meas.length;i++){
+      const d=effDur(meas[i]);
+      // début <= t < début+durée  (le dernier slot inclut sa borne de fin pour éviter un trou)
+      if(targetOff>=off-eps && (targetOff<off+d-eps || i===meas.length-1))return i;
+      off+=d;
+    }
+    return -1;
+  }
   function renderScoreOnce(layout){
     const selM=state.sel.m;
     // Note surlignée (rouge) : pendant le play, chaque voix suit sa propre position de lecture ;
-    // sinon, le curseur d'édition (state.sel). Les voix sans position de lecture n'affichent rien.
+    // sinon, le curseur d'édition (state.sel) SUR LA VOIX ACTIVE. Sur les autres voix, on surligne
+    // le slot qui commence au MÊME instant (décalage temporel), et rien si aucun slot ne tombe pile.
+    const isActiveVoice=(layout&&layout._renderTrack!==undefined&&layout._realActive!==undefined)?(layout._renderTrack===layout._realActive):true;
     let hlM=state.sel.m,hlS=state.sel.s;
     if(typeof audio!=='undefined'&&audio.playing){
       const ph=state._playHL&&state._playHL[state.activeTrack];
       if(ph){hlM=ph.m;hlS=ph.s;}else{hlM=-1;hlS=-1;}
+    } else if(!isActiveVoice){
+      // Voix non active : surlignage par position temporelle, pas par index.
+      const targetOff=(state._selTimeOff!==undefined)?state._selTimeOff:0;
+      const tr=state.tracks[state.activeTrack];
+      const meas=tr&&tr.measures&&tr.measures[state.sel.m];
+      const si=slotIndexAtTime(meas,targetOff);
+      hlM=state.sel.m;hlS=si; // si=-1 → rien de surligné dans cette voix
     }
     const single=!!(layout&&layout.single);
     // === Calcul dynamique des dimensions selon le conteneur et la taille choisie ===
@@ -1290,7 +1430,10 @@
     // supplémentaires sous chaque système (1 ligne de paroles ~ 10px).
     const LYRIC_ROW=10;
     const nVerses=state.viewFlags.lyrics?countVersesTrack(state.measures):1;
-    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW;
+    // Décalage vertical des paroles réglable par l'utilisateur (0 = position par défaut).
+    // Positif = paroles plus bas (on réserve alors de la place pour ne pas chevaucher le système suivant).
+    const lyricOff=state.lyricOffset||0;
+    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0);
     // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SP));
     const SCORE_W=single?layout.totalUnits:viewW;
@@ -1366,6 +1509,9 @@
       // Cle
       if(hC==='bass'){
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+      } else if(hC==='alto'||hC==='tenor'){
+        const cy=staffTop+(hC==='alto'?2:1)*LINE_GAP;
+        svg+='<text x="'+(LEFT_PAD-32)+'" y="'+cy+'" font-size="21" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle" dominant-baseline="central">𝄡</text>';
       } else {
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
         if(hC==='treble8'){
@@ -1488,34 +1634,52 @@
             let cx=xL+3+changeOffset;
             // Cle (en premier, juste apres la barre)
             if(hasClefChange){
-              cx+=6;
+              cx+=5;
               if(lC==='bass'){
-                svg+='<text x="'+cx+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+                svg+='<text x="'+cx+'" y="'+(staffTop+2.6*LINE_GAP+4)+'" font-size="18" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+              } else if(lC==='alto'||lC==='tenor'){
+                const cyy=staffTop+(lC==='alto'?2:1)*LINE_GAP;
+                svg+='<text x="'+cx+'" y="'+cyy+'" font-size="17" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle" dominant-baseline="central">𝄡</text>';
               } else {
-                svg+='<text x="'+cx+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
-                if(lC==='treble8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+                svg+='<text x="'+cx+'" y="'+(staffTop+2.4*LINE_GAP+4)+'" font-size="21" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
+                if(lC==='treble8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+4)+'" font-size="6" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
               }
-              cx+=10;
+              cx+=8;
             }
             // Armure
             if(hasKeyChange){
               if(hasClefChange)cx+=2;
-              const accs=keySigAccidentals(keyAt(mIdx),lC);
-              accs.forEach(a=>{
+              const newSig=keyAt(mIdx);
+              // Bécarres d'annulation : altérations présentes dans l'ANCIENNE armure et absentes
+              // de la nouvelle (notamment quand on revient à une armure vide). Affichés AVANT.
+              const oldAccs=keySigAccidentals(prevKey,lC);
+              const newAccs=keySigAccidentals(newSig,lC);
+              const newSteps=new Set(newAccs.map(a=>a.step));
+              const sameSign=(prevKey>0)===(newSig>0);
+              oldAccs.forEach(a=>{
+                // si la note n'est plus altérée dans la nouvelle armure (ou changement de sens ♯↔♭), bécarre
+                if(!newSteps.has(a.step)||!sameSign){
+                  const ny=noteY(staffTop,a.step,lC)+3;
+                  svg+='<text x="'+cx+'" y="'+ny+'" font-size="11" font-family="serif" fill="'+ink+'">♮</text>';
+                  cx+=6;
+                }
+              });
+              // Puis les altérations de la nouvelle armure
+              newAccs.forEach(a=>{
                 const ky=noteY(staffTop,a.step,lC)+4;
-                svg+='<text x="'+cx+'" y="'+ky+'" font-size="12" font-family="serif" fill="'+ink+'">'+a.sym+'</text>';
-                cx+=7;
+                svg+='<text x="'+cx+'" y="'+ky+'" font-size="11" font-family="serif" fill="'+ink+'">'+a.sym+'</text>';
+                cx+=6;
               });
               cx+=3;
             }
             // Rythme
             if(hasMeterChange){
-              if(hasClefChange||hasKeyChange)cx+=3;
+              if(hasClefChange||hasKeyChange)cx+=2;
               const{num,den}=parseMeter(lM);
-              cx+=5;
-              svg+='<text x="'+cx+'" y="'+(staffTop+1.7*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
-              svg+='<text x="'+cx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="12" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
-              cx+=9;
+              cx+=4;
+              svg+='<text x="'+cx+'" y="'+(staffTop+1.8*LINE_GAP+1)+'" font-size="10" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+num+'</text>';
+              svg+='<text x="'+cx+'" y="'+(staffTop+3.6*LINE_GAP+1)+'" font-size="10" font-family="serif" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+den+'</text>';
+              cx+=7;
             }
             // Marge supplementaire avant la premiere note
             cx+=4;
@@ -1648,7 +1812,7 @@
               if(!raw)continue;
               const lyricDisplay=raw.replace(/_/g,'').replace(/~/g,' ');
               const showDash=raw.endsWith('-');
-              const ly=staffTop+4*LINE_GAP+13+(v-1)*LYRIC_ROW;
+              const ly=staffTop+4*LINE_GAP+13+lyricOff+(v-1)*LYRIC_ROW;
               svg+='<text x="'+cx+'" y="'+ly+'" font-size="9" fill="'+ink+'" text-anchor="middle" font-family="sans-serif">'+escXml(lyricDisplay)+'</text>';
               if(showDash)svg+='<text x="'+(cx+5)+'" y="'+ly+'" font-size="9" fill="'+dim+'" text-anchor="start" font-family="sans-serif">-</text>';
             }
@@ -1665,6 +1829,7 @@
           // On utilise la duree de base (sans point ni n-uplet) pour decider le nombre de barres
           const lvls=g.map(idx=>{
             const bD=m[idx].dur;
+            if(bD<=0.0625+1e-6)return 4;
             if(bD<=0.125+1e-6)return 3;
             if(bD<=0.25+1e-6)return 2;
             return 1;
@@ -1677,8 +1842,8 @@
             const yy=bY;
             svg+='<rect x="'+xS+'" y="'+(yy-bT/2)+'" width="'+(xE-xS)+'" height="'+bT+'" fill="'+ink+'"/>';
           }
-          // Niveaux 2 et 3 : segments entre notes consecutives de meme niveau, demi-barres pour les isolees
-          for(let lvl=2;lvl<=3;lvl++){
+          // Niveaux 2, 3 et 4 : segments entre notes consecutives de meme niveau, demi-barres pour les isolees
+          for(let lvl=2;lvl<=4;lvl++){
             const yy=bY+(lvl-1)*dyO;
             // 1) Segments connectes : entre i et i+1 si les deux ont niveau >= lvl
             const connected=new Array(xPos.length).fill(false);
@@ -1783,13 +1948,30 @@
     const MIN_VOICE_PX=86,MAX_VOICE_PX=230;
     let voicePxH=Math.floor((availH-numV*(LABEL_PX+PAD_V+GAP))/numV);
     voicePxH=Math.max(MIN_VOICE_PX,Math.min(MAX_VOICE_PX,voicePxH));
+    // Vrai ZOOM : multiplie la taille d'affichage de TOUTE la partition (notes, portées, textes,
+    // largeur — tout dans le viewBox en unités est mis à l'échelle uniformément). 100 % = ajustement auto.
+    const zoomF=(state.zoom||100)/100;
+    voicePxH=Math.max(40,Math.round(voicePxH*zoomF));
     const pxPerUnit=voicePxH/voiceUnitH;
     const contentPxW=Math.ceil(layout.totalUnits*pxPerUnit);
 
     const saved=state.activeTrack;
+    // Décalage temporel du curseur dans SA mesure (voix réellement active), pour aligner le
+    // surlignage des autres voix par le TEMPS et non par l'index de slot.
+    layout._activeTrack=saved;
+    {
+      const tr=state.tracks[saved];
+      const meas=tr&&tr.measures&&tr.measures[state.sel.m];
+      let off=0;
+      if(meas)for(let k=0;k<state.sel.s&&k<meas.length;k++)off+=effDur(meas[k]);
+      state._selTimeOff=off;
+    }
     const blocks=[];
     visibleIdx.forEach(i=>{
       state.activeTrack=i;
+      layout._renderTrack=i;
+      // isActiveVoice se compare à la vraie voix active (saved), pas à state.activeTrack (qui boucle)
+      layout._realActive=saved;
       const svg=renderScoreOnce(layout);
       const tr=tracks[i];
       const isActive=(i===saved);
@@ -1810,7 +1992,16 @@
     state.activeTrack=saved;
     cont.style.overflowX='auto';
     cont.style.overflowY='auto';
-    cont.innerHTML=blocks.join('');
+    // Couplets supplémentaires (W:) affichés une seule fois sous toute la partition
+    let wordsHtml='';
+    if(state.viewFlags.lyrics){
+      const w=(state.headers.W||'').trim();
+      if(w){
+        const lines=w.split('\n').map(l=>escXml(l)).join('<br>');
+        wordsHtml='<div class="score-words" style="max-width:'+Math.max(contentPxW,320)+'px;margin:8px 2px 4px;padding:8px 12px;border-top:1px solid #e2e0d8;font-size:12px;line-height:1.5;color:#33312c;">'+lines+'</div>';
+      }
+    }
+    cont.innerHTML=blocks.join('')+wordsHtml;
     // Clic sur un bloc → piste active (sauf mono-piste)
     if(numV>1){
       document.querySelectorAll('#score .track-block').forEach(el=>{
@@ -1900,11 +2091,11 @@
   // La note active (objet de la liste triée)
   function activeChordNote(sl){const l=chordList(sl);return l.length?l[chordActiveIdx(sl)]:null}
   function renderState(){
-    document.getElementById('meas-pos').textContent=state.sel.m+1;
-    document.getElementById('slot-pos').textContent=state.sel.s+1;
-    document.getElementById('info-meter').textContent=meterAt(state.sel.m);
-    document.getElementById('info-key').textContent=keyHumanLabel(keyAt(state.sel.m));
-    document.getElementById('info-clef').textContent=clefHumanLabel(clefAt(state.sel.m));
+    {const e=document.getElementById('meas-pos');if(e)e.textContent=state.sel.m+1;}
+    {const e=document.getElementById('slot-pos');if(e)e.textContent=state.sel.s+1;}
+    {const e=document.getElementById('info-meter');if(e)e.textContent=meterAt(state.sel.m);}
+    {const e=document.getElementById('info-key');if(e)e.textContent=keyHumanLabel(keyAt(state.sel.m));}
+    {const e=document.getElementById('info-clef');if(e)e.textContent=clefHumanLabel(clefAt(state.sel.m));}
     document.getElementById('oct-val').textContent=state.octave>0?'+'+state.octave:state.octave;
     const sl=selectedSlot();
     document.querySelectorAll('[data-dur]').forEach(b=>{const aD=sl?sl.dur:1;b.classList.toggle('active',parseFloat(b.dataset.dur)===aD)});
@@ -1934,20 +2125,36 @@
       const ul=document.getElementById('tempo-unit-lbl');if(ul)ul.textContent=beatSym()+' '+beatName();}
     document.getElementById('vol-v').textContent=state.volume;
     document.getElementById('size-v').textContent=state.scoreScale||100;
+    {const zv=document.getElementById('zoom-v');if(zv)zv.textContent=(state.zoom||100);}
+    {const ly=document.getElementById('lyr-y-v');if(ly)ly.textContent=(state.lyricOffset||0);}
     document.getElementById('btn-play').textContent=audio.playing?'⏸':'▶';
     document.getElementById('btn-loop').classList.toggle('active',!!state.loop);
     document.getElementById('btn-undo').disabled=(history.pos<=0);
     document.getElementById('btn-redo').disabled=(history.pos>=history.stack.length-1);
     const um=document.getElementById('btn-undo-mes');if(um)um.disabled=(history.pos<=0);
     const rm=document.getElementById('btn-redo-mes');if(rm)rm.disabled=(history.pos>=history.stack.length-1);
+    {const up=document.getElementById('btn-undo-part');if(up)up.disabled=(history.pos<=0);}
+    {const rp=document.getElementById('btn-redo-part');if(rp)rp.disabled=(history.pos>=history.stack.length-1);}
     updatePasteButton();
     // Point 8 : bouton n-uplet en bleu si le slot actif est dans un n-uplet
     const sl0=selectedSlot();
     const tb=document.getElementById('btn-tuplet');
     if(tb)tb.classList.toggle('active', !!(sl0&&sl0.tuplet));
-    // Bouton liaison en bleu si la note active porte une liaison (tie, slur, ou en attente)
-    const linkBtn=document.getElementById('btn-link');
-    if(linkBtn)linkBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.linkToNext));
+    // Boutons tie/slur en bleu selon le type de liaison portée par la note active.
+    // Le type voulu est mémorisé dans _linkKind ; à défaut (anciennes données) on déduit
+    // depuis le résultat résolu (tieToNext/slurToNext) pour rester cohérent à l'affichage.
+    const isNote0=!!(sl0&&sl0.type==='note'&&sl0.linkToNext);
+    let kind0=null;
+    if(isNote0){
+      if(sl0.tieToNext)kind0='tie';            // résolu en tie
+      else if(sl0.slurToNext)kind0='slur';     // résolu en slur
+      else if(sl0._linkKind==='tie'||sl0._linkKind==='slur')kind0=sl0._linkKind; // en attente
+      else kind0='tie';
+    }
+    const tieBtn=document.getElementById('btn-tie');
+    if(tieBtn)tieBtn.classList.toggle('active', kind0==='tie');
+    const slurBtn=document.getElementById('btn-slur');
+    if(slurBtn)slurBtn.classList.toggle('active', kind0==='slur');
     // Boutons reprises et voltas en bleu selon l'etat de la mesure active
     const rA=state.repeats[state.sel.m];
     const repS=document.getElementById('btn-rep-start');
@@ -1976,12 +2183,13 @@
     {const vt=document.getElementById('ver-title');if(vt)vt.textContent=(state.headers.T||'').split('\n')[0];}
     document.getElementById('hdr-c-val').textContent=(state.headers.C||'—').split('\n')[0];
     document.getElementById('hdr-n-val').textContent=(state.headers.N||'—').split('\n')[0];
+    {const we=document.getElementById('hdr-w-val');if(we){const wv=(state.headers.W||'').trim();const nl=wv?wv.split('\n').filter(x=>x.trim()).length:0;we.textContent=wv?('✓('+nl+')'):'—';}}
     {const re=document.getElementById('hdr-r-val');if(re)re.textContent=(state.headers.R||'—').split('\n')[0];}
     {const mk=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=(v&&v.trim())?'✓':'·';};mk('hdr-h-val',state.headers.H);mk('hdr-f-val',state.headers.F);mk('hdr-z-val',state.headers.Z);mk('hdr-p-val',state.headers.P);}
   }
   function render(){renderScore();renderState();notifyPanelMeasureChanged();if(typeof updateBadge==='function')updateBadge()}
 
-  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(sl.note,sl.octave,effectiveAcc(meas,state.sel.s,sig),sig)+clefSoundShift(clefAt(state.sel.m));previewNote(midi,Math.min(0.4,effDur(sl)*60/state.tempo))}}
+  function playSelectedSlot(){const sl=selectedSlot();if(sl&&sl.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const shift=clefSoundShift(clefAt(state.sel.m));const dur=Math.min(0.4,effDur(sl)*60/state.tempo);const midi=midiOfNote(sl.note,sl.octave,effectiveAcc(meas,state.sel.s,sig),sig)+shift;previewNote(midi,dur);if(sl.stack&&sl.stack.length)sl.stack.forEach(sn=>{previewNote(midiOfNote(sn.note,sn.octave,sn.acc||'',sig)+shift,dur)})}}
   // À appeler AVANT de changer state.sel : dédoublonne silencieusement l'accord du slot quitté
   function leaveChordSlot(){
     if(!state._chordEditMode)return;
@@ -2291,8 +2499,10 @@
       state.octave=best;
     }
     const hadLink=!!sl.linkToNext;
+    const hadKind=sl._linkKind;
     const newSlot={type:'note',note:n,octave:state.octave,dur,dot,acc};
     if(hadLink)newSlot.linkToNext=true;
+    if(hadLink&&(hadKind==='tie'||hadKind==='slur'))newSlot._linkKind=hadKind;
     // Conserver l'appartenance au triolet
     if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}
     // Conserver l'accord empilé existant
@@ -2432,7 +2642,19 @@
       if(state.tracks.length>=MAX_TRACKS)return;
       // créer une piste vierge avec mêmes métrique/L/armure que la piste 0
       const t0=state.tracks[0]||{};
-      const nt=makeTrack({pieceMeter:t0.pieceMeter,pieceUnit:t0.pieceUnit,pieceKeySig:t0.pieceKeySig,pieceClef:'treble'});
+      // Reporter les REPRISES, VOLTAS et changements de MESURE/ARMURE en cours de morceau
+      // des voix existantes (structures partagées entre voix ; fusion par sécurité).
+      // La CLÉ n'est PAS reportée : elle est propre à chaque voix (la nouvelle reste en sol).
+      const mergedRepeats={},mergedTime={},mergedKey={};
+      state.tracks.forEach(t=>{
+        const rp=t.repeats||{};Object.keys(rp).forEach(k=>{mergedRepeats[k]=Object.assign({},mergedRepeats[k]||{},rp[k])});
+        const tc=t.timeChanges||{};Object.keys(tc).forEach(k=>{if(mergedTime[k]===undefined)mergedTime[k]=tc[k]});
+        const kc=t.keyChanges||{};Object.keys(kc).forEach(k=>{if(mergedKey[k]===undefined)mergedKey[k]=kc[k]});
+      });
+      const nt=makeTrack({pieceMeter:t0.pieceMeter,pieceUnit:t0.pieceUnit,pieceKeySig:t0.pieceKeySig,pieceClef:'treble',
+        repeats:JSON.parse(JSON.stringify(mergedRepeats)),
+        timeChanges:JSON.parse(JSON.stringify(mergedTime)),
+        keyChanges:JSON.parse(JSON.stringify(mergedKey))});
       // remplir avec autant de mesures vides que la piste 0
       const nMes=Math.max(1,(t0.measures||[]).length);
       for(let i=0;i<nMes;i++)nt.measures.push(buildEmptyMeasure(nt.pieceMeter));
@@ -2475,6 +2697,8 @@
   document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(sl){const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}});
   document.getElementById('btn-undo').addEventListener('click',undo);
   document.getElementById('btn-redo').addEventListener('click',redo);
+  {const u=document.getElementById('btn-undo-part');if(u)u.addEventListener('click',undo);}
+  {const r=document.getElementById('btn-redo-part');if(r)r.addEventListener('click',redo);}
   // Applique une mutation selon la portée choisie (voix active seule ou toutes les voix)
   function applyScoped(mutator){
     if(state.transposeScope==='one'){mutator();}
@@ -2487,12 +2711,22 @@
    if(one)one.addEventListener('click',()=>{state.transposeScope='one';syncScope();});
    if(all)all.addEventListener('click',()=>{state.transposeScope='all';syncScope();});
    syncScope();}
-  document.getElementById('btn-link').addEventListener('click',()=>{
+  // Tie et slur séparés. On garde le modèle « en attente » : un clic pose l'intention sur la
+  // note sélectionnée (linkToNext + _linkKind), résolue en arc dès qu'une note suivante existe.
+  // Reclic sur le même type = annule ; clic sur l'autre type = bascule tie⇄slur.
+  function setLinkKind(kind){
     const sl=selectedSlot();if(!sl||sl.type!=='note')return;
-    sl.linkToNext=!sl.linkToNext;
+    if(sl.linkToNext&&sl._linkKind===kind){
+      // même type → on retire la liaison
+      delete sl.linkToNext;delete sl._linkKind;
+    } else {
+      sl.linkToNext=true;sl._linkKind=kind;
+    }
     resolveLinks();
     pushHistory();render();
-  });
+  }
+  {const tb=document.getElementById('btn-tie');if(tb)tb.addEventListener('click',()=>setLinkKind('tie'));}
+  {const sb=document.getElementById('btn-slur');if(sb)sb.addEventListener('click',()=>setLinkKind('slur'));}
   document.getElementById('btn-disarm').addEventListener('click',()=>{applyScoped(()=>disarmKey());pushHistory();render()});
 
   function bindToggle(id,key){const el=document.getElementById(id);if(!el)return;el.addEventListener('click',()=>{state.viewFlags[key]=!state.viewFlags[key];render()})}
@@ -2593,9 +2827,9 @@
         const txt=lyricsToText(ti);
         return buildVoiceTabsHtml()+
           '<div class="lyr-note-count" id="lyr-note-count">Notes sur cette piste : <b>'+n+'</b></div>'+
-          '<p class="lyr-hint">Tapez les paroles : l\'application est instantanée. Espace = syllabe suivante ; un espace EN TROP (ou EN DÉBUT de ligne) saute une note et DÉCALE la suite. Tiret (bon-jour) = syllabes liées. <b>Entrée = nouveau couplet</b> (chaque ligne s\'aligne sur les mêmes notes ; affichés empilés sous la portée et exportés en w:/MusicXML). Videz le champ pour effacer.</p>'+
           '<textarea class="lyr-textarea" id="lyr-textarea" spellcheck="false">'+escXml(txt)+'</textarea>';
       }
+      const LYR_HINT='<p class="lyr-hint" id="lyr-hint">Tapez les paroles : l\'application est instantanée. Espace = syllabe suivante ; un espace EN TROP (ou EN DÉBUT de ligne) saute une note et DÉCALE la suite. Tiret (bon-jour) = syllabes liées. <b>Entrée = nouveau couplet</b> (chaque ligne s\'aligne sur les mêmes notes ; affichés empilés sous la portée et exportés en w:/MusicXML). Videz le champ pour effacer.</p>';
 
       function refreshTabHighlight(){
         document.querySelectorAll('#lyr-voice-tabs .k').forEach(b=>{
@@ -2618,6 +2852,9 @@
         hideActions:true,
         extraButtons:['Fermer'],
         onMount:()=>{
+          // Placer le texte explicatif SOUS le bouton Fermer
+          const actions=document.querySelector('#panel-body .actions');
+          if(actions&&!document.getElementById('lyr-hint')){actions.insertAdjacentHTML('afterend',LYR_HINT);}
           refreshTabHighlight();
           const ta=document.getElementById('lyr-textarea');
           if(ta){
@@ -2790,8 +3027,8 @@
     const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
       onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};renderScore();renderState();ensureSelectionVisible();}}});
     openPanel({
-      title:'Suppr mesure(s)',
-      body:'<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div><div class="mes-active">Supprimer une plage de mesures</div>'+rg.html(),
+      title:'Suppr plage de mesure(s)',
+      body:'<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div>'+rg.html(),
       hideActions:true,
       extraButtons:['Annuler','Supprimer'],
       onMount:()=>{rg.bind(document.getElementById('panel-body'));},
@@ -2933,7 +3170,7 @@
   function onBeat(o,beat){const eps=1e-6;const r=o%beat;return r<eps||Math.abs(r-beat)<eps}
   // === Reorganisation rythmique : fusionne notes/silences contigus en valeurs plus simples ===
   // Ex : deux croches identiques liees -> une noire ; deux silences contigus -> un silence plus long.
-  function isCleanValue(d){const e=1e-6;const bases=[4,2,1,0.5,0.25,0.125];for(const b of bases){if(Math.abs(d-b)<e)return{dur:b,dot:false};if(Math.abs(d-b*1.5)<e)return{dur:b,dot:true}}return null}
+  function isCleanValue(d){const e=1e-6;const bases=[4,2,1,0.5,0.25,0.125,0.0625];for(const b of bases){if(Math.abs(d-b)<e)return{dur:b,dot:false};if(Math.abs(d-b*1.5)<e)return{dur:b,dot:true}}return null}
   function consolidateRhythm(silent){
     let count=0;
     state.measures.forEach((meas,mi)=>{
@@ -3115,15 +3352,17 @@
 
   // === Decalage global du morceau a partir de la note selectionnee ===
   function flattenSlots(){
-    const out=[]; let absSel=-1;
+    const out=[]; let absSel=-1; let markSel=-1;
     state.measures.forEach((m,mi)=>{
       m.forEach((sl,si)=>{
+        if(sl._selMark)markSel=out.length;            // position réellement ciblée (multi-voix sûr)
         if(mi===state.sel.m&&si===state.sel.s)absSel=out.length;
         out.push({slot:sl,mIdx:mi,sIdx:si});
       });
     });
     const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
-    return{slots:out,absSel,caps};
+    // Si un slot est explicitement marqué (décalage à position donnée), il prime sur state.sel.
+    return{slots:out,absSel:(markSel>=0?markSel:absSel),caps};
   }
   function rebuildMeasuresFromSlots(slots,caps){
     const result=[];
@@ -3135,6 +3374,7 @@
       if(!sl.tuplet&&!sl.dot){
         const head={...sl,dur:want};
         const tail={...sl,dur:e-want,dot:false};
+        if(sl.stack)tail.stack=sl.stack.map(x=>Object.assign({},x));
         if(sl.type==='note'){
           head.tieToNext=true;
           if(!sl.tieToNext)delete tail.tieToNext;
@@ -3144,6 +3384,7 @@
       if(sl.dot&&!sl.tuplet){
         const head={...sl,dur:want,dot:false};
         const tail={...sl,dur:e-want,dot:false};
+        if(sl.stack)tail.stack=sl.stack.map(x=>Object.assign({},x));
         if(sl.type==='note'){
           head.tieToNext=true;
           if(!sl.tieToNext)delete tail.tieToNext;
@@ -3151,6 +3392,23 @@
         return[head,tail];
       }
       return[sl,null];
+    }
+    // Découpe une note/accord NON aligné sur les temps en figures liées par temps (notation lisible).
+    // Les silences ne sont pas re-découpés ici (splitDurationByBeat s'en charge au remplissage).
+    function beatAlignPieces(sl,startOffset,beat){
+      if(sl.type!=='note'||sl.tuplet)return [sl];
+      const pieces=splitDurationByBeat(startOffset,effDur(sl),beat);
+      if(pieces.length<=1)return [sl];
+      return pieces.map((p,i)=>{
+        const c=Object.assign({},sl,{dur:p.dur,dot:p.dot});
+        if(sl.stack)c.stack=sl.stack.map(x=>Object.assign({},x));
+        // chaîner par des tie : toutes liées sauf, pour la dernière, on garde le tie d'origine
+        if(i<pieces.length-1)c.tieToNext=true;
+        else { if(sl.tieToNext)c.tieToNext=true; else delete c.tieToNext; }
+        // accords/chord-symbol et texte uniquement sur la 1re figure
+        if(i>0){delete c.chord;delete c.text;}
+        return c;
+      });
     }
     for(const item of slots){
       let sl=item.slot;
@@ -3160,11 +3418,18 @@
         const remain=cap-used;
         const e=effDur(sl);
         if(e<=remain+eps){
-          curM.push(sl);used+=e;sl=null;
+          // Le slot tient dans la mesure : on l'aligne sur les temps s'il est à cheval.
+          const beat=4/parseMeter(meterAt(mi)).den;
+          const aligned=beatAlignPieces(sl,used,beat);
+          aligned.forEach(a=>curM.push(a));
+          used+=e;sl=null;
           if(used>=cap-eps){result.push(curM);curM=[];used=0;mi++}
         } else {
           const[head,tail]=splitSlot(sl,remain);
-          curM.push(head);used+=effDur(head);
+          const beat=4/parseMeter(meterAt(mi)).den;
+          const aligned=beatAlignPieces(head,used,beat);
+          aligned.forEach(a=>curM.push(a));
+          used+=effDur(head);
           if(used>=cap-eps){result.push(curM);curM=[];used=0;mi++}
           sl=tail;
         }
@@ -3330,22 +3595,87 @@
     }
     return false;
   }
-  function shiftPiece(direction,shiftDur,shiftDot){
+  // Variante position-explicite (utilisée par le décalage multi-voix).
+  function tupletBlockingShiftAt(posM,posS,d){
+    const eps=1e-6;
+    const m0=state.measures[posM],t0=m0&&m0[posS];
+    if(t0&&t0.tuplet){
+      const prev=m0[posS-1];
+      const atFirst=(posS===0)||!prev||!prev.tuplet||prev.tupletId!==t0.tupletId;
+      if(!atFirst)return true;
+    }
+    const seen={};
+    for(let mi=posM;mi<state.measures.length;mi++){
+      const meas=state.measures[mi];
+      const startS=(mi===posM)?posS:0;
+      for(let si=startS;si<meas.length;si++){
+        const t=meas[si];
+        if(t&&t.tuplet&&!seen[t.tupletId]){seen[t.tupletId]=true;const gd=tupletGroupDur(mi,si);if(gd>d+eps)return true;}
+      }
+    }
+    return false;
+  }
+  function shiftPiece(direction,shiftDur,shiftDot,scope){
+    if(scope==='all'){
+      // Décalage sur TOUTES les voix, au même INSTANT que la sélection courante (pas au même index).
+      const selM=state.sel.m, selS=state.sel.s;
+      const saved0=state.activeTrack;
+      // Décalage temporel cible (en noires) du curseur dans sa mesure, sur la voix active.
+      let targetOff=0;
+      {const tr=state.tracks[saved0];const meas=tr&&tr.measures&&tr.measures[selM];if(meas)for(let k=0;k<selS&&k<meas.length;k++)targetOff+=effDur(meas[k]);}
+      // Pour chaque voix, l'index du slot où insérer le décalage : celui qui COMMENCE à l'instant,
+      // ou à défaut celui qui CONTIENT l'instant (le silence s'insère alors avant cette note, ce qui
+      // pousse cette note et la suite vers la droite). -1 seulement si l'instant est hors mesure.
+      function slotForShiftAt(meas,off){if(!meas)return -1;const eps=1e-6;let o=0;for(let i=0;i<meas.length;i++){const d=effDur(meas[i]);if(off>=o-eps&&off<o+d-eps)return i;o+=d;}
+        // instant exactement en fin de mesure → après le dernier slot : on vise le dernier
+        if(Math.abs(o-off)<eps&&meas.length)return meas.length;return -1;}
+      // Vérif n-uplet préalable sur chaque voix (à sa propre position temporelle).
+      if(direction>0){
+        let blocked=false;
+        for(let i=0;i<state.tracks.length;i++){state.activeTrack=i;
+          const meas=state.measures[selM];
+          const ps=slotForShiftAt(meas,targetOff);
+          if(ps>=0&&ps<(meas?meas.length:0)){const eshift=shiftDot?shiftDur*1.5:shiftDur;if(tupletBlockingShiftAt(selM,ps,eshift)){blocked=true;break}}
+        }
+        state.activeTrack=saved0;
+        if(blocked){alert('Décalage impossible sur au moins une voix : la durée choisie est inférieure à celle d\u2019un n-uplet, qui ne peut pas être découpé.');return}
+      }
+      applyToAllTracks((i)=>{
+        const meas=state.measures[selM];
+        const ps=slotForShiftAt(meas,targetOff);
+        if(ps>=0&&ps<(meas?meas.length:0)){
+          // Pour la voix réellement active, on laisse shiftCore mettre à jour la sélection
+          // (elle SUIT ainsi la note décalée). Les autres voix : pas de mise à jour de sélection.
+          const isActive=(i===saved0);
+          shiftCore(direction,shiftDur,shiftDot,selM,ps,/*silent*/true,/*noSelUpdate*/!isActive);
+        }
+      });
+      // Sécurité : si la voix active n'avait pas de note à cet instant, garder une sélection valide.
+      if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
+      if(state.measures[state.sel.m]&&state.sel.s>=state.measures[state.sel.m].length)state.sel.s=state.measures[state.sel.m].length-1;
+      pushHistory();render();
+      return;
+    }
+    // Voix active uniquement
     const sl=selectedSlot();if(!sl)return;
+    shiftCore(direction,shiftDur,shiftDot,state.sel.m,state.sel.s,false);
+    pushHistory();render();
+  }
+  // Cœur du décalage sur la voix active, à la position (posM,posS). silent=true évite les alertes.
+  // noSelUpdate=true : ne touche PAS à state.sel (indispensable en mode toutes-voix, sinon la sélection
+  // est ré-clampée contre chaque voix successivement et corrompt l'itération).
+  function shiftCore(direction,shiftDur,shiftDot,posM,posS,silent,noSelUpdate){
+    const target=state.measures[posM]&&state.measures[posM][posS];
+    if(!target)return false;
     const eshift=shiftDot?shiftDur*1.5:shiftDur;
-    // Regle n-uplet (decalage a droite) : inserer du temps avant la selection pousse tout
-    // ce qui suit. Un n-uplet ne sait pas se decouper. On bloque donc si un n-uplet situe
-    // a / apres la selection a une duree de groupe superieure au decalage (il ne peut alors
-    // pas etre repositionne proprement), ou si la selection est au milieu d'un n-uplet.
     if(direction>0){
-      if(tupletBlockingShift(eshift)){alert('Décalage impossible : la durée choisie est inférieure à celle d\u2019un n-uplet,\nqui ne peut pas être découpé. Choisissez une durée au moins égale au n-uplet.');return}
+      if(tupletBlockingShiftAt(posM,posS,eshift)){if(!silent)alert('Décalage impossible : la durée choisie est inférieure à celle d\u2019un n-uplet,\nqui ne peut pas être découpé. Choisissez une durée au moins égale au n-uplet.');return false}
     }
     materializeAccidentals();
     const dur=eshift;
-    // Marqueur pour retrouver la note active apres reconstruction
-    sl._selMark=true;
+    target._selMark=true;
     const{slots,absSel,caps}=flattenSlots();
-    if(absSel<0){delete sl._selMark;return}
+    if(absSel<0){delete target._selMark;return false}
     let newFlat;
     if(direction>0){
       const silence={type:'rest',dur:shiftDur,dot:!!shiftDot};
@@ -3358,7 +3688,7 @@
         capSum+=caps[caps.length-1];
       }
     } else {
-      if(absSel===0){alert('Rien a supprimer avant');delete sl._selMark;return}
+      if(absSel===0){if(!silent)alert('Rien a supprimer avant');delete target._selMark;return false}
       const before=slots.slice(0,absSel).map(x=>x.slot);
       const after=slots.slice(absSel).map(x=>x.slot);
       let toRemove=dur;
@@ -3366,7 +3696,7 @@
       const eps=1e-6;
       while(toRemove>eps&&newBefore.length>0){
         const last=newBefore[newBefore.length-1];
-        if(last.tuplet){alert('Decalage gauche bloque par un n-uplet');delete sl._selMark;return}
+        if(last.tuplet){if(!silent)alert('Decalage gauche bloque par un n-uplet');delete target._selMark;return false}
         const e=effDur(last);
         if(e<=toRemove+eps){newBefore.pop();toRemove-=e}
         else {
@@ -3380,10 +3710,7 @@
     const rebuilt=rebuildMeasuresFromSlots(newFlat.map(s=>({slot:s})),caps);
     state.measures=rebuilt;
     cleanupAccidentals();
-    // La consolidation peut fusionner des slots et changer les index : on la fait AVANT
-    // de localiser la note active, et on preserve le marqueur _selMark a travers la fusion.
     consolidateRhythm(true);
-    // Retrouver la note active grace au marqueur (apres consolidation), puis nettoyer partout
     let found=null;
     for(let mi=0;mi<state.measures.length&&!found;mi++){
       for(let si=0;si<state.measures[mi].length;si++){
@@ -3391,24 +3718,30 @@
       }
     }
     state.measures.forEach(m=>m.forEach(x=>{delete x._selMark}));
-    if(found){state.sel.m=found.m;state.sel.s=found.s}
-    if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
-    if(state.sel.s>=state.measures[state.sel.m].length)state.sel.s=state.measures[state.sel.m].length-1;
-    pushHistory();render();
+    if(!noSelUpdate){
+      if(found){state.sel.m=found.m;state.sel.s=found.s}
+      if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
+      if(state.measures[state.sel.m]&&state.sel.s>=state.measures[state.sel.m].length)state.sel.s=state.measures[state.sel.m].length-1;
+    }
+    return true;
   }
   function openShiftPanel(){
     const sl=selectedSlot();
     const defDur=sl?sl.dur:1;
     const defDot=sl?!!sl.dot:false;
     const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
-    let chosen=defDur,chosenDot=defDot;
+    let chosen=defDur,chosenDot=defDot,scope='one';
     function body(){
-      let h='<div style="font-size:14px;margin-bottom:8px;">Duree du decalage :</div>';
+      let h='<div class="row-grid row-2" style="margin-bottom:8px;">';
+      h+='<button class="k" id="shift-scope-one" title="Décaler la voix active uniquement">Voix active</button>';
+      h+='<button class="k" id="shift-scope-all" title="Décaler toutes les voix à la même position">Toutes</button>';
+      h+='</div>';
+      h+='<div style="font-size:14px;margin-bottom:8px;">Durée du décalage :</div>';
       h+='<div class="row-grid row-6" style="margin-bottom:8px;">';
       DURS.forEach(d=>h+='<button class="k symbol" data-shdur="'+d.d+'">'+d.label+'</button>');
       h+='</div>';
       h+='<div class="row-grid" style="margin-bottom:8px;">';
-      h+='<button class="k" id="shift-dot-tgl">Pointee : <b id="shift-dot-v">non</b></button>';
+      h+='<button class="k" id="shift-dot-tgl">Pointée : <b id="shift-dot-v">non</b></button>';
       h+='</div>';
       h+='<div class="row-grid row-3">';
       h+='<button class="k" id="shift-do-left">\u21E6</button>';
@@ -3420,8 +3753,10 @@
     function refreshSel(){
       document.querySelectorAll('[data-shdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.shdur)===chosen));
       const dv=document.getElementById('shift-dot-v');if(dv)dv.textContent=chosenDot?'oui':'non';
+      const o=document.getElementById('shift-scope-one'),a=document.getElementById('shift-scope-all');
+      if(o)o.classList.toggle('active',scope==='one');if(a)a.classList.toggle('active',scope==='all');
     }
-    openPanel({title:'Decalage',body:body(),hideActions:true,
+    openPanel({title:'Décalage',body:body(),hideActions:true,
       onMount:()=>{
         refreshSel();
         document.querySelectorAll('[data-shdur]').forEach(b=>{
@@ -3429,8 +3764,10 @@
         });
         const tgl=document.getElementById('shift-dot-tgl');
         if(tgl)tgl.addEventListener('click',()=>{chosenDot=!chosenDot;refreshSel()});
-        document.getElementById('shift-do-left').addEventListener('click',()=>shiftPiece(-1,chosen,chosenDot));
-        document.getElementById('shift-do-right').addEventListener('click',()=>shiftPiece(+1,chosen,chosenDot));
+        {const o=document.getElementById('shift-scope-one');if(o)o.addEventListener('click',()=>{scope='one';refreshSel()});}
+        {const a=document.getElementById('shift-scope-all');if(a)a.addEventListener('click',()=>{scope='all';refreshSel()});}
+        document.getElementById('shift-do-left').addEventListener('click',()=>shiftPiece(-1,chosen,chosenDot,scope));
+        document.getElementById('shift-do-right').addEventListener('click',()=>shiftPiece(+1,chosen,chosenDot,scope));
         document.getElementById('shift-done').addEventListener('click',()=>closePanel());
       }
     });
@@ -3552,8 +3889,12 @@
       refresh();
     },onExtra:(w)=>{if(w==='Appliquer'){setBeat(selU,dotted);pushHistory();render()}closePanel()}});
   });}
+  {const zu=document.getElementById('zoom-u');if(zu)zu.addEventListener('click',()=>{state.zoom=Math.min(300,(state.zoom||100)+10);render()});}
+  {const zd=document.getElementById('zoom-d');if(zd)zd.addEventListener('click',()=>{state.zoom=Math.max(50,(state.zoom||100)-10);render()});}
   document.getElementById('size-u').addEventListener('click',()=>{state.scoreScale=Math.min(250,(state.scoreScale||100)+10);render()});
   document.getElementById('size-d').addEventListener('click',()=>{state.scoreScale=Math.max(40,(state.scoreScale||100)-10);render()});
+  {const lu=document.getElementById('lyr-y-u');if(lu)lu.addEventListener('click',()=>{state.lyricOffset=Math.min(40,(state.lyricOffset||0)+2);render()});}
+  {const ld=document.getElementById('lyr-y-d');if(ld)ld.addEventListener('click',()=>{state.lyricOffset=Math.max(-10,(state.lyricOffset||0)-2);render()});}
   document.getElementById('btn-play').addEventListener('click',()=>{if(audio.playing)stopPlayback(true);else playSchedule()});
   document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
   document.getElementById('btn-loop').addEventListener('click',()=>{state.loop=!state.loop;document.getElementById('btn-loop').classList.toggle('active',state.loop)});
@@ -3562,10 +3903,12 @@
   // ⭐ Accord : boutons ajoutent leur texte, ⌫ efface dernier char, pas de fondamentale
   document.getElementById('btn-chord').addEventListener('click',()=>{
     let sl=selectedSlot();
-    if(!sl||sl.type!=='note'){alert('Sélectionnez une note');return}
+    if(!sl||(sl.type!=='note'&&sl.type!=='rest')){alert('Sélectionnez une note ou un silence');return}
     let freeText=sl.chord||'';
+    let annot=sl.text||'';
     function controls(){
-      let h='<input class="chord-input" id="chord-free" type="text" value="'+freeText.replace(/"/g,'&quot;')+'"/>';
+      let h='<div class="stepper-label" style="text-align:left;">Accord d\'accompagnement (au-dessus)</div>';
+      h+='<input class="chord-input" id="chord-free" type="text" value="'+freeText.replace(/"/g,'&quot;')+'"/>';
       h+='<div class="chord-pad" style="grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px;">';
       NOTES.forEach(n=>h+='<button class="k note-btn" data-add="'+n.n+'" style="height:40px !important;padding:0 !important;"><span class="lbl" style="font-size:15px;">'+n.label+'</span><span class="sub" style="font-size:11px;">'+n.sub+'</span></button>');
       h+='</div>';
@@ -3573,28 +3916,36 @@
       CHORD_BTNS.forEach(b=>h+='<button class="k" data-add="'+b+'" style="height:34px !important;font-size:14px !important;">'+b+'</button>');
       h+='<button class="k" data-add="__BS__" style="height:34px !important;">⌫</button>';
       h+='</div>';
+      h+='<div class="stepper-label" style="text-align:left;margin-top:8px;">Texte libre au-dessus (annotation)</div>';
+      h+='<input class="chord-input" id="annot-free" type="text" placeholder="ex : Intro, rit., Solo…" value="'+annot.replace(/"/g,'&quot;')+'"/>';
       return h;
     }
     function bindAdd(){
       const inp=document.getElementById('chord-free');
       if(inp)inp.addEventListener('input',(e)=>{freeText=e.target.value});
+      const an=document.getElementById('annot-free');
+      if(an)an.addEventListener('input',(e)=>{annot=e.target.value});
       document.querySelectorAll('[data-add]').forEach(b=>{
         b.addEventListener('click',()=>{const add=b.dataset.add;if(add==='__BS__')freeText=freeText.slice(0,-1);else freeText+=add;const i=document.getElementById('chord-free');if(i)i.value=freeText;});
       });
     }
-    openPanel({title:'Accord',body:controls(),hideActions:true,extraButtons:['Fin','Suppr','Appliquer'],actionsClass:'three',showMes:true,onMount:bindAdd,
-      onMeasureChange:()=>{// la note active a changé : recharger le champ et réafficher les boutons
+    openPanel({title:'Accord / Texte',body:controls(),hideActions:true,extraButtons:['Fin','Suppr','Appliquer'],actionsClass:'three',showMes:true,onMount:bindAdd,
+      onMeasureChange:()=>{// le slot actif a changé : recharger les champs
         sl=selectedSlot();
-        freeText=(sl&&sl.type==='note'&&sl.chord)?sl.chord:'';
+        freeText=(sl&&(sl.type==='note'||sl.type==='rest')&&sl.chord)?sl.chord:'';
+        annot=(sl&&(sl.type==='note'||sl.type==='rest')&&sl.text)?sl.text:'';
         const inp=document.getElementById('chord-free');if(inp)inp.value=freeText;
+        const an=document.getElementById('annot-free');if(an)an.value=annot;
       },
       onExtra:(w)=>{
         if(w==='Fin'){closePanel();return}
-        sl=selectedSlot();if(!sl||sl.type!=='note')return;
-        if(w==='Suppr'){delete sl.chord;freeText='';const inp=document.getElementById('chord-free');if(inp)inp.value='';pushHistory();render();return}
+        sl=selectedSlot();if(!sl||(sl.type!=='note'&&sl.type!=='rest'))return;
+        if(w==='Suppr'){delete sl.chord;delete sl.text;freeText='';annot='';const i=document.getElementById('chord-free');if(i)i.value='';const a=document.getElementById('annot-free');if(a)a.value='';pushHistory();render();return}
         // Appliquer : modifie/ajoute SANS fermer
-        const final=(freeText||'').trim();
-        if(final)sl.chord=final;else delete sl.chord;
+        const finalC=(freeText||'').trim();
+        if(finalC)sl.chord=finalC;else delete sl.chord;
+        const finalT=(annot||'').trim();
+        if(finalT)sl.text=finalT;else delete sl.text;
         pushHistory();render();
       }});
   });
@@ -3605,8 +3956,7 @@
     let sl=selectedSlot();
     state._chordEditMode=true;state.chordActive=0;
     state._chordAddPending=!(sl&&sl.type==='note');
-    document.getElementById('chord-row-normal').style.display='none';
-    document.getElementById('chord-row-edit').style.display='';
+    const n=document.getElementById('btn-stack');if(n)n.classList.add('active');
     const a=activeChordNote(selectedSlot());if(a)state.octave=a.octave;
     render();
   }
@@ -3615,12 +3965,11 @@
     const sl=selectedSlot();
     if(sl&&sl.type==='note'&&dedupeChord(sl))pushHistory();
     state._chordEditMode=false;state._chordAddPending=false;
-    const e=document.getElementById('chord-row-edit');if(e)e.style.display='none';
-    const n=document.getElementById('chord-row-normal');if(n)n.style.display='';
+    const n=document.getElementById('btn-stack');if(n)n.classList.remove('active');
     render();
   }
-  document.getElementById('btn-stack').addEventListener('click',chordEnter);
-  document.getElementById('ce-fin').addEventListener('click',chordExit);
+  // ♫ Accord : bascule le mode édition d'accord (les boutons − + ▲ ▼ agissent sur l'empilement)
+  document.getElementById('btn-stack').addEventListener('click',()=>{if(state._chordEditMode)chordExit();else chordEnter();});
   document.getElementById('ce-up').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;const n=chordList(sl).length;state.chordActive=Math.min(n-1,chordActiveIdx(sl)+1);state._chordAddPending=false;const a=activeChordNote(sl);if(a){state.octave=a.octave;previewNote(midiOfNote(a.note,a.octave,a.acc,keyAt(state.sel.m)))}render();});
   document.getElementById('ce-down').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;state.chordActive=Math.max(0,chordActiveIdx(sl)-1);state._chordAddPending=false;const a=activeChordNote(sl);if(a){state.octave=a.octave;previewNote(midiOfNote(a.note,a.octave,a.acc,keyAt(state.sel.m)))}render();});
   document.getElementById('ce-plus').addEventListener('click',()=>{state._chordAddPending=true;render();});
@@ -3792,13 +4141,16 @@
     function num(el, tag, def) { const v = txt(el, tag); return v ? parseFloat(v) : def; }
 
     // --- En-têtes globaux ---
-    const headers = { X:'1', T:'', C:'', N:'', H:'', F:'', Z:'', P:'' };
+    const headers = { X:'1', T:'', C:'', N:'', H:'', F:'', Z:'', P:'', W:'' };
     const workTitle = txt(doc, 'work-title');
     const movTitle  = txt(doc, 'movement-title');
     headers.T = workTitle || movTitle || '';
     doc.querySelectorAll('creator').forEach(c => {
       if (c.getAttribute('type') === 'composer') headers.C = c.textContent.trim();
     });
+    // Couplets supplémentaires (W:) éventuellement stockés par cette app à l'export
+    const wf = doc.querySelector('miscellaneous-field[name="abc-words"]');
+    if (wf) headers.W = wf.textContent.replace(/\r/g,'');
 
     // --- Tempo global (1ère direction sound) ---
     let globalTempo = 80, globalBeatUnit = 1, globalBeatDotted = false;
@@ -3809,7 +4161,7 @@
       const bu = txt(firstMM, 'beat-unit') || 'quarter';
       const dotted = !!firstMM.querySelector('beat-unit-dot');
       const pm = parseFloat(txt(firstMM, 'per-minute')) || globalTempo;
-      const unitMap = { whole:4, half:2, quarter:1, eighth:0.5, '16th':0.25, '32nd':0.125 };
+      const unitMap = { whole:4, half:2, quarter:1, eighth:0.5, '16th':0.25, '32nd':0.125, '64th':0.0625 };
       const uq = (unitMap[bu] || 1) * (dotted ? 1.5 : 1);
       globalTempo = pm * uq;           // canonique en noires/min
       globalBeatUnit = unitMap[bu] || 1;
@@ -3895,10 +4247,16 @@
           const clefEl = attrEl.querySelector('clef');
           if (clefEl) {
             const sign = txt(clefEl, 'sign').toUpperCase();
+            const line = parseInt(txt(clefEl, 'line') || '0', 10);
             const octChg = parseInt(txt(clefEl, 'clef-octave-change') || '0', 10);
-            if (sign === 'F') clef = 'bass';
+            if (sign === 'F') clef = 'bass';            // fa (toute ligne → fa 4e par défaut)
+            else if (sign === 'C') {
+              // Clé d'ut : ligne 3 = alto, ligne 4 = ténor. Autres lignes (soprano/mezzo/baryton)
+              // ramenées au plus proche pour ne pas s'afficher de travers.
+              clef = (line >= 4) ? 'tenor' : 'alto';
+            }
             else if (sign === 'G' && octChg === -1) clef = 'treble8';
-            else clef = 'treble';
+            else clef = 'treble';                        // sol (et clés de sol exotiques)
             if (mi === 0) pieceClef = clef;
             else clefChanges[mi] = clef;
           }
@@ -3936,7 +4294,7 @@
         function toDurDot(durQ) {
           let dur = durQ, dot = false;
           const trial = durQ * 2 / 3;
-          if (trial >= 0.125 - 1e-6 && trial <= 4 + 1e-6) {
+          if (trial >= 0.0625 - 1e-6 && trial <= 4 + 1e-6) {
             const l2 = Math.log2(trial);
             if (Math.abs(Math.round(l2) - l2) < 1e-6) { dur = trial; dot = true; }
           }
@@ -4040,10 +4398,13 @@
             'major': '', 'minor': 'm', 'augmented': 'aug', 'diminished': 'dim',
             'dominant': '7', 'major-seventh': 'Maj7', 'minor-seventh': 'm7',
             'diminished-seventh': 'dim7', 'augmented-seventh': 'aug7',
-            'half-diminished': 'm7b5', 'major-sixth': '6', 'minor-sixth': 'm6',
+            'half-diminished': 'm7b5', 'major-minor': 'mMaj7',
+            'major-sixth': '6', 'minor-sixth': 'm6',
             'dominant-ninth': '9', 'major-ninth': 'Maj9', 'minor-ninth': 'm9',
+            'dominant-11th': '11', 'major-11th': 'Maj11', 'minor-11th': 'm11',
+            'dominant-13th': '13', 'major-13th': 'Maj13', 'minor-13th': 'm13',
             'suspended-second': 'sus2', 'suspended-fourth': 'sus4',
-            'dominant-11th': '11', 'dominant-13th': '13', 'power': '5'
+            'power': '5', 'pedal': '', 'other': '', 'none': ''
           };
           if (kindText) s += kindText;
           else if (KIND_MAP[kind] !== undefined) s += KIND_MAP[kind];
@@ -4060,18 +4421,30 @@
         // Pré-scan : associer chaque <harmony> à la première <note> de la voix cible qui le suit.
         // (Les symboles d'accord sont attachés à la voix en cours d'extraction.)
         const harmonyForNote = new Map();
+        const wordsForNote = new Map();
         {
           let pendingHarmony = '';
+          let pendingWords = '';
           Array.from(mEl.children).forEach(child => {
             if (child.tagName === 'harmony') {
               const h = parseHarmony(child);
               if (h) pendingHarmony = h;
+            } else if (child.tagName === 'direction') {
+              // Texte libre au-dessus : <direction-type><words>…</words>
+              // (on ignore les directions de tempo/métronome déjà gérées ailleurs)
+              if (!child.querySelector('metronome')) {
+                const wEls = child.querySelectorAll('direction-type words');
+                if (wEls && wEls.length) {
+                  const w = Array.from(wEls).map(e => e.textContent).join('').trim();
+                  if (w) pendingWords = pendingWords ? (pendingWords + ' ' + w) : w;
+                }
+              }
             } else if (child.tagName === 'note') {
               const v = child.querySelector('voice');
               const vid = v ? v.textContent.trim() : '1';
-              if (vid === targetVoice && pendingHarmony && !child.querySelector('chord')) {
-                harmonyForNote.set(child, pendingHarmony);
-                pendingHarmony = '';
+              if (vid === targetVoice && !child.querySelector('chord')) {
+                if (pendingHarmony) { harmonyForNote.set(child, pendingHarmony); pendingHarmony = ''; }
+                if (pendingWords) { wordsForNote.set(child, pendingWords); pendingWords = ''; }
               }
             }
           });
@@ -4126,7 +4499,8 @@
               notes: [{ nEl, info: isRest ? null : extractNoteInfo(nEl), durQ }],
               isRest,
               tupletActual, tupletNormal, nominalDurQ, tupStart, tupStop,
-              harmony: harmonyForNote.get(nEl) || ''
+              harmony: harmonyForNote.get(nEl) || '',
+              words: wordsForNote.get(nEl) || ''
             });
           }
         });
@@ -4151,6 +4525,8 @@
               if (ev.nominalDurQ > 0) { const nd = toDurDot(ev.nominalDurQ); restSlot.dur = nd.dur; restSlot.dot = nd.dot; }
               if (ev.tupStop) { curTupletId = null; curTupletN = 0; curTupletNormal = 2; }
             }
+            if (ev.harmony) restSlot.chord = ev.harmony;
+            if (ev.words) restSlot.text = ev.words;
             slots.push(restSlot);
             return;
           }
@@ -4190,6 +4566,8 @@
           if (slotTuplet) { slot.tuplet = slotTuplet; slot.tupletId = slotTupletId; if (slotTupletNormal !== 2) slot.tupletNormal = slotTupletNormal; }
           // Symbole d'accord (harmony)
           if (ev.harmony) slot.chord = ev.harmony;
+          // Texte libre au-dessus (words)
+          if (ev.words) slot.text = ev.words;
           // Ornements / articulations
           if (head.orn && head.orn.length) slot.orn = head.orn.slice();
 
@@ -4227,6 +4605,35 @@
 
           slots.push(slot);
           lastNoteSlot = slot;   // mémoriser pour le prochain tie/slur (y compris inter-mesure)
+
+          // Durée non représentable par une figure simple/pointée (ex. note DOUBLE ou TRIPLE pointée
+          // venant d'un MusicXML : 1,75 / 1,875…). Notre modèle ne gère que la pointée simple.
+          // Plutôt que de laisser une durée « bâtarde » qui s'affiche de travers, on découpe la note
+          // en figures propres LIÉES entre elles (ex. noire pointée ⌣ croche pour 1,75), sauf en n-uplet.
+          if (!slotTuplet) {
+            const want = chordDurQ;
+            const clean = isCleanValue(want);
+            if (!clean) {
+              // Décomposition EXACTE en valeurs simples décroissantes (toujours juste), liées.
+              // Ex. noire double-pointée 1,75 → noire ⌣ croche ⌣ double.
+              const eps = 1e-6; const BASES = [4,2,1,0.5,0.25,0.125,0.0625];
+              const pieces = []; let rem = +want.toFixed(6);
+              for (const b of BASES) { while (rem >= b - eps) { pieces.push({dur:b,dot:false}); rem = +(rem-b).toFixed(6); } }
+              if (pieces.length > 1) {
+                // remplacer le slot poussé par la suite de figures liées
+                slots.pop();
+                pieces.forEach((p, i) => {
+                  const c = Object.assign({}, slot, { dur: p.dur, dot: p.dot });
+                  if (slot.stack) c.stack = slot.stack.map(x => Object.assign({}, x));
+                  if (i < pieces.length - 1) c.tieToNext = true;
+                  else { if (slot.tieToNext) c.tieToNext = true; else delete c.tieToNext; }
+                  if (i > 0) { delete c.chord; delete c.text; delete c.lyric; delete c.verses; delete c.orn; }
+                  slots.push(c);
+                  lastNoteSlot = c;
+                });
+              }
+            }
+          }
 
           // Fermer le groupe n-uplet après cette note
           if (inTuplet && ev.tupStop) { curTupletId = null; curTupletN = 0; curTupletNormal = 2; }
@@ -4489,6 +4896,8 @@
   function clefXml(clefName){
     if(clefName==='bass')return '<clef><sign>F</sign><line>4</line></clef>';
     if(clefName==='treble8')return '<clef><sign>G</sign><line>2</line><clef-octave-change>-1</clef-octave-change></clef>';
+    if(clefName==='alto')return '<clef><sign>C</sign><line>3</line></clef>';
+    if(clefName==='tenor')return '<clef><sign>C</sign><line>4</line></clef>';
     return '<clef><sign>G</sign><line>2</line></clef>';
   }
   function keyXml(sig){return '<key><fifths>'+sig+'</fifths><mode>major</mode></key>'}
@@ -4514,7 +4923,8 @@
     if(d>=1)return 'quarter';
     if(d>=0.5)return 'eighth';
     if(d>=0.25)return '16th';
-    return '32nd';
+    if(d>=0.125)return '32nd';
+    return '64th';
   }
   // Génère <harmony>...</harmony> à partir d'un symbole texte (ex. "Cm7", "G/B").
   function harmonyXml(sym){
@@ -4524,19 +4934,61 @@
     const step=m[1];const alt=m[2];let rest=m[3]||'';
     let bass='';const slash=rest.indexOf('/');
     if(slash>=0){bass=rest.slice(slash+1);rest=rest.slice(0,slash)}
-    // Déduire le kind MusicXML depuis le suffixe
-    const KIND={'':'major','m':'minor','min':'minor','-':'minor','aug':'augmented','+':'augmented',
-      'dim':'diminished','°':'diminished','7':'dominant','Maj7':'major-seventh','maj7':'major-seventh',
-      'M7':'major-seventh','m7':'minor-seventh','min7':'minor-seventh','dim7':'diminished-seventh',
-      'm7b5':'half-diminished','6':'major-sixth','m6':'minor-sixth','9':'dominant-ninth',
-      'Maj9':'major-ninth','m9':'minor-ninth','sus2':'suspended-second','sus4':'suspended-fourth',
-      '11':'dominant-11th','13':'dominant-13th','5':'power'};
-    const kind=KIND[rest]!==undefined?KIND[rest]:'major';
+    // Déduire le kind MusicXML depuis le suffixe (table élargie)
+    const KIND={
+      '':'major','M':'major','maj':'major',
+      'm':'minor','min':'minor','-':'minor',
+      'aug':'augmented','+':'augmented','+5':'augmented','#5':'augmented',
+      'dim':'diminished','°':'diminished','o':'diminished',
+      '7':'dominant','dom7':'dominant',
+      'Maj7':'major-seventh','maj7':'major-seventh','M7':'major-seventh','Δ':'major-seventh','Δ7':'major-seventh',
+      'm7':'minor-seventh','min7':'minor-seventh','-7':'minor-seventh',
+      'dim7':'diminished-seventh','°7':'diminished-seventh','o7':'diminished-seventh',
+      'aug7':'augmented-seventh','+7':'augmented-seventh','7#5':'augmented-seventh','7+5':'augmented-seventh',
+      'm7b5':'half-diminished','ø':'half-diminished','ø7':'half-diminished','-7b5':'half-diminished',
+      'mMaj7':'major-minor','mM7':'major-minor','-Maj7':'major-minor',
+      '6':'major-sixth','M6':'major-sixth','maj6':'major-sixth',
+      'm6':'minor-sixth','min6':'minor-sixth','-6':'minor-sixth',
+      '9':'dominant-ninth','7/9':'dominant-ninth',
+      'Maj9':'major-ninth','maj9':'major-ninth','M9':'major-ninth',
+      'm9':'minor-ninth','min9':'minor-ninth','-9':'minor-ninth',
+      '11':'dominant-11th','Maj11':'major-11th','M11':'major-11th','m11':'minor-11th','-11':'minor-11th',
+      '13':'dominant-13th','Maj13':'major-13th','M13':'major-13th','m13':'minor-13th','-13':'minor-13th',
+      'sus2':'suspended-second','sus4':'suspended-fourth','sus':'suspended-fourth','7sus4':'suspended-fourth','7sus':'suspended-fourth',
+      '5':'power','add9':'major','6/9':'major-sixth','69':'major-sixth'
+    };
+    const known=KIND[rest]!==undefined;
+    let kind;
+    if(known)kind=KIND[rest];
+    else{
+      // Heuristique de repli : on devine une base raisonnable, et on conserve le texte exact.
+      const r=rest;
+      if(/^(maj7|M7|Δ)/i.test(r))kind='major-seventh';
+      else if(/^(m|min|-)/.test(r)&&!/^maj/i.test(r)){ kind=/7/.test(r)?'minor-seventh':'minor'; }
+      else if(/dim|°|o/.test(r))kind='diminished';
+      else if(/aug|\+/.test(r))kind='augmented';
+      else if(/sus/.test(r))kind='suspended-fourth';
+      else if(/13/.test(r))kind='dominant-13th';
+      else if(/11/.test(r))kind='dominant-11th';
+      else if(/9/.test(r))kind='dominant-ninth';
+      else if(/7/.test(r))kind='dominant';
+      else kind='major';
+    }
     let x='<harmony>';
     x+='<root><root-step>'+step+'</root-step>';
     if(alt==='#')x+='<root-alter>1</root-alter>';else if(alt==='b')x+='<root-alter>-1</root-alter>';
     x+='</root>';
-    x+='<kind'+(KIND[rest]!==undefined?'':' text="'+escapeXml(rest)+'"')+'>'+kind+'</kind>';
+    // Suffixe canonique que l'import reconstruirait pour ce kind. Si le suffixe tapé en diffère
+    // (graphie alternative ø/°/Δ, ou extension add9/7sus4…), on conserve le texte EXACT via text=
+    // pour un aller-retour fidèle ; sinon on laisse le lecteur formater le kind.
+    const CANON={'major':'','minor':'m','augmented':'aug','diminished':'dim','dominant':'7',
+      'major-seventh':'Maj7','minor-seventh':'m7','diminished-seventh':'dim7','augmented-seventh':'aug7',
+      'half-diminished':'m7b5','major-minor':'mMaj7','major-sixth':'6','minor-sixth':'m6',
+      'dominant-ninth':'9','major-ninth':'Maj9','minor-ninth':'m9','dominant-11th':'11','major-11th':'Maj11',
+      'minor-11th':'m11','dominant-13th':'13','major-13th':'Maj13','minor-13th':'m13',
+      'suspended-second':'sus2','suspended-fourth':'sus4','power':'5'};
+    const needText=(rest!==(CANON[kind]!==undefined?CANON[kind]:''));
+    x+='<kind'+(needText?' text="'+escapeXml(rest)+'"':'')+'>'+kind+'</kind>';
     if(bass){
       const bm=bass.match(/^([A-G])([#b]?)/);
       if(bm){x+='<bass><bass-step>'+bm[1]+'</bass-step>';if(bm[2]==='#')x+='<bass-alter>1</bass-alter>';else if(bm[2]==='b')x+='<bass-alter>-1</bass-alter>';x+='</bass>'}
@@ -4642,9 +5094,13 @@
     const title=(state.headers.T||'').split('\n')[0]||'Sans titre';
     const composer=(state.headers.C||'').split('\n')[0]||'';
     xml+='<work><work-title>'+escapeXml(title)+'</work-title></work>\n';
-    if(composer){
-      xml+='<identification><creator type="composer">'+escapeXml(composer)+'</creator></identification>\n';
-    }
+    // identification : compositeur + couplets supplémentaires (W:) stockés en miscellaneous-field
+    // (emplacement standard préservé, contrairement aux cadres de texte MuseScore qui ne s'exportent pas)
+    const extraWords=(state.headers.W||'');
+    let ident='';
+    if(composer)ident+='<creator type="composer">'+escapeXml(composer)+'</creator>';
+    if(extraWords.trim())ident+='<miscellaneous><miscellaneous-field name="abc-words">'+escapeXml(extraWords)+'</miscellaneous-field></miscellaneous>';
+    if(ident)xml+='<identification>'+ident+'</identification>\n';
     // part-list : une score-part par piste
     const tracks=(state.tracks&&state.tracks.length)?state.tracks:[null];
     xml+='<part-list>';
@@ -4699,9 +5155,13 @@
       }
       meas.forEach((slot,si)=>{
         const dur=Math.max(1,Math.round(effDur(slot)*DIV));
-        // Symbole d'accord : <harmony> est un élément FRÈRE placé AVANT la note
-        if(slot.type==='note'&&slot.chord){
+        // Symbole d'accord : <harmony> est un élément FRÈRE placé AVANT la note/silence
+        if(slot.chord){
           xml+=harmonyXml(slot.chord);
+        }
+        // Texte libre au-dessus : <direction><words> (placé AVANT la note/silence)
+        if(slot.text){
+          xml+='<direction placement="above"><direction-type><words>'+escapeXml(slot.text)+'</words></direction-type></direction>\n';
         }
         // Note de tête (on passe prevNoteXm pour détecter tie/slur stop inter-mesure)
         xml+=oneNoteXml(slot,si,meas,lK,lC,dur,false,prevNoteXm);
@@ -4849,7 +5309,7 @@
 
   // Point 9 : Bouton Aide
   document.getElementById('btn-help').addEventListener('click',()=>{
-    const helpText='<div style="font-size:24px;line-height:1.4;font-weight:600;text-align:left;">'
+    const helpText='<div style="font-size:13px;line-height:1.4;font-weight:600;text-align:left;">'
       +'<b style="color:#0c447c;">Onglet Notes</b><br>'
       +'• 7 boutons Do…Si pour saisir une note<br>'
       +'• Durées : ronde, blanche, noire, croche, double, triple<br>'
@@ -4926,57 +5386,60 @@
   // et positionne la vue sur la mesure de cette ligne. Le libellé est un simple texte.
   // opts: {from, to, min, max, focus, onChange(from,to,focus)}. Renvoie {html, bind, getFrom, getTo}.
   function makeRangeSelector(opts){
-    let from=opts.from, to=opts.to, active=opts.focus||'to'; // ligne « allumée » (bleue) — 'to' au départ
+    let from=opts.from, to=opts.to, active=opts.focus||'to'; // champ sélectionné ('from' ou 'to')
     const min=opts.min!=null?opts.min:1, max=opts.max;
-    // Bornage min/max + alignement croisé : `driver` indique la borne qu'on vient de modifier ;
-    // elle « pousse » l'autre à l'identique si elle la dépasse (from au-delà de to, ou to en deçà de from).
     function clamp(driver){
       from=Math.max(min,Math.min(max,from));
       to=Math.max(min,Math.min(max,to));
       if(driver==='from'){ if(from>to)to=from; }
       else if(driver==='to'){ if(to<from)from=to; }
-      else { if(to<from)to=from; } // pas de borne pilote (init/refresh) : sécurité
+      else { if(to<from)to=from; }
     }
     function html(){
-      function row(which,label,val){
-        return '<div class="rg-row" data-rg="'+which+'" style="display:grid;grid-template-columns:auto 30px 26px 1fr 26px 30px;gap:3px;align-items:center;margin-top:3px;">'
-          +'<button class="k rg-label" data-rg="'+which+'" style="font-size:11px;font-weight:700;padding:0 6px;height:26px;width:auto;text-align:left;white-space:nowrap;">'+label+'</button>'
-          +'<button class="k rg-step" data-rg="'+which+'" data-d="-10" style="height:26px;font-size:12px;padding:0;">−10</button>'
-          +'<button class="k rg-step" data-rg="'+which+'" data-d="-1" style="height:26px;font-size:14px;padding:0;">−</button>'
-          +'<div class="val" style="text-align:center;"><b class="rg-val" data-rg="'+which+'">'+val+'</b></div>'
-          +'<button class="k rg-step" data-rg="'+which+'" data-d="1" style="height:26px;font-size:14px;padding:0;">+</button>'
-          +'<button class="k rg-step" data-rg="'+which+'" data-d="10" style="height:26px;font-size:12px;padding:0;">+10</button>'
-          +'</div>';
-      }
       clamp();
-      return '<div class="rg-wrap">'+row('from','De la mesure',from)+row('to','à la mesure',to)+'</div>';
+      function fieldRow(which,label,val){
+        // Ligne sélectionnable : libellé + valeur. Un clic la rend « active ».
+        return '<button class="k rg-field" data-rg="'+which+'" style="display:grid;grid-template-columns:1fr auto;align-items:center;width:100%;height:30px;font-size:13px;font-weight:700;text-align:left;padding:0 10px;margin-top:3px;">'
+          +'<span>'+label+'</span><span class="rg-val" data-rg="'+which+'" style="font-size:15px;">'+val+'</span></button>';
+      }
+      // Une SEULE ligne de boutons partagée : −10 −1 déb fin +1 +10, agissant sur le champ sélectionné.
+      const stepRow='<div class="rg-steps" style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin-top:4px;">'
+        +'<button class="k rg-step" data-d="-10" style="font-size:12px;padding:0;">−10</button>'
+        +'<button class="k rg-step" data-d="-1" style="font-size:13px;padding:0;">−1</button>'
+        +'<button class="k rg-step" data-set="min" style="font-size:12px;padding:0;">déb</button>'
+        +'<button class="k rg-step" data-set="max" style="font-size:12px;padding:0;">fin</button>'
+        +'<button class="k rg-step" data-d="1" style="font-size:13px;padding:0;">+1</button>'
+        +'<button class="k rg-step" data-d="10" style="font-size:12px;padding:0;">+10</button>'
+        +'</div>';
+      return '<div class="rg-wrap">'+fieldRow('from','De la mesure',from)+fieldRow('to','à la mesure',to)+stepRow+'</div>';
     }
     function refresh(root){
       clamp();
       root.querySelectorAll('.rg-val').forEach(el=>{el.textContent=(el.dataset.rg==='from')?from:to;});
-      // Surbrillance : SEUL le bouton-libellé de la ligne active (« de la mesure » ou « à la mesure ») est bleu
-      root.querySelectorAll('.rg-label').forEach(b=>{
+      // Le champ actif (de/à) est surligné en bleu
+      root.querySelectorAll('.rg-field').forEach(b=>{
         const on=(b.dataset.rg===active);
         b.style.background=on?'#cfe5fa':'';b.style.borderColor=on?'#185fa5':'';b.style.color=on?'#0c447c':'';
       });
     }
+    function applyDelta(d){ if(active==='from')from+=d; else to+=d; clamp(active); }
+    function applySet(kind){ const v=(kind==='min')?min:max; if(active==='from')from=v; else to=v; clamp(active); }
     function bind(root){
-      // Clic sur un libellé : rend sa ligne active (bleue) et positionne la vue, sans changer les valeurs
-      root.querySelectorAll('.rg-label').forEach(b=>b.addEventListener('click',()=>{
+      // Sélection du champ (de / à)
+      root.querySelectorAll('.rg-field').forEach(b=>b.addEventListener('click',()=>{
         active=b.dataset.rg;
         if(opts.onChange)opts.onChange(from,to,active);
         refresh(root);
       }));
+      // Ligne de boutons partagée : modifie le champ actif
       root.querySelectorAll('.rg-step').forEach(b=>b.addEventListener('click',()=>{
-        const which=b.dataset.rg, d=parseInt(b.dataset.d,10);
-        if(which==='from')from+=d; else to+=d;
-        active=which;            // la ligne modifiée devient active → son libellé s'allume
-        clamp(which);
-        if(opts.onChange)opts.onChange(from,to,which);  // positionne la vue sur cette ligne
+        if(b.dataset.set){ applySet(b.dataset.set); }
+        else { applyDelta(parseInt(b.dataset.d,10)); }
+        if(opts.onChange)opts.onChange(from,to,active);
         refresh(root);
       }));
       refresh(root);
-      // Hook : un clic sur une mesure de la partition met à jour la valeur de la ligne active.
+      // Clic sur une mesure de la partition → met à jour le champ actif
       state._rangePick=(measureIdx1based)=>{
         if(active==='from')from=measureIdx1based; else to=measureIdx1based;
         clamp(active);
@@ -5069,16 +5532,20 @@
 
   // ⭐ Headers : Titre/X simple input, ST/C/N multilignes avec bouton ↵
   function headerPromptSimple(key,title){return ()=>openPanel({title:title,body:'<div class="row"><input id="hi" type="text" value="'+((state.headers[key]||'')+'').replace(/"/g,'&quot;')+'"/></div>',onMount:()=>document.getElementById('hi').focus(),onOk:()=>{let v=document.getElementById('hi').value.trim();if(key==='X'&&!v)v='0';state.headers[key]=v;pushHistory()}})}
-  function headerPromptMulti(key,title){return ()=>{
+  function headerPromptMulti(key,title,opts){opts=opts||{};return ()=>{
+    const big=!!opts.big;
+    const taStyle=big?'min-height:240px;height:240px;':'height:auto;min-height:0;';
+    const rows=big?12:3;
     openPanel({
       title:title,
-      compact:true,
-      body:'<textarea id="hi" rows="3" style="height:auto;min-height:0;">'+((state.headers[key]||'')+'').replace(/</g,'&lt;')+'</textarea>'+
-        '<div class="row-grid" style="margin-top:8px;"><button class="k" id="newline-btn" style="font-size:14px;">↵ Nouvelle ligne</button></div>',
+      compact:!big,
+      body:'<textarea id="hi" rows="'+rows+'" style="'+taStyle+'">'+((state.headers[key]||'')+'').replace(/</g,'&lt;')+'</textarea>'+
+        (big?'':'<div class="row-grid" style="margin-top:8px;"><button class="k" id="newline-btn" style="font-size:14px;">↵ Nouvelle ligne</button></div>'),
       onMount:()=>{
         const ta=document.getElementById('hi');
         ta.focus();
-        document.getElementById('newline-btn').addEventListener('click',()=>{
+        const nb=document.getElementById('newline-btn');
+        if(nb)nb.addEventListener('click',()=>{
           const pos=ta.selectionStart;
           const v=ta.value;
           ta.value=v.substring(0,pos)+'\n'+v.substring(pos);
@@ -5093,6 +5560,7 @@
   document.querySelector('[data-hdr="T"]').addEventListener('click',headerPromptMulti('T','Titre'));
   document.querySelector('[data-hdr="C"]').addEventListener('click',headerPromptMulti('C','Compositeur'));
   document.querySelector('[data-hdr="N"]').addEventListener('click',headerPromptMulti('N','Commentaire'));
+  {const wb=document.querySelector('[data-hdr="W"]');if(wb)wb.addEventListener('click',headerPromptMulti('W','Couplets supplémentaires',{big:true}));}
   {const rb=document.querySelector('[data-hdr="R"]');if(rb)rb.addEventListener('click',headerPromptSimple('R','R: Type de rythme (Reel, Jig, Slide…)'));}
   {const hb=document.querySelector('[data-hdr="H"]');if(hb)hb.addEventListener('click',headerPromptMulti('H','Historique / source (H:)'));}
   {const fb=document.querySelector('[data-hdr="F"]');if(fb)fb.addEventListener('click',headerPromptSimple('F','URL du fichier (F:)'));}
@@ -5109,10 +5577,19 @@
     const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
       onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};st=getCurrent();const nv=document.getElementById('num-v');if(nv)nv.textContent=st.n;const dv=document.getElementById('den-v');if(dv)dv.textContent=st.d;const lv=document.getElementById('L-v');if(lv)lv.textContent=st.uD;renderScore();renderState();ensureSelectionVisible();}}});
     function controls(){
+      function inlineStep(label,idD,idV,val,idU){
+        return '<div class="stepper-inline">'
+          +'<span class="si-label">'+label+'</span>'
+          +'<button class="k" id="'+idD+'">−</button>'
+          +'<div class="val"><b id="'+idV+'">'+val+'</b></div>'
+          +'<button class="k" id="'+idU+'">+</button></div>';
+      }
       return '<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div>'+rg.html()+
-        '<div class="stepper-label">Numérateur</div><div class="stepper"><button class="k" id="num-d">−</button><div class="val"><b id="num-v">'+st.n+'</b></div><button class="k" id="num-u">+</button></div>'+
-        '<div class="stepper-label">Dénominateur</div><div class="stepper"><button class="k" id="den-d">−</button><div class="val"><b id="den-v">'+st.d+'</b></div><button class="k" id="den-u">+</button></div>'+
-        '<div class="stepper-label">Unité L:1/x</div><div class="stepper"><button class="k" id="L-d">−</button><div class="val"><b id="L-v">'+st.uD+'</b></div><button class="k" id="L-u">+</button></div>';
+        '<div class="rythme-compact">'+
+          inlineStep('Numérateur','num-d','num-v',st.n,'num-u')+
+          inlineStep('Dénominateur','den-d','den-v',st.d,'den-u')+
+          inlineStep('Unité L:1/x','L-d','L-v',st.uD,'L-u')+
+        '</div>';
     }
     function rebind(){
       rg.bind(document.getElementById('panel-body'));
@@ -5181,15 +5658,23 @@
   document.querySelector('[data-hdr="CLEF"]').addEventListener('click',()=>{
     let pick=clefAt(state.sel.m);
     const rg=makeRangeSelector({from:state.sel.m+1,to:state.sel.m+1,min:1,max:state.measures.length,focus:'to',
-      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};pick=clefAt(m);const rf=document.querySelector('#clef-pick');if(rf)rf.querySelectorAll('.k').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));renderScore();renderState();ensureSelectionVisible();}}});
-    function controls(){return '<div class="mes-active" style="color:#0c6b2f;">◆ S\'applique à la <b>voix active</b></div>'+rg.html()+
+      onChange:(f,t,focus)=>{const m=(focus==='from'?f:t)-1;if(m>=0&&m<state.measures.length){state.sel={m,s:0};pick=clefAt(m);document.querySelectorAll('#clef-pick .k[data-clef], #clef-others-row .k[data-clef]').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));renderScore();renderState();ensureSelectionVisible();}}});
+    function controls(){
+      const showOthers=(pick==='alto'||pick==='tenor');
+      return '<div class="mes-active" style="color:#0c6b2f;">◆ S\'applique à la <b>voix active</b></div>'+rg.html()+
       '<div class="stepper-label">Clé</div>'+
-      '<div class="row-grid row-3" id="clef-pick"><button class="k clef-small" data-clef="treble">𝄞</button><button class="k clef-small" data-clef="treble8" title="Sol octaviée (sonne une octave plus bas)">𝄞<span style="font-size:0.5em;vertical-align:-1em;">8</span></button><button class="k clef-small" data-clef="bass">𝄢</button></div>'}
+      '<div class="row-grid row-4" id="clef-pick"><button class="k clef-small" data-clef="treble">𝄞</button><button class="k clef-small" data-clef="treble8" title="Sol octaviée (sonne une octave plus bas)"><svg width="20" height="30" viewBox="0 0 20 30" style="vertical-align:middle;"><text x="10" y="21" font-size="23" font-family="serif" text-anchor="middle" fill="currentColor">𝄞</text><text x="10" y="29" font-size="8" font-weight="bold" font-family="serif" text-anchor="middle" fill="currentColor">8</text></svg></button><button class="k clef-small" data-clef="bass">𝄢</button><button class="k" id="clef-others" title="Clés d\'ut (alto, ténor)" style="font-size:12px;">Autres ▾</button></div>'+
+      '<div class="row-grid row-2" id="clef-others-row" style="margin-top:3px;'+(showOthers?'':'display:none;')+'">'+
+        '<button class="k clef-small" data-clef="alto" title="Clé d\'ut 3e ligne (alto)"><svg width="34" height="30" viewBox="0 0 34 30" style="vertical-align:middle;"><text x="11" y="15" font-size="21" font-family="serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">𝄡</text><text x="26" y="15" font-size="9" font-weight="bold" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">alto</text></svg></button>'+
+        '<button class="k clef-small" data-clef="tenor" title="Clé d\'ut 4e ligne (ténor)"><svg width="40" height="30" viewBox="0 0 40 30" style="vertical-align:middle;"><text x="11" y="15" font-size="21" font-family="serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">𝄡</text><text x="29" y="15" font-size="9" font-weight="bold" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">tén.</text></svg></button>'+
+      '</div>'}
     function rebind(){
       rg.bind(document.getElementById('panel-body'));
-      const rf=()=>document.querySelectorAll('#clef-pick .k').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));
+      const rf=()=>document.querySelectorAll('#clef-pick .k[data-clef], #clef-others-row .k[data-clef]').forEach(b=>b.classList.toggle('active',b.dataset.clef===pick));
       rf();
-      document.querySelectorAll('#clef-pick .k').forEach(b=>b.addEventListener('click',()=>{pick=b.dataset.clef;rf()}));
+      document.querySelectorAll('#clef-pick .k[data-clef], #clef-others-row .k[data-clef]').forEach(b=>b.addEventListener('click',()=>{pick=b.dataset.clef;rf()}));
+      const ob=document.getElementById('clef-others');
+      if(ob)ob.addEventListener('click',()=>{const row=document.getElementById('clef-others-row');if(row)row.style.display=(row.style.display==='none')?'':'none';});
     }
     openPanel({
       title:'Clé',body:controls(),hideActions:true,extraButtons:['Annuler','Appliquer'],
@@ -5265,6 +5750,8 @@
     if(state.measures[m]&&state.measures[m][s]){
       state.sel={m,s};
       render();
+      // Jouer la note cliquée (silences ignorés). Aperçu sonore court.
+      playSelectedSlot();
     }
   });
 
