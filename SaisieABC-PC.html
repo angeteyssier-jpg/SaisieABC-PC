@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.37 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.46 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -303,6 +303,9 @@
           <button class="k" data-hdr="K">Armure</button>
           <button class="k" data-hdr="CLEF">Clé</button>
         </div>
+        <div class="row-grid">
+          <button class="k" id="btn-tempo-change" style="font-size:15px;">♩= Tempo…</button>
+        </div>
         <div class="row-grid row-4">
           <button class="k" id="btn-rep-start">𝄆</button>
           <button class="k" id="btn-rep-end">𝄇</button>
@@ -311,6 +314,10 @@
         </div>
         <div class="row-grid">
           <button class="k" id="btn-part" style="font-size:16px;">Partie P: <span id="part-val">—</span></button>
+        </div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-linebreak" title="Forcer une fin de ligne après cette mesure (mise en page, toutes voix)" style="font-size:13px;">⏎ Fin ligne</button>
+          <button class="k" id="btn-pagebreak" title="Forcer une fin de page après cette mesure (mise en page, toutes voix)" style="font-size:13px;">⤓ Fin page</button>
         </div>
         <div class="row-grid">
           <button class="k" id="btn-shift">⇦ Décaler ⇨</button>
@@ -474,24 +481,38 @@
   const TRACK_FIELDS=['measures','pieceMeter','pieceUnit','pieceKeySig','pieceClef','timeChanges','keyChanges','clefChanges','repeats','parts'];
   const MAX_TRACKS=6;
   // Crée une piste vierge avec valeurs par défaut
+  // Clone profond des mesures (chaque slot devient un objet indépendant) : empêche absolument
+  // que deux pistes partagent les mêmes objets de notes (cause de paroles qui « bavent » d'une voix
+  // à l'autre). On clone aussi les maps par-mesure pour la même raison.
+  function cloneMeasures(meas){
+    if(!Array.isArray(meas))return [];
+    return meas.map(m=>Array.isArray(m)?m.map(s=>{
+      const c=Object.assign({},s);
+      if(Array.isArray(s.stack))c.stack=s.stack.map(x=>Object.assign({},x));
+      if(Array.isArray(s.verses))c.verses=s.verses.slice();
+      if(Array.isArray(s.orn))c.orn=s.orn.slice();
+      return c;
+    }):[]);
+  }
+  function cloneMap(o){return o?JSON.parse(JSON.stringify(o)):{};}
   function makeTrack(opts){opts=opts||{};return {
     name:opts.name||'',
-    measures:opts.measures||[],
+    measures:cloneMeasures(opts.measures||[]),
     pieceMeter:opts.pieceMeter||'4/4',
     pieceUnit:opts.pieceUnit||'1/4',
     pieceKeySig:(opts.pieceKeySig!==undefined)?opts.pieceKeySig:0,
     pieceClef:opts.pieceClef||'treble',
-    timeChanges:opts.timeChanges||{},
-    keyChanges:opts.keyChanges||{},
-    clefChanges:opts.clefChanges||{},
-    repeats:opts.repeats||{},
-    parts:opts.parts||{},
+    timeChanges:cloneMap(opts.timeChanges),
+    keyChanges:cloneMap(opts.keyChanges),
+    clefChanges:cloneMap(opts.clefChanges),
+    repeats:cloneMap(opts.repeats),
+    parts:cloneMap(opts.parts),
     vol:(opts.vol!==undefined)?opts.vol:100,
     mute:!!opts.mute,
     visible:(opts.visible!==undefined)?opts.visible:true,
     instrument:(opts.instrument!==undefined)?opts.instrument:0
   }}
-  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
+  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
   // Aliasing : state.<champ> lit/écrit la piste active
   TRACK_FIELDS.forEach(f=>{Object.defineProperty(state,f,{
     get(){const tr=state.tracks[state.activeTrack]||state.tracks[0];return tr?tr[f]:undefined},
@@ -520,6 +541,21 @@
     if(!s)s='morceau';
     return s.substring(0,120);
   }
+  // Variante qui CONSERVE les espaces (retire seulement les caractères interdits).
+  function sanitizeFilenameKeepSpaces(name){
+    let s=String(name||'').trim();
+    s=s.replace(/[<>:"/\\|?*\x00-\x1f]/g,'');
+    s=s.replace(/\s+/g,' ').trim();
+    s=s.replace(/^[. ]+|[. ]+$/g,'');
+    if(!s)s='morceau';
+    return s.substring(0,120);
+  }
+  // Nom de fichier proposé : le nom du fichier ouvert s'il existe, sinon le titre (espaces conservés).
+  function proposedBaseName(){
+    if(state.openedFileName)return sanitizeFilenameKeepSpaces(state.openedFileName);
+    const title=(state.headers.T&&state.headers.T.trim().split('\n')[0])||'';
+    return title?sanitizeFilenameKeepSpaces(title):'morceau';
+  }
 
   const history={stack:[],pos:-1,max:100};
   // Mode d'affichage du tempo : 'q'(noire) 'qd'(noire pointée) 'e'(croche) 'ed'(croche pointée). state.tempo reste canonique en noires/min.
@@ -533,6 +569,11 @@
   function beatDotted(){if(typeof state.tempoBeatDotted==='boolean')return state.tempoBeatDotted;return !!state.tempoDotted||state.tempoMode==='qd'||state.tempoMode==='ed'}
   function setBeat(u,dotted){state.tempoBeatUnit=u;state.tempoBeatDotted=!!dotted;state.tempoDotted=(u===1&&dotted)}
   function beatQuarters(u,dotted){if(u===undefined)u=beatUnit();if(dotted===undefined)dotted=beatDotted();return u*(dotted?1.5:1)}
+  // Glyphe de la battue pour l'affichage du tempo (♩, ♪, etc.) + point si pointée.
+  function beatGlyph(u,dotted){if(u===undefined)u=beatUnit();if(dotted===undefined)dotted=beatDotted();
+    let g='\u2669';// noire
+    if(u>=4)g='\uD834\uDD5D';else if(u>=2)g='\uD834\uDD5E';else if(u>=1)g='\u2669';else if(u>=0.5)g='\u266A';else g='\u266C';
+    return g+(dotted?'.':'');}
   function tempoDisplayVal(){return Math.round(state.tempo/beatQuarters())}
   function tempoFromDisplay(val){return val*beatQuarters()}
   function beatSym(u,dotted){if(u===undefined)u=beatUnit();if(dotted===undefined)dotted=beatDotted();const f=TEMPO_UNITS.find(x=>Math.abs(x.u-u)<1e-9);return (f?f.sym:'♩')+(dotted?'.':'')}
@@ -569,6 +610,9 @@
   function meterAt(idx){let cur=state.pieceMeter;for(let i=0;i<=idx;i++)if(state.timeChanges[i])cur=state.timeChanges[i];return cur}
   function keyAt(idx){let cur=state.pieceKeySig;for(let i=0;i<=idx;i++)if(state.keyChanges[i]!==undefined)cur=state.keyChanges[i];return cur}
   function clefAt(idx){let cur=state.pieceClef;for(let i=0;i<=idx;i++)if(state.clefChanges[i])cur=state.clefChanges[i];return cur}
+  // Tempo effectif (en NOIRES/min, canonique) à la mesure idx. state.tempo = tempo initial ;
+  // state.tempoChanges[mi] = nouveau tempo (noires/min) à partir de la mesure mi, jusqu'au prochain.
+  function tempoAt(idx){let cur=state.tempo;const tc=state.tempoChanges||{};for(let i=0;i<=idx;i++)if(tc[i]!==undefined)cur=tc[i];return cur}
   function measureCapacity(meter){const{num,den}=parseMeter(meter);return num*(4/den)}
   function effDur(t){
     let d=t.dot?t.dur*1.5:t.dur;
@@ -585,7 +629,7 @@
   function beamGroupUnit(meter){const{num,den}=parseMeter(meter);if(den===8&&num%3===0&&num>=6)return 1.5;return 4/den}
 
   function buildEmptyMeasure(meter){const{num,den}=parseMeter(meter);const beatDur=4/den;const slots=[];for(let i=0;i<num;i++)slots.push({type:'rest',dur:beatDur,dot:false});return slots}
-  function rebuildMeasures(){const count=Math.max(state.measures.length,9);state.measures=[];state.timeChanges={};state.keyChanges={};state.clefChanges={};state.repeats={};state.parts={};for(let i=0;i<count;i++)state.measures.push(buildEmptyMeasure(state.pieceMeter));state.sel={m:0,s:0}}
+  function rebuildMeasures(){const count=Math.max(state.measures.length,9);state.measures=[];state.timeChanges={};state.keyChanges={};state.clefChanges={};state.repeats={};state.parts={};state.tempoChanges={};state.breaks={};for(let i=0;i<count;i++)state.measures.push(buildEmptyMeasure(state.pieceMeter));state.sel={m:0,s:0}}
 
   function splitDurationByBeat(offset,amount,beat){
     const eps=1e-6;const out=[];let cur=+offset.toFixed(6);let rem=+amount.toFixed(6);
@@ -924,7 +968,7 @@
   }
 
   function buildBarSeparator(prevMi,mi){const prevEnd=(prevMi>=0)&&state.repeats[prevMi]?.end;const thisStart=state.repeats[mi]?.start;if(prevEnd&&thisStart)return':|:';if(prevEnd)return':|';if(thisStart)return'|:';if(mi===0)return'';return'|'}
-  function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
+  function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.tempoChanges&&state.tempoChanges[mi]!==undefined){parts.push('[Q:'+beatAbcFraction()+'='+Math.round(state.tempoChanges[mi]/beatQuarters())+']')}if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
   function buildVoltaFor(mi){const r=state.repeats[mi];if(!r||!r.volta)return'';return'['+r.volta}
 
   // Construit le corps ABC pour la voix courante (lit la piste active via les alias state.*)
@@ -971,6 +1015,13 @@
         const he=gOf[si];const ne=gOf[si+1];const inSame=he&&ne&&he.gi===ne.gi;
         if(!inSame)body+=' ';
       });
+      // Sauts de mise en page après cette mesure : $ = fin de ligne, %%newpage = fin de page.
+      const br=state.breaks&&state.breaks[mi];
+      if(br){
+        // fermer la barre de mesure courante avant le saut
+        if(br.page){body+=' |\n%%newpage\n';}
+        else if(br.line){body+=' $\n';}
+      }
     });
     // Sécurité : si un slur reste ouvert en fin de voix, le fermer pour ne pas laisser de '(' orphelin
     if(slurActive)body+=')';
@@ -1054,22 +1105,15 @@
     (measures||[]).forEach(m=>m.forEach(s=>{ if(s.type==='note'&&s.verses&&s.verses.length)max=Math.max(max,1+s.verses.length); }));
     return max;
   }
-  // Découpe UNE ligne de texte (un couplet) en syllabes selon les règles espace/tiret.
-  // '' = note sautée (décalage). La ligne ne doit plus contenir de saut de ligne ; tab→espace.
+  // Découpe UNE ligne de texte (un couplet) en syllabes. Le SÉPARATEUR est l'ESPACE uniquement :
+  // chaque mot séparé par une espace = UNE syllabe sur UNE note. Le tiret n'est PAS un séparateur,
+  // c'est un effet visuel (mot cassé) conservé tel quel dans la syllabe.
+  // '' = note sautée (décalage) lorsqu'il y a une espace en trop.
   function parseLyricLineToSyls(line){
     const syls=[];
     line.split(' ').forEach(tok=>{
-      if(tok===''){syls.push('');return}              // espace = note sautée (décalage)
-      const trailingDash=tok.endsWith('-');
-      const body=trailingDash?tok.slice(0,-1):tok;
-      if(!body)return;                                 // tiret seul "-" : ignoré
-      const parts=body.split('-');
-      parts.forEach((p,i)=>{
-        if(!p)return;
-        const isLastPart=(i===parts.length-1);
-        const hasNext=(!isLastPart && parts[i+1]!=='') || (isLastPart && trailingDash);
-        syls.push(hasNext ? p+'-' : p);
-      });
+      if(tok===''){syls.push('');return}   // espace en trop / début → note sautée (décalage)
+      syls.push(tok);                       // syllabe verbatim (tirets internes/finaux conservés)
     });
     return syls;
   }
@@ -1088,12 +1132,15 @@
         const l=verseSyl(s,v);
         if(l){
           any=true;
-          // notre modèle stocke le tiret de liaison collé ("bon-") → ABC veut "bon-" suivi d'un espace
-          // on remplace les espaces internes par ~ (insécable), on garde le - final
-          const hasDash=l.endsWith('-');
-          let core=hasDash?l.slice(0,-1):l;
-          core=core.replace(/ /g,'~');
-          syls.push(hasDash?(core+'-'):core);
+          // Modèle : la syllabe est saisie telle quelle, espace = séparateur, tiret = effet visuel.
+          // En ABC w:, le '-' sépare les syllabes : pour préserver un tiret VISUEL interne (ex. "bon-jour"
+          // sur une seule note), on l'échappe en "\-" (que assignLyrics reconvertit). Un tiret FINAL de
+          // continuation est conservé comme vrai '-' (liaison à la note suivante, usage standard).
+          const hasTrailDash=l.endsWith('-');
+          let core=hasTrailDash?l.slice(0,-1):l;
+          core=core.replace(/-/g,'\\-');      // tirets internes → littéraux (visuels)
+          core=core.replace(/ /g,'~');        // espaces internes → insécables
+          syls.push(hasTrailDash?(core+'-'):core);
         } else syls.push('*');
       });
       // retirer les '*' superflus en fin de ligne
@@ -1194,7 +1241,7 @@
     return out;
   }
 
-  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};
     // --- multi-voix ---
     const voiceOrder=[];            // ordre d'apparition des voix
     const voiceMeta={};             // id -> {clef,name}
@@ -1262,7 +1309,7 @@
     }
     return ns;
   }
-  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingTuplet=null,slurDepth=0,lastNoteSlot=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='['&&body[i+1]&&/[\^_=A-Ga-g]/.test(body[i+1])){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);i=end+1;let dsOut='';while(i<body.length&&/[\d/]/.test(body[i])){dsOut+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}
+  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingTuplet=null,slurDepth=0,lastNoteSlot=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){i++;continue}if(c==='$'){const bm=(curMeasure.length>0)?mIdx:(mIdx-1);if(bm>=0){if(!ns.breaks[bm])ns.breaks[bm]={};ns.breaks[bm].line=true}i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const ti=mIdx+(curMeasure.length>0?1:0);const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);let bpmQ=null;if(qm){const bf=beatFromAbc(parseInt(qm[1],10),parseInt(qm[2],10));bpmQ=parseInt(qm[3],10)*bf.unit*(bf.dotted?1.5:1)}else{const qm2=v.match(/=\s*(\d+)/);if(qm2)bpmQ=parseInt(qm2[1],10);else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3)bpmQ=parseInt(qm3[1],10)}}if(bpmQ!==null){if(ti===0)ns.tempo=bpmQ;else ns.tempoChanges[ti]=bpmQ}}else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const v=parseInt(body[i+1],10);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=v;i+=2;continue}if(c==='['&&body[i+1]&&/[\^_=A-Ga-g]/.test(body[i+1])){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);i=end+1;let dsOut='';while(i<body.length&&/[\d/]/.test(body[i])){dsOut+=body[i];i++}let tie=false;if(body[i]==='-'){tie=true;i++}
         // découper les notes internes de l'accord (avec leur durée propre)
         const chordNotes=[];let p=0;let firstDs='';while(p<inner.length){let a='';while(p<inner.length&&(inner[p]==='^'||inner[p]==='_'||inner[p]==='=')){if(inner[p]==='^')a=(a==='^'?'^^':'^');else if(inner[p]==='_')a=(a==='_'?'__':'_');else a='=';p++}if(p>=inner.length)break;const cc=inner[p];if(/[A-Ga-g]/.test(cc)){let nn=cc.toUpperCase();let oo=(cc===cc.toLowerCase())?1:0;p++;while(p<inner.length&&(inner[p]==="'"||inner[p]===',')){if(inner[p]==="'")oo++;else oo--;p++}let ids='';while(p<inner.length&&/[\d/]/.test(inner[p])){ids+=inner[p];p++}if(firstDs==='')firstDs=ids;chordNotes.push({note:nn,octave:oo,acc:a?(a.length>1?a[0]:a):''})}else p++}
         // durée : externe (après ]) prioritaire, sinon celle des notes internes
@@ -1562,6 +1609,19 @@
         const x=(i===0)?measureBounds[0].xL:measureBounds[i-1].xR;
         svg+='<line x1="'+x+'" y1="'+staffTop+'" x2="'+x+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="'+(i===0?1.1:0.7)+'" opacity="0.7"/>';
       }
+      // Repères de mise en page (fin de ligne / fin de page) — affichés sur la voix active seulement.
+      if(isActiveVoice&&state.breaks){
+        for(let i=0;i<lineData.mIdxs.length;i++){
+          const mIdx=lineData.mIdxs[i];const br=state.breaks[mIdx];if(!br)continue;
+          const xR=measureBounds[i].xR;const yTop=staffTop-2;
+          if(br.page){
+            // double chevron vers le bas = fin de page
+            svg+='<text x="'+(xR-3)+'" y="'+(yTop-3)+'" font-size="11" fill="#185fa5" text-anchor="end">⤓</text>';
+          } else if(br.line){
+            svg+='<text x="'+(xR-3)+'" y="'+(yTop-3)+'" font-size="11" fill="#185fa5" text-anchor="end">⏎</text>';
+          }
+        }
+      }
       // Etat partage pour les liaisons traversant les mesures de la ligne
       let pS=null;
       const tP=[];
@@ -1805,13 +1865,35 @@
           if(si===0){
             if(state.viewFlags.measureNums)svg+='<text x="'+(xL+2)+'" y="'+(staffTop-3)+'" font-size="8" fill="'+dim+'">'+String(mIdx+1)+'</text>';
             if(state.viewFlags.parts&&state.parts&&state.parts[mIdx])svg+='<text x="'+(xL+2)+'" y="'+(staffTop-14)+'" font-size="11" font-weight="bold" fill="'+ink+'">'+escXml(state.parts[mIdx])+'</text>';
+            // Indication de tempo : mesure 0 (tempo initial) ou toute mesure avec changement.
+            // Affichée sur la voix VISIBLE LA PLUS HAUTE (pas forcément la voix active).
+            const tc=state.tempoChanges||{};
+            const isTopVoice=(layout&&layout._topVisible!==undefined&&layout._renderTrack!==undefined)?(layout._renderTrack===layout._topVisible):isActiveVoice;
+            if((mIdx===0||tc[mIdx]!==undefined)&&isTopVoice){
+              const bpm=Math.round(tempoAt(mIdx)/beatQuarters());
+              // y normalement au-dessus de la portée ; sur la 1re ligne l'espace est réduit (viewBox
+              // commence à 0), donc on borne à une valeur VISIBLE. On décale aussi en x pour ne pas
+              // chevaucher le numéro de mesure / la lettre de partie.
+              const tyTempo=Math.max(8,staffTop-23);
+              const hasPart=!!(state.viewFlags.parts&&state.parts&&state.parts[mIdx]);
+              // si l'espace au-dessus est resserré (1re ligne) OU si une lettre de partie occupe déjà
+              // la zone, on décale le tempo à droite pour éviter tout chevauchement.
+              const cramped=(tyTempo>=staffTop-14);
+              let txTempo=xL+2;
+              if(cramped||hasPart)txTempo=xL+(hasPart?28:16);
+              svg+='<text x="'+txTempo+'" y="'+tyTempo+'" font-size="10" font-weight="bold" font-family="serif" fill="'+ink+'">'+beatGlyph()+'='+bpm+'</text>';
+            }
           }
           if(t.type==='note'&&state.viewFlags.lyrics){
             for(let v=1;v<=nVerses;v++){
               const raw=verseSyl(t,v);
               if(!raw)continue;
-              const lyricDisplay=raw.replace(/_/g,'').replace(/~/g,' ');
-              const showDash=raw.endsWith('-');
+              const showDash=/-+$/.test(raw);
+              // Le tiret FINAL de continuation est dessiné séparément à droite : on retire TOUS les
+              // tirets finaux du texte (données héritées pouvant en contenir plusieurs → « li-- »).
+              // Les tirets internes (bon-jour) restent.
+              const core=raw.replace(/-+$/,'');
+              const lyricDisplay=core.replace(/_/g,'').replace(/~/g,' ');
               const ly=staffTop+4*LINE_GAP+13+lyricOff+(v-1)*LYRIC_ROW;
               svg+='<text x="'+cx+'" y="'+ly+'" font-size="9" fill="'+ink+'" text-anchor="middle" font-family="sans-serif">'+escXml(lyricDisplay)+'</text>';
               if(showDash)svg+='<text x="'+(cx+5)+'" y="'+ly+'" font-size="9" fill="'+dim+'" text-anchor="start" font-family="sans-serif">-</text>';
@@ -1967,6 +2049,7 @@
       state._selTimeOff=off;
     }
     const blocks=[];
+    layout._topVisible=(visibleIdx&&visibleIdx.length)?visibleIdx[0]:saved; // voix visible la plus haute
     visibleIdx.forEach(i=>{
       state.activeTrack=i;
       layout._renderTrack=i;
@@ -2038,10 +2121,15 @@
       // recul : amener la sélection près du bord gauche
       cont.scrollLeft=Math.max(0,pxL-margin);
     } else if(pxAheadR>viewR-margin){
+      // Si la fin du morceau est déjà visible, ne pas défiler davantage vers la droite
+      // (évite de continuer à pousser alors qu'il n'y a plus rien à révéler en fin de partition).
+      const totalPx=(lc.layout.totalUnits||0)*lc.pxPerUnit;
+      if(totalPx<=viewR+1)return;
       // avance : amener la 2e mesure d'anticipation au bord droit, sans masquer le début de la sélection
       let target=pxAheadR-cont.clientWidth+margin;
       target=Math.min(target, pxL-margin); // ne jamais cacher le début de la mesure sélectionnée
-      cont.scrollLeft=Math.max(0,target);
+      target=Math.max(0,Math.min(target, totalPx-cont.clientWidth)); // borne au défilement max réel
+      cont.scrollLeft=target;
     }
   }
 
@@ -2165,6 +2253,10 @@
     if(v1)v1.classList.toggle('active', !!(rA&&rA.volta===1));
     const v2=document.getElementById('btn-volta2');
     if(v2)v2.classList.toggle('active', !!(rA&&rA.volta===2));
+    // Sauts de mise en page
+    const brA=state.breaks&&state.breaks[state.sel.m];
+    {const lb=document.getElementById('btn-linebreak');if(lb)lb.classList.toggle('active',!!(brA&&brA.line));}
+    {const pb=document.getElementById('btn-pagebreak');if(pb)pb.classList.toggle('active',!!(brA&&brA.page));}
     const partV=state.parts&&state.parts[state.sel.m];const pvEl=document.getElementById('part-val');if(pvEl)pvEl.textContent=partV||'—';const pBtn=document.getElementById('btn-part');if(pBtn)pBtn.classList.toggle('active',!!partV);
     const vmBtn=document.getElementById('btn-viewmode');if(vmBtn)vmBtn.textContent=state.viewmode?'✎':'👁';
     const tc=document.getElementById('btn-toggle-chords');if(tc)tc.classList.toggle('active',!!state.viewFlags.chords);
@@ -2180,7 +2272,16 @@
      const bC=document.querySelector('[data-hdr="CLEF"]');if(bC)bC.classList.toggle('active',m===0||state.clefChanges[m]!==undefined);}
     document.getElementById('hdr-x-val').textContent=state.headers.X||'0';
     document.getElementById('hdr-t-val').textContent=(state.headers.T||'—').split('\n')[0];
-    {const vt=document.getElementById('ver-title');if(vt)vt.textContent=(state.headers.T||'').split('\n')[0];}
+    {const vt=document.getElementById('ver-title');if(vt){
+      const title=(state.headers.T||'').split('\n')[0].trim();
+      const fname=state.openedFileName?(state.openedFileName+'.abc'):'';
+      // Affiche : « Titre — fichier.abc » (titre si présent, puis nom du fichier ouvert)
+      let label='';
+      if(title&&fname)label=title+'  —  '+fname;
+      else if(title)label=title;
+      else if(fname)label=fname;
+      vt.textContent=label;
+    }}
     document.getElementById('hdr-c-val').textContent=(state.headers.C||'—').split('\n')[0];
     document.getElementById('hdr-n-val').textContent=(state.headers.N||'—').split('\n')[0];
     {const we=document.getElementById('hdr-w-val');if(we){const wv=(state.headers.W||'').trim();const nl=wv?wv.split('\n').filter(x=>x.trim()).length:0;we.textContent=wv?('✓('+nl+')'):'—';}}
@@ -2310,12 +2411,13 @@
         if(!m){continue}
         const sig=keyAt(mi);
         const oct=clefSoundShift(clefAt(mi));
+        const qDm=60/tempoAt(mi); // durée d'une noire à la mesure mi (tempo variable)
         // start slot : en multi on démarre toujours en début de mesure (synchro parfaite entre voix) ;
         // en mono on respecte le slot sélectionné (démarrage en cours de mesure).
         const firstSlot=(!multi&&oi===startIdxInOrder&&mi===startMeasure)?startSlotActive:0;
         for(let si=firstSlot;si<m.length;si++){
           const slot=m[si];
-          const dur=effDur(slot)*qD;
+          const dur=effDur(slot)*qDm;
           if(slot.type==='note'){
             const midi=midiOfNote(slot.note,slot.octave,effectiveAcc(m,si,sig),sig)+oct;
             const ev={midi,dur,startAt:acc,measureIdx:mi,slotIdx:si,trackIdx:ti,gainScale,tieToNext:!!slot.tieToNext};
@@ -2755,7 +2857,7 @@
         const nv=countVersesInNotes(notes);
         const lines=[];
         for(let v=1;v<=nv;v++){
-          const parts=notes.map(s=>verseSyl(s,v).replace(/_/g,'').replace(/~/g,' '));
+          const parts=notes.map(s=>verseSyl(s,v).replace(/_/g,'').replace(/~/g,' ').replace(/-+$/,m=>'-'));
           // Retirer les notes vides en fin de ligne (sinon espaces parasites),
           // mais conserver les vides en tête / au milieu qui matérialisent les décalages.
           while(parts.length && parts[parts.length-1]==='') parts.pop();
@@ -2845,6 +2947,31 @@
         state.viewFlags.lyrics=true;
         render();
       }
+      // Suivre en affichage la MESURE correspondant à la position du curseur dans le texte.
+      // On compte les syllabes de la LIGNE courante (un couplet) jusqu'au curseur → index de note,
+      // puis on sélectionne cette note dans la voix des paroles et on fait défiler la partition.
+      function followCaret(){
+        const ta=document.getElementById('lyr-textarea');
+        if(!ta)return;
+        const pos=ta.selectionStart;
+        const upto=ta.value.substring(0,pos);
+        // Ligne courante = couplet courant ; on ne compte que sur cette ligne.
+        const nl=upto.lastIndexOf('\n');
+        const lineStart=nl+1;
+        const lineText=upto.substring(lineStart);
+        // nombre de syllabes (séparées par espaces ; chaque espace fait avancer d'une note)
+        const syls=lineText.split(' ');
+        let noteIdx=Math.max(0,syls.length-1);
+        // Localiser la note d'index noteIdx dans la voix des paroles, repérer sa mesure/slot.
+        const tr=state.tracks[lyrTrack];
+        if(!tr)return;
+        let count=0,found=null;
+        (tr.measures||[]).forEach((meas,mi)=>{meas.forEach((s,si)=>{if(s.type==='note'){if(count===noteIdx)found={m:mi,s:si};count++;}})});
+        if(found){
+          state.sel={m:found.m,s:found.s};
+          ensureSelectionVisible();
+        }
+      }
 
       openPanel({
         title:'Saisie Paroles',
@@ -2858,8 +2985,10 @@
           refreshTabHighlight();
           const ta=document.getElementById('lyr-textarea');
           if(ta){
-            // Application instantanée à chaque frappe
-            ta.addEventListener('input',()=>{ applyNow(); });
+            // Application instantanée à chaque frappe + suivi de la mesure courante
+            ta.addEventListener('input',()=>{ applyNow(); followCaret(); });
+            ta.addEventListener('keyup',()=>{ followCaret(); });
+            ta.addEventListener('click',()=>{ followCaret(); });
             // À la fermeture/perte de focus, on fige dans l'historique
             ta.addEventListener('blur',()=>{ pushHistory(); });
           }
@@ -3051,6 +3180,10 @@
           state.repeats=sk(state.repeats,m,m+c);
           if(state.parts)state.parts=sk(state.parts,m,m+c);
         });
+        // breaks / tempoChanges sont au niveau du morceau (non par-voix) : décaler UNE seule fois.
+        {const c2=c;function sk1(map){const out={};for(const k of Object.keys(map||{})){const i=parseInt(k,10);if(i<m)out[i]=map[k];else if(i>=m+c2)out[i-c2]=map[k]}return out}
+          if(state.tempoChanges)state.tempoChanges=sk1(state.tempoChanges);
+          if(state.breaks)state.breaks=sk1(state.breaks);}
         if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
         state.sel.s=0;
         pushHistory();closePanel();render();
@@ -3118,6 +3251,13 @@
             if(state.parts)state.parts=sk(state.parts,th,inc);
           }
         });
+        // breaks / tempoChanges au niveau morceau : décaler UNE seule fois (hors boucle voix).
+        if(side!=='end'){
+          const th=selM;const inc=(side==='left');
+          function sk1(map){const out={};for(const k of Object.keys(map||{})){const i=parseInt(k,10);const sh=inc?(i>=th):(i>th);out[sh?i+count:i]=map[k]}return out}
+          if(state.tempoChanges)state.tempoChanges=sk1(state.tempoChanges);
+          if(state.breaks)state.breaks=sk1(state.breaks);
+        }
         if(side==='end')state.sel={m:state.measures.length-count,s:0};
         else state.sel={m:(side==='right'?selM+1:selM),s:0};
         pushHistory();closePanel();render();
@@ -3155,6 +3295,10 @@
   document.getElementById('btn-rep-end').addEventListener('click',()=>{const m=state.sel.m;const nv=!(state.repeats[m]&&state.repeats[m].end);applyToAllTracks(()=>{ensureRepeat(m).end=nv;});pushHistory();render()});
   document.getElementById('btn-volta1').addEventListener('click',()=>{const m=state.sel.m;const nv=(state.repeats[m]&&state.repeats[m].volta===1)?0:1;applyToAllTracks(()=>{ensureRepeat(m).volta=nv;});pushHistory();render()});
   document.getElementById('btn-volta2').addEventListener('click',()=>{const m=state.sel.m;const nv=(state.repeats[m]&&state.repeats[m].volta===2)?0:2;applyToAllTracks(()=>{ensureRepeat(m).volta=nv;});pushHistory();render()});
+  // Sauts de mise en page (communs à toutes les voix) : fin de ligne / fin de page après la mesure.
+  function ensureBreak(m){if(!state.breaks)state.breaks={};if(!state.breaks[m])state.breaks[m]={};return state.breaks[m]}
+  document.getElementById('btn-linebreak').addEventListener('click',()=>{const m=state.sel.m;const b=ensureBreak(m);b.line=!b.line;if(!b.line&&!b.page)delete state.breaks[m];pushHistory();render()});
+  document.getElementById('btn-pagebreak').addEventListener('click',()=>{const m=state.sel.m;const b=ensureBreak(m);b.page=!b.page;if(!b.line&&!b.page)delete state.breaks[m];pushHistory();render()});
   document.getElementById('btn-part').addEventListener('click',()=>{
     if(!state.parts)state.parts={};
     const cur=state.parts[state.sel.m]||'';
@@ -3541,6 +3685,8 @@
     state.clefChanges=shiftMapDropInside(state.clefChanges);
     state.repeats=shiftMapDropInside(state.repeats);
     state.timeChanges=shiftMapDropInside(state.timeChanges);
+    if(state.breaks)state.breaks=shiftMapDropInside(state.breaks);
+    if(state.tempoChanges)state.tempoChanges=shiftMapDropInside(state.tempoChanges);
     // Reposer armure/cle sur la 1ere mesure de la plage (si elles existaient)
     if(keyAtStart!==undefined&&startM>0)state.keyChanges[startM]=keyAtStart;
     if(clefAtStart!==undefined&&startM>0)state.clefChanges[startM]=clefAtStart;
@@ -3860,6 +4006,63 @@
   document.getElementById('vol-d').addEventListener('click',()=>changeVolume(-1));
   document.getElementById('vol-u5').addEventListener('click',()=>changeVolume(5));
   document.getElementById('vol-d5').addEventListener('click',()=>changeVolume(-5));
+  // === Changement de tempo en cours de morceau (commun à toutes les voix) ===
+  {const tcb=document.getElementById('btn-tempo-change');if(tcb)tcb.addEventListener('click',()=>{
+    let fromM=state.sel.m;                       // mesure de départ (0-based)
+    const maxM=Math.max(0,state.measures.length-1);
+    // valeur initiale = tempo affiché effectif à cette mesure
+    let dispBpm=Math.round(tempoAt(fromM)/beatQuarters());
+    function curHasChange(){return fromM>0 && (state.tempoChanges||{})[fromM]!==undefined}
+    function body(){
+      let h='<div class="mes-active" style="color:#8a5a00;">⊕ Tempo commun à <b>toutes les voix</b></div>';
+      h+='<div class="control-row" style="margin-bottom:6px;">'
+        +'<button class="k" id="tcm-d">−</button>'
+        +'<div class="label">À partir de la mesure <b id="tcm-v">'+(fromM+1)+'</b></div>'
+        +'<button class="k" id="tcm-u">+</button></div>';
+      h+='<div class="control-row" style="margin-bottom:6px;">'
+        +'<button class="k" id="tcb-d10">−10</button>'
+        +'<button class="k" id="tcb-d">−</button>'
+        +'<div class="label">'+beatGlyph()+' = <b id="tcb-v">'+dispBpm+'</b></div>'
+        +'<button class="k" id="tcb-u">+</button>'
+        +'<button class="k" id="tcb-u10">+10</button></div>';
+      h+='<div class="row-grid row-2"><button class="k primary" id="tcb-apply">Appliquer</button>'
+        +'<button class="k" id="tcb-del">Supprimer ce changement</button></div>';
+      h+='<p class="lyr-hint">Le tempo s\'applique de cette mesure jusqu\'à la fin (ou jusqu\'au prochain changement). La mesure 1 fixe le tempo initial du morceau.</p>';
+      return h;
+    }
+    function refresh(){
+      const mv=document.getElementById('tcm-v');if(mv)mv.textContent=(fromM+1);
+      // quand on change de mesure, recharger le tempo effectif affiché
+      dispBpm=Math.round(tempoAt(fromM)/beatQuarters());
+      const bv=document.getElementById('tcb-v');if(bv)bv.textContent=dispBpm;
+      const del=document.getElementById('tcb-del');if(del)del.disabled=!curHasChange();
+    }
+    function setBpm(d){dispBpm=Math.max(1,dispBpm+d);const bv=document.getElementById('tcb-v');if(bv)bv.textContent=dispBpm;}
+    openPanel({title:'Tempo',body:body(),hideActions:true,extraButtons:['Fermer'],
+      onMount:()=>{
+        document.getElementById('tcm-u').addEventListener('click',()=>{fromM=Math.min(maxM,fromM+1);state.sel={m:fromM,s:0};renderState();ensureSelectionVisible();refresh();});
+        document.getElementById('tcm-d').addEventListener('click',()=>{fromM=Math.max(0,fromM-1);state.sel={m:fromM,s:0};renderState();ensureSelectionVisible();refresh();});
+        document.getElementById('tcb-u').addEventListener('click',()=>setBpm(1));
+        document.getElementById('tcb-d').addEventListener('click',()=>setBpm(-1));
+        document.getElementById('tcb-u10').addEventListener('click',()=>setBpm(10));
+        document.getElementById('tcb-d10').addEventListener('click',()=>setBpm(-10));
+        document.getElementById('tcb-apply').addEventListener('click',()=>{
+          const canon=Math.max(30,Math.min(300,tempoFromDisplay(dispBpm)));
+          if(fromM===0){state.tempo=canon;}             // mesure 1 = tempo initial du morceau
+          else {state.tempoChanges=state.tempoChanges||{};state.tempoChanges[fromM]=canon;}
+          pushHistory();
+          if(audio.playing){replayFromCurrent();renderState();}else render();
+          refresh();
+        });
+        document.getElementById('tcb-del').addEventListener('click',()=>{
+          if(curHasChange()){delete state.tempoChanges[fromM];pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();refresh();}
+        });
+        refresh();
+      },
+      onExtra:()=>closePanel()
+    });
+  });}
+
   function changeTempo(delta){
     let disp=Math.max(1,tempoDisplayVal()+delta);
     let canon=Math.max(30,Math.min(300,tempoFromDisplay(disp)));
@@ -3975,7 +4178,7 @@
   document.getElementById('ce-plus').addEventListener('click',()=>{state._chordAddPending=true;render();});
   document.getElementById('ce-minus').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;const l=chordList(sl);const ai=chordActiveIdx(sl);if(l.length<=1){const z=state.measures[state.sel.m][state.sel.s];const dur=z.dur,dot=z.dot;state.measures[state.sel.m][state.sel.s]={type:'rest',dur,dot};state.chordActive=0;state._chordAddPending=true;pushHistory();render();return}l.splice(ai,1);chordWrite(sl,l);state.chordActive=Math.max(0,Math.min(ai,l.length-1));state._chordAddPending=false;pushHistory();render();});
 
-  document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const baseName=state.openedFileName||(state.headers.T&&state.headers.T.trim().split('\n')[0])||'morceau';const fn=sanitizeFilename(baseName)+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
+  document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const fn=proposedBaseName()+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
   const fileInput=document.getElementById('file-input');
   document.getElementById('btn-open-file').addEventListener('click',()=>fileInput.click());
   // Mémoire du dernier fichier multi-morceaux ouvert (pour le bouton Liste)
@@ -4151,6 +4354,11 @@
     // Couplets supplémentaires (W:) éventuellement stockés par cette app à l'export
     const wf = doc.querySelector('miscellaneous-field[name="abc-words"]');
     if (wf) headers.W = wf.textContent.replace(/\r/g,'');
+    // Accumulateur : les <words> LONGS (blocs de structure/paroles, type EasyABC) ne sont pas des
+    // annotations ponctuelles ; on les regroupe en W: d'en-tête plutôt que de les coller sur une note.
+    const collectedWords = [];
+    const collectedWordsSeen = new Set();
+    function isLongWords(w){ return w && (w.length > 40 || w.split(/\s+/).length > 6); }
 
     // --- Tempo global (1ère direction sound) ---
     let globalTempo = 80, globalBeatUnit = 1, globalBeatDotted = false;
@@ -4166,6 +4374,31 @@
       globalTempo = pm * uq;           // canonique en noires/min
       globalBeatUnit = unitMap[bu] || 1;
       globalBeatDotted = dotted;
+    }
+    // --- Changements de tempo en cours de morceau (lus sur la 1re partie) ---
+    const tempoChanges = {};
+    {
+      const firstPart = doc.querySelector('part');
+      if (firstPart) {
+        const umap = { whole:4, half:2, quarter:1, eighth:0.5, '16th':0.25, '32nd':0.125, '64th':0.0625 };
+        const meas = firstPart.querySelectorAll('measure');
+        meas.forEach((mEl, mi) => {
+          if (mi === 0) return;          // la 1re mesure définit le tempo initial (déjà lu)
+          let t = null;
+          const mm = mEl.querySelector('metronome');
+          if (mm) {
+            const bu2 = txt(mm, 'beat-unit') || 'quarter';
+            const dot2 = !!mm.querySelector('beat-unit-dot');
+            const pm2 = parseFloat(txt(mm, 'per-minute'));
+            if (!isNaN(pm2)) t = pm2 * (umap[bu2] || 1) * (dot2 ? 1.5 : 1);
+          }
+          if (t === null) {
+            const snd = mEl.querySelector('sound[tempo]');
+            if (snd) { const v = parseFloat(snd.getAttribute('tempo')); if (!isNaN(v)) t = v; }
+          }
+          if (t !== null) tempoChanges[mi] = t;
+        });
+      }
     }
 
     // --- Parts : une piste par <part> ---
@@ -4435,8 +4668,15 @@
               if (!child.querySelector('metronome')) {
                 const wEls = child.querySelectorAll('direction-type words');
                 if (wEls && wEls.length) {
-                  const w = Array.from(wEls).map(e => e.textContent).join('').trim();
-                  if (w) pendingWords = pendingWords ? (pendingWords + ' ' + w) : w;
+                  const w = Array.from(wEls).map(e => e.textContent).join('').replace(/\s+/g,' ').trim();
+                  if (w) {
+                    if (isLongWords(w)) {
+                      // bloc long → W: d'en-tête (regroupé en haut, comme EasyABC), pas sur une note
+                      if (!collectedWordsSeen.has(w)) { collectedWordsSeen.add(w); collectedWords.push(w); }
+                    } else {
+                      pendingWords = pendingWords ? (pendingWords + ' ' + w) : w;
+                    }
+                  }
                 }
               }
             } else if (child.tagName === 'note') {
@@ -4674,12 +4914,20 @@
 
     if (!tracks.length) { alert('Aucune piste importée.'); return false; }
 
+    // Regrouper les blocs <words> longs collectés en lignes W: d'en-tête (présentation EasyABC).
+    if (collectedWords.length) {
+      const existing = (headers.W || '').trim();
+      const merged = (existing ? existing.split('\n') : []).concat(collectedWords);
+      headers.W = merged.join('\n');
+    }
+
     // Fonction d'application finale au state (après éventuelle réunion de voix)
     function applyTracks(finalTracks) {
       state.headers = headers;
       state.tracks = finalTracks;
       state.activeTrack = 0;
       state.tempo = globalTempo;
+      state.tempoChanges = tempoChanges;
       state.tempoBeatUnit = globalBeatUnit;
       state.tempoBeatDotted = globalBeatDotted;
       state.tempoDotted = (globalBeatUnit === 1 && globalBeatDotted);
@@ -4884,7 +5132,7 @@
   const STORAGE_KEY='abc-editor-saves';
   function getSaves(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(_){return[]}}
   function setSaves(list){localStorage.setItem(STORAGE_KEY,JSON.stringify(list))}
-  function exportState(){return JSON.stringify({headers:state.headers,pieceMeter:state.pieceMeter,pieceUnit:state.pieceUnit,pieceKeySig:state.pieceKeySig,pieceClef:state.pieceClef,measures:state.measures,timeChanges:state.timeChanges,keyChanges:state.keyChanges,clefChanges:state.clefChanges,repeats:state.repeats,tempo:state.tempo,tempoBeatUnit:beatUnit(),tempoBeatDotted:beatDotted()})}
+  function exportState(){return JSON.stringify({headers:state.headers,pieceMeter:state.pieceMeter,pieceUnit:state.pieceUnit,pieceKeySig:state.pieceKeySig,pieceClef:state.pieceClef,measures:state.measures,timeChanges:state.timeChanges,keyChanges:state.keyChanges,clefChanges:state.clefChanges,repeats:state.repeats,tempo:state.tempo,tempoBeatUnit:beatUnit(),tempoBeatDotted:beatDotted(),tempoChanges:state.tempoChanges||{},breaks:state.breaks||{}})}
   function importStateJson(json){try{const o=JSON.parse(json);Object.assign(state,o);state.openedFileName=null;state.sel={m:0,s:0};state.octave=0;pushHistory();render();return true}catch(e){return false}}
 
   document.getElementById('btn-saves').addEventListener('click',()=>{const saves=getSaves();let lh='<div class="save-list">';if(saves.length===0)lh+='<div class="item" style="color:#888780;cursor:default;">Aucune sauvegarde</div>';else saves.forEach((s,i)=>lh+='<div class="item" data-idx="'+i+'"><span>'+s.name+'</span><span class="del" data-del="'+i+'">×</span></div>');lh+='</div>';lh+='<div class="row"><span class="field-label">Nom:</span><input id="sn" type="text" value="'+(state.headers.T||'Morceau').replace(/"/g,'&quot;')+'"/></div>';openPanel({title:'Mémoires',body:lh,hideActions:true,extraButtons:['Annuler','Enregistrer'],onMount:()=>{document.querySelectorAll('.save-list .item[data-idx]').forEach(el=>{el.addEventListener('click',(ev)=>{if(ev.target.dataset.del!==undefined){const idx=parseInt(ev.target.dataset.del,10);const saves=getSaves();saves.splice(idx,1);setSaves(saves);closePanel();return}const idx=parseInt(el.dataset.idx,10);const saves=getSaves();if(saves[idx]&&importStateJson(saves[idx].data))closePanel()})})},onExtra:(w)=>{if(w==='Annuler'){closePanel();return}const name=document.getElementById('sn').value.trim()||'Morceau';const saves=getSaves();const ex=saves.findIndex(s=>s.name===name);const e={name,data:exportState(),date:new Date().toISOString()};if(ex>=0)saves[ex]=e;else saves.push(e);setSaves(saves);closePanel()}})});
@@ -5142,11 +5390,14 @@
         if(hasClefChange)xml+=clefXml(lC);
         xml+='</attributes>\n';
       }
-      if(isFirst&&includeTempo){
-        const bpmTempo=state.tempoDotted?Math.round(state.tempo*2/3):state.tempo;
-        const beatUnit=state.tempoDotted?'eighth':'quarter';
-        const dot=state.tempoDotted?'<beat-unit-dot/>':'';
-        xml+='<direction placement="above"><direction-type><metronome><beat-unit>'+beatUnit+'</beat-unit>'+dot+'<per-minute>'+bpmTempo+'</per-minute></metronome></direction-type><sound tempo="'+state.tempo+'"/></direction>\n';
+      const tcMap=state.tempoChanges||{};
+      const tempoHere=(isFirst)?state.tempo:tcMap[mi];
+      if(includeTempo && tempoHere!==undefined){
+        const dotted=(isFirst?state.tempoDotted:false);
+        const bpmTempo=dotted?Math.round(tempoHere*2/3):Math.round(tempoHere);
+        const beatUnit=dotted?'eighth':'quarter';
+        const dot=dotted?'<beat-unit-dot/>':'';
+        xml+='<direction placement="above"><direction-type><metronome><beat-unit>'+beatUnit+'</beat-unit>'+dot+'<per-minute>'+bpmTempo+'</per-minute></metronome></direction-type><sound tempo="'+Math.round(tempoHere)+'"/></direction>\n';
       }
       const r=state.repeats[mi];
       if(r){
@@ -5295,8 +5546,7 @@
       const blob=new Blob([zipBytes],{type:'application/vnd.recordare.musicxml'});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
-      const baseName=state.openedFileName||(state.headers.T&&state.headers.T.trim().split('\n')[0])||'morceau';
-      const fn=sanitizeFilename(baseName)+'.mxl';
+      const fn=proposedBaseName()+'.mxl';
       a.href=url;a.download=fn;
       document.body.appendChild(a);a.click();document.body.removeChild(a);
       URL.revokeObjectURL(url);
@@ -5305,7 +5555,7 @@
     }
   });
 
-  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.openedFileName=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();pushHistory();render()}closePanel()}})});
+  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.tempoChanges={};state.breaks={};state.openedFileName=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();pushHistory();render()}closePanel()}})});
 
   // Point 9 : Bouton Aide
   document.getElementById('btn-help').addEventListener('click',()=>{
