@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.46 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.49 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -262,7 +262,7 @@
 
       <div class="tab-panel active" data-panel="notes">
         <div class="row-grid row-4" id="chord-row-edit" title="Gestion des accords (notes empilées)">
-          <button class="k" id="ce-minus" title="Retirer la note active de l'accord">−</button>
+          <button class="k" id="ce-minus" title="Supprimer la note active de l'accord">Suppr</button>
           <button class="k" id="ce-plus" title="Ajouter une note à l'accord">+</button>
           <button class="k" id="ce-up" title="Note du dessus">▲</button>
           <button class="k" id="ce-down" title="Note du dessous">▼</button>
@@ -280,11 +280,10 @@
           <button class="k" id="btn-slur" title="Slur (liaison de phrasé, hauteurs différentes) — sélectionnez une note puis posez la suivante. Posable même sans note à droite (liaison en attente).">⌣ slur</button>
           <button class="k" id="btn-del">⌫</button>
         </div>
-        <div class="row-grid row-4" id="chord-row-normal">
+        <div class="row-grid row-3" id="chord-row-normal">
           <button class="k" id="btn-tuplet">3:2</button>
           <button class="k" id="btn-chord">Cm</button>
           <button class="k" id="btn-orn">~ tr</button>
-          <button class="k" id="btn-stack">♫ Accord</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-undo">↶</button>
@@ -325,6 +324,9 @@
         <div class="row-grid row-2">
           <button class="k" id="btn-copy-mes">📋</button>
           <button class="k" id="btn-paste-mes">📥</button>
+        </div>
+        <div class="row-grid">
+          <button class="k" id="btn-noterange" title="Transposer / copier / coller une portion de notes (de la note X à la note Y)" style="font-size:13px;">✂ Portion de notes…</button>
         </div>
         <div class="row-grid row-3">
           <button class="k" id="btn-undo-mes">↶</button>
@@ -1632,13 +1634,13 @@
       let pendingIncomingTie=false;
       // Gère la chaîne de slur : appelée pour chaque note avec sa position.
       // prevHadSlur = la note précédente avait slurToNext (donc lien actif vers celle-ci).
-      function handleSlur(prevHadSlur,cx,y,thisHasSlur){
-        if(prevHadSlur){ if(!slurStart)slurStart=slurLast||{cx,y}; slurLast={cx,y}; }
+      function handleSlur(prevHadSlur,cx,y,thisHasSlur,su){
+        if(prevHadSlur){ if(!slurStart)slurStart=slurLast||{cx,y,su}; slurLast={cx,y,su}; }
         else { // pas de lien entrant : fermer la chaîne précédente s'il y en a une
-          if(slurStart&&slurLast){sP.push({fromCx:slurStart.cx,fromY:slurStart.y,toCx:slurLast.cx,toY:slurLast.y})}
-          slurStart=null;slurLast={cx,y};
+          if(slurStart&&slurLast){sP.push({fromCx:slurStart.cx,fromY:slurStart.y,toCx:slurLast.cx,toY:slurLast.y,stemUp:slurStart.su})}
+          slurStart=null;slurLast={cx,y,su};
         }
-        if(thisHasSlur&&!slurStart)slurStart={cx,y}; // cette note ouvre une chaîne
+        if(thisHasSlur&&!slurStart)slurStart={cx,y,su}; // cette note ouvre une chaîne
       }
       if(lsm>0){
         const prevM=state.measures[lsm-1];
@@ -1819,10 +1821,10 @@
               svg+='<line x1="'+sx+'" y1="'+hY+'" x2="'+sx+'" y2="'+bY+'" stroke="'+cl+'" stroke-width="0.8"/>';
               if(iS&&!(state._chordEditMode&&state._chordAddPending))svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
               if(iS&&state._chordEditMode&&!state._chordAddPending){const ac=activeChordNote(t);if(ac){const ay=noteY(staffTop,stepIndex(ac.note,ac.octave),lC);svg+='<circle cx="'+cx+'" cy="'+ay+'" r="5" fill="none" stroke="#d11" stroke-width="1.4"/>';}}
-              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY});
-              if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in'});pendingIncomingTie=false}
-              handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext);
-              pS={t,cx,y:dr.headY};
+              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:(pS.su!==undefined?pS.su:su)});
+              if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in',stemUp:su});pendingIncomingTie=false}
+              handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext,su);
+              pS={t,cx,y:dr.headY,su};
             } else {
               const st=stepIndex(t.note,t.octave);
               const su=st<mS;
@@ -1831,10 +1833,10 @@
               svg+=staccatoDot(t,cx,dr.headY,su,cl);
               if(iS&&!(state._chordEditMode&&state._chordAddPending))svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
               if(iS&&state._chordEditMode&&!state._chordAddPending){const ac=activeChordNote(t);if(ac){const ay=noteY(staffTop,stepIndex(ac.note,ac.octave),lC);svg+='<circle cx="'+cx+'" cy="'+ay+'" r="5" fill="none" stroke="#d11" stroke-width="1.4"/>';}}
-              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY});
-              if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in'});pendingIncomingTie=false}
-              handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext);
-              pS={t,cx,y:dr.headY};
+              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:(pS.su!==undefined?pS.su:su)});
+              if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in',stemUp:su});pendingIncomingTie=false}
+              handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext,su);
+              pS={t,cx,y:dr.headY,su};
             }
             // Liaison « en attente » : intention posée mais ni tie ni slur résolu (pas de note à droite)
             if(t.linkToNext&&!t.tieToNext&&!t.slurToNext&&pS){pendP.push({cx:pS.cx,y:pS.y});}
@@ -1843,7 +1845,7 @@
             svg+=dr.svg;
             if(iS&&!(state._chordEditMode&&state._chordAddPending))svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
             // Silences cassent les liaisons
-            if(slurStart&&slurLast){sP.push({fromCx:slurStart.cx,fromY:slurStart.y,toCx:slurLast.cx,toY:slurLast.y})}
+            if(slurStart&&slurLast){sP.push({fromCx:slurStart.cx,fromY:slurStart.y,toCx:slurLast.cx,toY:slurLast.y,stemUp:slurStart.su})}
             slurStart=null;slurLast=null;
             pS=null;
           }
@@ -1959,20 +1961,36 @@
         tP.push({fromCx:pS.cx,fromY:pS.y,toCx:SCORE_W-RIGHT_PAD+4,toY:pS.y,partial:'out'});
       }
       // Fermer la chaîne de slur en cours en fin de ligne
-      if(slurStart&&slurLast&&slurStart.cx!==slurLast.cx){sP.push({fromCx:slurStart.cx,fromY:slurStart.y,toCx:slurLast.cx,toY:slurLast.y})}
+      if(slurStart&&slurLast&&slurStart.cx!==slurLast.cx){sP.push({fromCx:slurStart.cx,fromY:slurStart.y,toCx:slurLast.cx,toY:slurLast.y,stemUp:slurStart.su})}
       slurStart=null;slurLast=null;
-      // Dessiner toutes les liaisons de durée (tie) de la ligne
+      // Dessiner toutes les liaisons de durée (tie) de la ligne.
+      // Règle : la liaison s'incurve à l'OPPOSÉ des tiges (tiges en haut → liaison en dessous, ouvrant
+      // vers le haut ; tiges en bas → liaison au-dessus). Écart suffisant des têtes pour ne pas coller.
       tP.forEach(tp=>{
         const cx=(tp.fromCx+tp.toCx)/2;
-        const cy=((tp.fromY+tp.toY)/2)+6;
-        svg+='<path d="M '+(tp.fromCx+3)+' '+(tp.fromY+3)+' Q '+cx+' '+cy+' '+(tp.toCx-3)+' '+(tp.toY+3)+'" stroke="'+ink+'" stroke-width="0.9" fill="none"/>';
+        const below=(tp.stemUp!==false); // par défaut tiges en haut → liaison en dessous
+        const gap=5;          // écart vertical départ/arrivée par rapport à la tête
+        const bow=7;          // hauteur de la courbure
+        const y1=tp.fromY+(below?gap:-gap);
+        const y2=tp.toY+(below?gap:-gap);
+        // sommet de l'arc du bon côté ; sur grand écart de hauteur on suit la pente entre les deux têtes
+        const cy=((y1+y2)/2)+(below?bow:-bow);
+        const x1=tp.fromCx+3, x2=tp.toCx-3;
+        svg+='<path d="M '+x1+' '+y1+' Q '+cx+' '+cy+' '+x2+' '+y2+'" stroke="'+ink+'" stroke-width="0.9" fill="none"/>';
       });
-      // Dessiner les slurs (phrasé) : UN seul arc par chaîne, plus large et au-dessus des têtes
+      // Slurs (phrasé) : un seul arc par chaîne, du côté opposé aux tiges, en épousant le grand écart.
       sP.forEach(sp=>{
         const cx=(sp.fromCx+sp.toCx)/2;
-        const topY=Math.min(sp.fromY,sp.toY);
-        const cy=topY-9;  // arc au-dessus
-        svg+='<path d="M '+(sp.fromCx+1)+' '+(sp.fromY-4)+' Q '+cx+' '+cy+' '+(sp.toCx-1)+' '+(sp.toY-4)+'" stroke="'+ink+'" stroke-width="1.1" fill="none" stroke-linecap="round"/>';
+        const below=(sp.stemUp===false); // tiges en bas → slur au-dessus ; sinon au-dessus aussi par défaut
+        // Convention lisible : slur au-DESSUS par défaut (tiges en haut), en dessous si tiges en bas.
+        const above=!below;
+        const gap=5, bow=10;
+        const y1=sp.fromY+(above?-gap:gap);
+        const y2=sp.toY+(above?-gap:gap);
+        // Sur grand intervalle, le sommet se cale sur la tête la plus extrême du bon côté.
+        const extreme=above?Math.min(y1,y2):Math.max(y1,y2);
+        const cy=extreme+(above?-bow:bow);
+        svg+='<path d="M '+(sp.fromCx+1)+' '+y1+' Q '+cx+' '+cy+' '+(sp.toCx-1)+' '+y2+'" stroke="'+ink+'" stroke-width="1.1" fill="none" stroke-linecap="round"/>';
       });
       // Liaisons « en attente » : petit arc pointillé bleu sortant de la note (aucune note à droite encore)
       pendP.forEach(pp=>{
@@ -3924,6 +3942,136 @@
   document.getElementById('btn-undo-mes').addEventListener('click',undo);
   document.getElementById('btn-redo-mes').addEventListener('click',redo);
   let clipboardMes=null; // {measures:[...], repeats:{0:..},  timeChanges:{}, keyChanges:{}, clefChanges:{}}
+
+  // ===== Portion de notes (de la note X à la note Y) : transposer / copier / coller =====
+  // Sélection par deux clics sur la partition. Travaille sur la VOIX ACTIVE.
+  let noteClip=null;                 // tableau de slots clonés (portion copiée)
+  // Index global (à plat) d'une position {m,s} dans la voix active.
+  function flatIndexOf(m,s){let idx=0;for(let mi=0;mi<m;mi++)idx+=state.measures[mi].length;return idx+s;}
+  // Liste à plat [{m,s,slot}] de la voix active.
+  function flatSlots(){const out=[];state.measures.forEach((meas,mi)=>meas.forEach((slot,si)=>out.push({m:mi,s:si,slot})));return out;}
+  // Clone profond d'un slot (note/silence/accord).
+  function cloneSlot(s){const c=Object.assign({},s);if(Array.isArray(s.stack))c.stack=s.stack.map(x=>Object.assign({},x));if(Array.isArray(s.verses))c.verses=s.verses.slice();if(Array.isArray(s.orn))c.orn=s.orn.slice();return c;}
+  // Transpose une note (tête ou note d'accord) de n demi-tons, en figistant l'altération absolue.
+  function transposeNoteObj(o,semitones,preferFlats){
+    const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+    let midi=60+baseSemi[o.note]+o.octave*12;
+    if(o.acc==='^')midi+=1;else if(o.acc==='_')midi-=1;
+    const out=midiToNote(midi+semitones,preferFlats);
+    o.note=out.note;o.octave=out.octave;o.acc=out.acc;
+  }
+  // Transpose une PLAGE de slots (de from..to inclus, indices globaux) de la voix active.
+  function transposeRange(fromIdx,toIdx,semitones){
+    const preferFlats=(semitones<0);
+    const flat=flatSlots();
+    if(fromIdx>toIdx){const t=fromIdx;fromIdx=toIdx;toIdx=t;}
+    for(let i=fromIdx;i<=toIdx&&i<flat.length;i++){
+      const slot=flat[i].slot;
+      if(slot.type!=='note')continue;
+      transposeNoteObj(slot,semitones,preferFlats);
+      if(slot.stack&&slot.stack.length)slot.stack.forEach(o=>transposeNoteObj(o,semitones,preferFlats));
+    }
+    // Re-résoudre proprement les altérations affichées de tout le morceau (simple et sûr).
+    cleanupAccidentals();
+  }
+  // Copie une plage (clones) dans noteClip.
+  function copyRange(fromIdx,toIdx){
+    const flat=flatSlots();
+    if(fromIdx>toIdx){const t=fromIdx;fromIdx=toIdx;toIdx=t;}
+    noteClip=[];
+    for(let i=fromIdx;i<=toIdx&&i<flat.length;i++)noteClip.push(cloneSlot(flat[i].slot));
+  }
+  // Colle (ÉCRASE) la portion à partir de l'index global startIdx, sans changer la grille de mesures :
+  // on remplace les slots un à un. La durée des slots collés peut différer ; on remplit tant que des
+  // slots existent et qu'on n'a pas dépassé la capacité — sinon on s'arrête (pas d'insertion).
+  function pasteOverwriteAt(startIdx){
+    if(!noteClip||!noteClip.length)return false;
+    const flat=flatSlots();
+    let i=startIdx;
+    for(let k=0;k<noteClip.length&&i<flat.length;k++,i++){
+      const pos=flat[i];
+      state.measures[pos.m][pos.s]=cloneSlot(noteClip[k]);
+    }
+    // Re-découper proprement chaque mesure touchée pour respecter les temps (notes liées),
+    // puis nettoyer les altérations.
+    const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
+    const {slots}=flattenSlots();
+    state.measures=rebuildMeasuresFromSlots(slots,caps);
+    cleanupAccidentals();
+    return true;
+  }
+
+  document.getElementById('btn-noterange').addEventListener('click',()=>{
+    // sélection courante de portion (indices globaux), init = note active seule
+    let fromIdx=flatIndexOf(state.sel.m,state.sel.s);
+    let toIdx=fromIdx;
+    let semi=0;
+    let picking=0; // 0=inactif, 1=attend note début, 2=attend note fin
+    function rangeLabel(){
+      const flat=flatSlots();
+      const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);
+      const n=Math.max(0,b-a+1);
+      return 'Portion : <b>'+n+'</b> note(s)/silence(s)';
+    }
+    function body(){
+      let h='<div class="mes-active" style="color:#0c6b2f;">◆ Voix active — portion de notes</div>';
+      h+='<div class="label" id="nr-range" style="margin:4px 0;">'+rangeLabel()+'</div>';
+      h+='<div class="row-grid"><button class="k" id="nr-pick">🎯 Sélectionner (2 clics)</button></div>';
+      h+='<div class="stepper-label" style="margin-top:8px;">Transposer la portion</div>';
+      h+='<div class="control-row" style="justify-content:center;gap:6px;margin-bottom:4px;">'
+        +'<button class="k" id="nr-d12">−8ve</button>'
+        +'<button class="k" id="nr-d">−½</button>'
+        +'<div class="label" style="min-width:54px;text-align:center;"><b id="nr-semi">0</b> ½t</div>'
+        +'<button class="k" id="nr-u">+½</button>'
+        +'<button class="k" id="nr-u12">+8ve</button></div>';
+      h+='<div class="row-grid"><button class="k primary" id="nr-transp">Transposer</button></div>';
+      h+='<div class="stepper-label" style="margin-top:8px;">Copier / Coller</div>';
+      h+='<div class="row-grid row-2"><button class="k" id="nr-copy">📋 Copier</button>'
+        +'<button class="k" id="nr-paste">📥 Coller ici</button></div>';
+      h+='<p class="lyr-hint">Sélectionnez la portion (clic note de début puis note de fin). Transposer agit sur la portion. Coller écrase à partir de la note active (sélectionnée par un clic).</p>';
+      return h;
+    }
+    function refresh(){
+      const r=document.getElementById('nr-range');if(r)r.innerHTML=rangeLabel();
+      const sv=document.getElementById('nr-semi');if(sv)sv.textContent=semi;
+      const pk=document.getElementById('nr-pick');if(pk)pk.classList.toggle('active',picking>0);
+      const pb=document.getElementById('nr-paste');if(pb){pb.disabled=!(noteClip&&noteClip.length);pb.style.opacity=(noteClip&&noteClip.length)?'':'0.5';}
+    }
+    function setSemi(d){semi+=d;const sv=document.getElementById('nr-semi');if(sv)sv.textContent=semi;}
+    openPanel({title:'Portion de notes',body:body(),hideActions:true,extraButtons:['Fermer'],
+      onMount:()=>{
+        document.getElementById('nr-pick').addEventListener('click',()=>{
+          picking=1;
+          state._notePick=(mi,si)=>{
+            const idx=flatIndexOf(mi,si);
+            if(picking===1){fromIdx=idx;toIdx=idx;picking=2;state.sel={m:mi,s:si};renderState();refresh();}
+            else if(picking===2){toIdx=idx;picking=0;state._notePick=null;render();refresh();}
+          };
+          refresh();
+        });
+        document.getElementById('nr-u').addEventListener('click',()=>setSemi(1));
+        document.getElementById('nr-d').addEventListener('click',()=>setSemi(-1));
+        document.getElementById('nr-u12').addEventListener('click',()=>setSemi(12));
+        document.getElementById('nr-d12').addEventListener('click',()=>setSemi(-12));
+        document.getElementById('nr-transp').addEventListener('click',()=>{
+          if(semi===0)return;
+          transposeRange(fromIdx,toIdx,semi);
+          pushHistory();render();semi=0;refresh();
+        });
+        document.getElementById('nr-copy').addEventListener('click',()=>{
+          copyRange(fromIdx,toIdx);refresh();
+        });
+        document.getElementById('nr-paste').addEventListener('click',()=>{
+          const startIdx=flatIndexOf(state.sel.m,state.sel.s);
+          if(pasteOverwriteAt(startIdx)){pushHistory();render();refresh();}
+        });
+        refresh();
+      },
+      onExtra:()=>{state._notePick=null;closePanel();}
+    });
+  });
+
+
   function updatePasteButton(){
     const b=document.getElementById('btn-paste-mes');
     if(!b)return;
@@ -4008,54 +4156,48 @@
   document.getElementById('vol-d5').addEventListener('click',()=>changeVolume(-5));
   // === Changement de tempo en cours de morceau (commun à toutes les voix) ===
   {const tcb=document.getElementById('btn-tempo-change');if(tcb)tcb.addEventListener('click',()=>{
-    let fromM=state.sel.m;                       // mesure de départ (0-based)
-    const maxM=Math.max(0,state.measures.length-1);
-    // valeur initiale = tempo affiché effectif à cette mesure
-    let dispBpm=Math.round(tempoAt(fromM)/beatQuarters());
-    function curHasChange(){return fromM>0 && (state.tempoChanges||{})[fromM]!==undefined}
+    function fromM(){return state.sel.m;}                       // mesure de départ = mesure active (suit la nav du haut)
+    let dispBpm=Math.round(tempoAt(fromM())/beatQuarters());
+    function curHasChange(){return fromM()>0 && (state.tempoChanges||{})[fromM()]!==undefined}
     function body(){
       let h='<div class="mes-active" style="color:#8a5a00;">⊕ Tempo commun à <b>toutes les voix</b></div>';
-      h+='<div class="control-row" style="margin-bottom:6px;">'
-        +'<button class="k" id="tcm-d">−</button>'
-        +'<div class="label">À partir de la mesure <b id="tcm-v">'+(fromM+1)+'</b></div>'
-        +'<button class="k" id="tcm-u">+</button></div>';
-      h+='<div class="control-row" style="margin-bottom:6px;">'
+      h+='<div class="label" style="margin-bottom:6px;">À partir de la mesure <b id="tcm-v">'+(fromM()+1)+'</b></div>';
+      // bpm sur une seule ligne : −10 −1 valeur +1 +10
+      h+='<div class="control-row" style="margin-bottom:6px;justify-content:center;gap:6px;">'
         +'<button class="k" id="tcb-d10">−10</button>'
-        +'<button class="k" id="tcb-d">−</button>'
-        +'<div class="label">'+beatGlyph()+' = <b id="tcb-v">'+dispBpm+'</b></div>'
-        +'<button class="k" id="tcb-u">+</button>'
+        +'<button class="k" id="tcb-d">−1</button>'
+        +'<div class="label" style="min-width:64px;text-align:center;">'+beatGlyph()+' = <b id="tcb-v">'+dispBpm+'</b></div>'
+        +'<button class="k" id="tcb-u">+1</button>'
         +'<button class="k" id="tcb-u10">+10</button></div>';
       h+='<div class="row-grid row-2"><button class="k primary" id="tcb-apply">Appliquer</button>'
         +'<button class="k" id="tcb-del">Supprimer ce changement</button></div>';
-      h+='<p class="lyr-hint">Le tempo s\'applique de cette mesure jusqu\'à la fin (ou jusqu\'au prochain changement). La mesure 1 fixe le tempo initial du morceau.</p>';
+      h+='<p class="lyr-hint">Utilisez les flèches de mesure en haut pour choisir la mesure. Le tempo s\'applique de cette mesure jusqu\'à la fin (ou jusqu\'au prochain changement). La mesure 1 fixe le tempo initial.</p>';
       return h;
     }
     function refresh(){
-      const mv=document.getElementById('tcm-v');if(mv)mv.textContent=(fromM+1);
-      // quand on change de mesure, recharger le tempo effectif affiché
-      dispBpm=Math.round(tempoAt(fromM)/beatQuarters());
+      const mv=document.getElementById('tcm-v');if(mv)mv.textContent=(fromM()+1);
+      dispBpm=Math.round(tempoAt(fromM())/beatQuarters());
       const bv=document.getElementById('tcb-v');if(bv)bv.textContent=dispBpm;
       const del=document.getElementById('tcb-del');if(del)del.disabled=!curHasChange();
     }
     function setBpm(d){dispBpm=Math.max(1,dispBpm+d);const bv=document.getElementById('tcb-v');if(bv)bv.textContent=dispBpm;}
-    openPanel({title:'Tempo',body:body(),hideActions:true,extraButtons:['Fermer'],
+    openPanel({title:'Tempo',body:body(),hideActions:true,extraButtons:['Fermer'],showMes:true,
+      onMeasureChange:()=>{refresh();},
       onMount:()=>{
-        document.getElementById('tcm-u').addEventListener('click',()=>{fromM=Math.min(maxM,fromM+1);state.sel={m:fromM,s:0};renderState();ensureSelectionVisible();refresh();});
-        document.getElementById('tcm-d').addEventListener('click',()=>{fromM=Math.max(0,fromM-1);state.sel={m:fromM,s:0};renderState();ensureSelectionVisible();refresh();});
         document.getElementById('tcb-u').addEventListener('click',()=>setBpm(1));
         document.getElementById('tcb-d').addEventListener('click',()=>setBpm(-1));
         document.getElementById('tcb-u10').addEventListener('click',()=>setBpm(10));
         document.getElementById('tcb-d10').addEventListener('click',()=>setBpm(-10));
         document.getElementById('tcb-apply').addEventListener('click',()=>{
           const canon=Math.max(30,Math.min(300,tempoFromDisplay(dispBpm)));
-          if(fromM===0){state.tempo=canon;}             // mesure 1 = tempo initial du morceau
-          else {state.tempoChanges=state.tempoChanges||{};state.tempoChanges[fromM]=canon;}
+          if(fromM()===0){state.tempo=canon;}
+          else {state.tempoChanges=state.tempoChanges||{};state.tempoChanges[fromM()]=canon;}
           pushHistory();
           if(audio.playing){replayFromCurrent();renderState();}else render();
           refresh();
         });
         document.getElementById('tcb-del').addEventListener('click',()=>{
-          if(curHasChange()){delete state.tempoChanges[fromM];pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();refresh();}
+          if(curHasChange()){delete state.tempoChanges[fromM()];pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();refresh();}
         });
         refresh();
       },
@@ -4171,12 +4313,15 @@
     const n=document.getElementById('btn-stack');if(n)n.classList.remove('active');
     render();
   }
-  // ♫ Accord : bascule le mode édition d'accord (les boutons − + ▲ ▼ agissent sur l'empilement)
-  document.getElementById('btn-stack').addEventListener('click',()=>{if(state._chordEditMode)chordExit();else chordEnter();});
-  document.getElementById('ce-up').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;const n=chordList(sl).length;state.chordActive=Math.min(n-1,chordActiveIdx(sl)+1);state._chordAddPending=false;const a=activeChordNote(sl);if(a){state.octave=a.octave;previewNote(midiOfNote(a.note,a.octave,a.acc,keyAt(state.sel.m)))}render();});
-  document.getElementById('ce-down').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;state.chordActive=Math.max(0,chordActiveIdx(sl)-1);state._chordAddPending=false;const a=activeChordNote(sl);if(a){state.octave=a.octave;previewNote(midiOfNote(a.note,a.octave,a.acc,keyAt(state.sel.m)))}render();});
-  document.getElementById('ce-plus').addEventListener('click',()=>{state._chordAddPending=true;render();});
-  document.getElementById('ce-minus').addEventListener('click',()=>{const sl=selectedSlot();if(!sl||sl.type!=='note')return;const l=chordList(sl);const ai=chordActiveIdx(sl);if(l.length<=1){const z=state.measures[state.sel.m][state.sel.s];const dur=z.dur,dot=z.dot;state.measures[state.sel.m][state.sel.s]={type:'rest',dur,dot};state.chordActive=0;state._chordAddPending=true;pushHistory();render();return}l.splice(ai,1);chordWrite(sl,l);state.chordActive=Math.max(0,Math.min(ai,l.length-1));state._chordAddPending=false;pushHistory();render();});
+  // ♫ Accord : le bouton de bascule a été retiré. Le mode d'édition d'accord s'active implicitement
+  // dès qu'on utilise les flèches ▲▼ ou le bouton + (empilement de notes). chordEnsureMode() entre
+  // dans le mode si besoin.
+  function chordEnsureMode(){ if(!state._chordEditMode) chordEnter(); }
+  {const bs=document.getElementById('btn-stack');if(bs)bs.addEventListener('click',()=>{if(state._chordEditMode)chordExit();else chordEnter();});}
+  document.getElementById('ce-up').addEventListener('click',()=>{chordEnsureMode();const sl=selectedSlot();if(!sl||sl.type!=='note')return;const n=chordList(sl).length;state.chordActive=Math.min(n-1,chordActiveIdx(sl)+1);state._chordAddPending=false;const a=activeChordNote(sl);if(a){state.octave=a.octave;previewNote(midiOfNote(a.note,a.octave,a.acc,keyAt(state.sel.m)))}render();});
+  document.getElementById('ce-down').addEventListener('click',()=>{chordEnsureMode();const sl=selectedSlot();if(!sl||sl.type!=='note')return;state.chordActive=Math.max(0,chordActiveIdx(sl)-1);state._chordAddPending=false;const a=activeChordNote(sl);if(a){state.octave=a.octave;previewNote(midiOfNote(a.note,a.octave,a.acc,keyAt(state.sel.m)))}render();});
+  document.getElementById('ce-plus').addEventListener('click',()=>{chordEnsureMode();state._chordAddPending=true;render();});
+  document.getElementById('ce-minus').addEventListener('click',()=>{chordEnsureMode();const sl=selectedSlot();if(!sl||sl.type!=='note')return;const l=chordList(sl);const ai=chordActiveIdx(sl);if(l.length<=1){const z=state.measures[state.sel.m][state.sel.s];const dur=z.dur,dot=z.dot;state.measures[state.sel.m][state.sel.s]={type:'rest',dur,dot};state.chordActive=0;state._chordAddPending=true;pushHistory();render();return}l.splice(ai,1);chordWrite(sl,l);state.chordActive=Math.max(0,Math.min(ai,l.length-1));state._chordAddPending=false;pushHistory();render();});
 
   document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const fn=proposedBaseName()+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
   const fileInput=document.getElementById('file-input');
@@ -5763,7 +5908,7 @@
     if(onMount)setTimeout(onMount,50);
     if(extraButtons)setTimeout(()=>{panelBody.querySelectorAll('[data-extra]').forEach(b=>{b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)})})},50);
   }
-  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
+  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;state._notePick=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
   function notifyPanelMeasureChanged(){
     if(!panel.classList.contains('open'))return;
     if(cShowMes)panelMes.textContent='Mes '+(state.sel.m+1);
@@ -5975,6 +6120,8 @@
     if(isNaN(mi)||isNaN(si))return;
     if(mi<0||mi>=state.measures.length)return;
     if(si<0||si>=state.measures[mi].length)return;
+    // Sélection d'une portion de notes (2 clics) : intercepte le clic.
+    if(state._notePick){state._notePick(mi,si);return;}
     // Si un sélecteur de plage est ouvert : le clic remplit la valeur de la ligne active
     if(state._rangePick){state._rangePick(mi+1);return;}
     state.sel={m:mi,s:si};
