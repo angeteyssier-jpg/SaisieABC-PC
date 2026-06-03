@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.49 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.50 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -1369,6 +1369,10 @@
   function clefSoundShift(clef){return clef==='treble8'?-12:0;}
   function noteY(staffTop,step,c){const r=clefRefStep(c);const bl=staffTop+4*LINE_GAP;return bl-(step-r)*(LINE_GAP/2)}
   function stepIndex(note,oct){const m={C:0,D:1,E:2,F:3,G:4,A:5,B:6};return m[note]+7*oct}
+  // Notes (note+octave+altération) d'un slot : note principale + empilées (accord).
+  function slotChordNotes(slot){if(!slot||slot.type!=='note')return [];const out=[{note:slot.note,octave:slot.octave,acc:slot.acc||''}];if(slot.stack)slot.stack.forEach(s=>out.push({note:s.note,octave:s.octave,acc:s.acc||''}));return out;}
+  // Y des têtes communes entre deux slots (pour tracer un tie PAR hauteur tenue, accords inclus).
+  function sharedTieYs(prevSlot,curSlot,staffTop,c){const A=slotChordNotes(prevSlot),B=slotChordNotes(curSlot),res=[];A.forEach(a=>{if(B.some(b=>b.note===a.note&&b.octave===a.octave&&(b.acc||'')===(a.acc||''))){res.push(noteY(staffTop,stepIndex(a.note,a.octave),c));}});return res;}
   const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
   // Clés d'ut : positions des altérations d'armure (indices de pas), dérivées du placement standard.
   const ASS={F:3,C:0,G:4,D:1,A:-2,E:2,B:-1},AFS={B:-1,E:2,A:-2,D:1,G:-3,C:0,F:3};            // alto (ut 3e)
@@ -1821,7 +1825,7 @@
               svg+='<line x1="'+sx+'" y1="'+hY+'" x2="'+sx+'" y2="'+bY+'" stroke="'+cl+'" stroke-width="0.8"/>';
               if(iS&&!(state._chordEditMode&&state._chordAddPending))svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
               if(iS&&state._chordEditMode&&!state._chordAddPending){const ac=activeChordNote(t);if(ac){const ay=noteY(staffTop,stepIndex(ac.note,ac.octave),lC);svg+='<circle cx="'+cx+'" cy="'+ay+'" r="5" fill="none" stroke="#d11" stroke-width="1.4"/>';}}
-              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:(pS.su!==undefined?pS.su:su)});
+              if(pS&&pS.t.tieToNext){const _su=(pS.su!==undefined?pS.su:su);const _ys=sharedTieYs(pS.t,t,staffTop,lC);if(_ys.length){_ys.forEach(_y=>tP.push({fromCx:pS.cx,fromY:_y,toCx:cx,toY:_y,stemUp:_su}));}else{tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:_su});}}
               if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in',stemUp:su});pendingIncomingTie=false}
               handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext,su);
               pS={t,cx,y:dr.headY,su};
@@ -1833,7 +1837,7 @@
               svg+=staccatoDot(t,cx,dr.headY,su,cl);
               if(iS&&!(state._chordEditMode&&state._chordAddPending))svg+='<circle cx="'+cx+'" cy="'+dr.headY+'" r="8" fill="none" stroke="'+sel+'" stroke-width="0.7" opacity="0.4"/>';
               if(iS&&state._chordEditMode&&!state._chordAddPending){const ac=activeChordNote(t);if(ac){const ay=noteY(staffTop,stepIndex(ac.note,ac.octave),lC);svg+='<circle cx="'+cx+'" cy="'+ay+'" r="5" fill="none" stroke="#d11" stroke-width="1.4"/>';}}
-              if(pS&&pS.t.tieToNext)tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:(pS.su!==undefined?pS.su:su)});
+              if(pS&&pS.t.tieToNext){const _su=(pS.su!==undefined?pS.su:su);const _ys=sharedTieYs(pS.t,t,staffTop,lC);if(_ys.length){_ys.forEach(_y=>tP.push({fromCx:pS.cx,fromY:_y,toCx:cx,toY:_y,stemUp:_su}));}else{tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:_su});}}
               if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in',stemUp:su});pendingIncomingTie=false}
               handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext,su);
               pS={t,cx,y:dr.headY,su};
@@ -2364,17 +2368,13 @@
           if(!nextSlot||nextSlot.type!=='note'){delete t.tieToNext;delete t.slurToNext;continue;} // silence → en attente
           const a=slotMidiSet(meas,si,sig);
           const b=slotMidiSet(nx.meas,nx.idx,nx.sig);
-          const same=a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
-          // Si l'import a fixé un type explicite, on le respecte (sauf incohérence évidente :
-          // un "tie" ne peut relier que des hauteurs identiques ; sinon on retombe sur slur).
-          if(t._linkKind==='tie'){
-            if(same){t.tieToNext=true;delete t.slurToNext;}
-            else{t.slurToNext=true;delete t.tieToNext;}
-          } else if(t._linkKind==='slur'){
+          // tie conservé dès qu'au moins UNE hauteur est commune aux deux slots (accords partiellement tenus) ;
+          // sinon (aucune hauteur commune) on retombe sur un slur. Un slur explicite reste un slur.
+          const common=(a&&b)?a.filter(v=>b.indexOf(v)>=0):[];
+          if(t._linkKind==='slur'){
             t.slurToNext=true;delete t.tieToNext;
           } else {
-            // Pas de type explicite (liaison ajoutée manuellement) → déduire par la hauteur
-            if(same){t.tieToNext=true;delete t.slurToNext;}
+            if(common.length){t.tieToNext=true;delete t.slurToNext;}
             else{t.slurToNext=true;delete t.tieToNext;}
           }
         }
