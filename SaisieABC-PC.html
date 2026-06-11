@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.55 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.56 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -372,6 +372,7 @@
         <div class="row-grid"><button class="k" data-hdr="C" style="font-size:16px;">Compositeur : <span id="hdr-c-val">—</span></button></div>
         <div class="row-grid"><button class="k" data-hdr="N" style="font-size:16px;">Commentaire : <span id="hdr-n-val">—</span></button></div>
         <div class="row-grid"><button class="k" data-hdr="R" style="font-size:16px;">Rythme : <span id="hdr-r-val">—</span></button></div>
+        <div class="row-grid"><button class="k" id="btn-scoreversion" style="font-size:14px;" title="Version de la partition (export %%scoreversion)">Version partition : <span id="hdr-sv-val" style="color:#185fa5;">—</span></button></div>
         <div class="row-grid row-4">
           <button class="k" data-hdr="H" style="font-size:13px;">Hist. <span id="hdr-h-val" style="color:#185fa5;">·</span></button>
           <button class="k" data-hdr="F" style="font-size:13px;">URL <span id="hdr-f-val" style="color:#185fa5;">·</span></button>
@@ -499,6 +500,7 @@
   function cloneMap(o){return o?JSON.parse(JSON.stringify(o)):{};}
   function makeTrack(opts){opts=opts||{};return {
     name:opts.name||'',
+    sname:opts.sname||'',
     measures:cloneMeasures(opts.measures||[]),
     pieceMeter:opts.pieceMeter||'4/4',
     pieceUnit:opts.pieceUnit||'1/4',
@@ -514,7 +516,7 @@
     visible:(opts.visible!==undefined)?opts.visible:true,
     instrument:(opts.instrument!==undefined)?opts.instrument:0
   }}
-  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
+  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
   // Aliasing : state.<champ> lit/écrit la piste active
   TRACK_FIELDS.forEach(f=>{Object.defineProperty(state,f,{
     get(){const tr=state.tracks[state.activeTrack]||state.tracks[0];return tr?tr[f]:undefined},
@@ -1032,7 +1034,7 @@
     return body;
   }
   function buildAbcText(){
-    let h='';h+='X:'+(state.headers.X||'0')+'\n';
+    let h='';h+='X:'+(state.headers.X||'0')+'\n';if(state.headers.scoreVersion&&state.headers.scoreVersion.trim())h+='%%scoreversion '+state.headers.scoreVersion.trim()+'\n';
     if(state.headers.T)state.headers.T.split('\n').forEach(l=>{if(l.trim())h+='T:'+l+'\n'});
     if(state.headers.C)state.headers.C.split('\n').forEach(l=>{if(l.trim())h+='C:'+l+'\n'});
     if(state.headers.N)state.headers.N.split('\n').forEach(l=>{if(l.trim())h+='N:'+l+'\n'});
@@ -1059,7 +1061,7 @@
     }
     // Multi-voix : déclarer les voix en en-tête, puis émettre chaque corps
     let header='';
-    for(let i=0;i<nTracks;i++){const tr=state.tracks[i];const id=String(i+1);const clName=clefToAbcName(tr.pieceClef);header+='V:'+id+' clef='+clName;if(tr.name)header+=' name="'+tr.name.replace(/"/g,'')+'"';header+='\n'}
+    for(let i=0;i<nTracks;i++){const tr=state.tracks[i];const id=String(i+1);const clName=clefToAbcName(tr.pieceClef);header+='V:'+id+' clef='+clName;if(tr.name)header+=' name="'+tr.name.replace(/"/g,'')+'"';if(tr.sname)header+=' sname="'+tr.sname.replace(/"/g,'')+'"';header+='\n'}
     h+=header;
     for(let i=0;i<nTracks;i++){
       state.activeTrack=i;
@@ -1247,7 +1249,7 @@
     return out;
   }
 
-  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};
+  function parseAbcText(text){const cleaned=text.split(/\r?\n/).map(line=>{const m=line.match(/^(.*?)(?:%.*)?$/);return m?m[1]:line});const ns={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},pieceMeter:'4/4',pieceUnit:'1/4',pieceKeySig:0,pieceClef:'treble',measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},tempo:60,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},sel:{m:0,s:0},octave:0,volume:state.volume,parts:{}};{const _sv=text.split(/\r?\n/).find(l=>/^%%scoreversion\s/i.test(l));if(_sv)ns.headers.scoreVersion=_sv.replace(/^%%scoreversion\s+/i,'').trim();}
     // --- multi-voix ---
     const voiceOrder=[];            // ordre d'apparition des voix
     const voiceMeta={};             // id -> {clef,name}
@@ -1259,11 +1261,11 @@
     function addBody(s){bodyByVoice[curVoice]=(bodyByVoice[curVoice]||'')+s}
     let inBody=false,sawL=false;
     for(const line of cleaned){const t=line.trim();
-      if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='R'){ns.headers.R=v}else if(k==='H'){ns.headers.H=ns.headers.H?(ns.headers.H+'\n'+v):v}else if(k==='F'){ns.headers.F=v}else if(k==='Z'){ns.headers.Z=v}else if(k==='W'){ns.headers.W=ns.headers.W?(ns.headers.W+'\n'+v):v}else if(k==='P'){ns.headers.P=v}else if(k==='M')ns.pieceMeter=v;else if(k==='L'){ns.pieceUnit=v;sawL=true}else if(k==='V'){const vm=v.match(/^(\S+)(.*)$/);if(vm){const vid=vm[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=v.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,undefined)}const nm=v.match(/(?:name|nm)\s*=\s*"([^"]*)"/i)||v.match(/(?:name|nm)\s*=\s*(\S+)/i);if(nm)voiceMeta[vid].name=nm[1]}}else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=v.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}
+      if(!inBody){const m=t.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='X')ns.headers.X=v;else if(k==='T'){ns.headers.T=ns.headers.T?(ns.headers.T+'\n'+v):v}else if(k==='C'){ns.headers.C=ns.headers.C?(ns.headers.C+'\n'+v):v}else if(k==='N'){ns.headers.N=ns.headers.N?(ns.headers.N+'\n'+v):v}else if(k==='R'){ns.headers.R=v}else if(k==='H'){ns.headers.H=ns.headers.H?(ns.headers.H+'\n'+v):v}else if(k==='F'){ns.headers.F=v}else if(k==='Z'){ns.headers.Z=v}else if(k==='W'){ns.headers.W=ns.headers.W?(ns.headers.W+'\n'+v):v}else if(k==='P'){ns.headers.P=v}else if(k==='M')ns.pieceMeter=v;else if(k==='L'){ns.pieceUnit=v;sawL=true}else if(k==='V'){const vm=v.match(/^(\S+)(.*)$/);if(vm){const vid=vm[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=v.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,undefined)}const nm=v.match(/(?:^|\s)(?:name|nm)\s*=\s*"([^"]*)"/i)||v.match(/(?:^|\s)(?:name|nm)\s*=\s*(\S+)/i);if(nm)voiceMeta[vid].name=nm[1];const snm=v.match(/(?:^|\s)(?:sname|snm)\s*=\s*"([^"]*)"/i)||v.match(/(?:^|\s)(?:sname|snm)\s*=\s*(\S+)/i);if(snm)voiceMeta[vid].sname=snm[1]}}else if(k==='Q'){const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);if(qm){const num=parseInt(qm[1],10),den=parseInt(qm[2],10),bpm=parseInt(qm[3],10);const bf=beatFromAbc(num,den);const uq=bf.unit*(bf.dotted?1.5:1);ns.tempo=bpm*uq;ns.tempoBeatUnit=bf.unit;ns.tempoBeatDotted=bf.dotted;ns.tempoDotted=(bf.unit===1&&bf.dotted);ns._hasTempo=true}else{const qm2=v.match(/=\s*(\d+)/);if(qm2){ns.tempo=parseInt(qm2[1],10);ns.tempoBeatUnit=1;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3){const um=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);const denom=um?parseInt(um[1],10):4;const unitInQuarters=4/denom;ns.tempo=parseInt(qm3[1],10)*unitInQuarters;ns.tempoBeatUnit=unitInQuarters;ns.tempoBeatDotted=false;ns.tempoDotted=false;ns._hasTempo=true}}}}else if(k==='K'){const kd=parseKeyDef(v);ns.pieceKeySig=kd.sig;ns.pieceClef=kd.clef;inBody=true}continue}continue}
       // --- corps ---
       // Ligne V: dans le corps -> change la voix courante
       const vline=t.match(/^V:\s*(\S+)(.*)$/);
-      if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,voiceMeta[vid].clef)}const nm=t.match(/(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];continue}
+      if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,voiceMeta[vid].clef)}const nm=t.match(/(?:^|\s)(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];const snm=t.match(/(?:^|\s)(?:sname|snm)\s*=\s*"([^"]*)"/i);if(snm)voiceMeta[vid].sname=snm[1];continue}
       const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){addBody(' [P:'+fv.trim()+'] ')}else if(fk==='w'||fk==='W'){ns._lyricLinesByVoice=ns._lyricLinesByVoice||{};(ns._lyricLinesByVoice[curVoice]=ns._lyricLinesByVoice[curVoice]||[]).push(fv)}continue}
       const hf=t.match(/^([MLQK]):\s*(.*)$/);
       if(hf){const hk=hf[1],hv=hf[2].trim();const seenMusic=/[A-Ga-gz]/.test(bodyByVoice[curVoice]||'');
@@ -1300,7 +1302,7 @@
       const sub={pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:(meta.keySig!==undefined?meta.keySig:ns.pieceKeySig),pieceClef:meta.clef||ns.pieceClef,measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},parts:{}};
       let bt=expandGraceNotesBody(bodyByVoice[vid]||'');
       parseAbcBody(bt,sub);
-      ns.tracks.push(makeTrack({name:meta.name||('V'+vid),measures:sub.measures,pieceMeter:sub.pieceMeter,pieceUnit:sub.pieceUnit,pieceKeySig:sub.pieceKeySig,pieceClef:sub.pieceClef,timeChanges:sub.timeChanges,keyChanges:sub.keyChanges,clefChanges:sub.clefChanges,repeats:sub.repeats,parts:sub.parts}));
+      ns.tracks.push(makeTrack({name:meta.name||('V'+vid),sname:meta.sname||'',measures:sub.measures,pieceMeter:sub.pieceMeter,pieceUnit:sub.pieceUnit,pieceKeySig:sub.pieceKeySig,pieceClef:sub.pieceClef,timeChanges:sub.timeChanges,keyChanges:sub.keyChanges,clefChanges:sub.clefChanges,repeats:sub.repeats,parts:sub.parts}));
     });
     if(!ns.tracks.length)ns.tracks.push(makeTrack({pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:ns.pieceKeySig,pieceClef:ns.pieceClef}));
     ns.activeTrack=0;
@@ -2312,7 +2314,7 @@
     document.getElementById('hdr-n-val').textContent=(state.headers.N||'—').split('\n')[0];
     {const we=document.getElementById('hdr-w-val');if(we){const wv=(state.headers.W||'').trim();const nl=wv?wv.split('\n').filter(x=>x.trim()).length:0;we.textContent=wv?('✓('+nl+')'):'—';}}
     {const re=document.getElementById('hdr-r-val');if(re)re.textContent=(state.headers.R||'—').split('\n')[0];}
-    {const mk=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=(v&&v.trim())?'✓':'·';};mk('hdr-h-val',state.headers.H);mk('hdr-f-val',state.headers.F);mk('hdr-z-val',state.headers.Z);mk('hdr-p-val',state.headers.P);}
+    {const mk=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=(v&&v.trim())?'✓':'·';};mk('hdr-h-val',state.headers.H);mk('hdr-f-val',state.headers.F);mk('hdr-z-val',state.headers.Z);mk('hdr-p-val',state.headers.P);}{const e=document.getElementById('hdr-sv-val');if(e){const sv=(state.headers.scoreVersion||'').trim();e.textContent=sv?('v '+sv):'—';}}
   }
   function render(){renderScore();renderState();notifyPanelMeasureChanged();if(typeof updateBadge==='function')updateBadge()}
 
@@ -2738,6 +2740,7 @@
       if(tr.length>1)h+='<button class="k tk-del" data-idx="'+i+'" style="width:34px;font-size:14px;color:#a33;" title="Supprimer cette piste">🗑</button>';
       h+='</div>';
       h+='<div style="display:flex;align-items:center;gap:6px;padding:0 2px;">';
+      h+='<input type="text" class="tk-sname" data-idx="'+i+'" value="'+escXml(t.sname||'')+'" placeholder="abr." maxlength="8" style="width:54px;font-size:11px;padding:2px 4px;" title="Nom court (sname) affich\u00e9 en d\u00e9but de port\u00e9e, ex. S A T B"/>';
       h+='<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap;"><input type="checkbox" class="tk-play" data-idx="'+i+'" '+(playOn?'checked':'')+'/> Lire</label>';
       h+='<span style="font-size:12px;opacity:0.7;">🔊</span>';
       h+='<input type="range" class="tk-vol" data-idx="'+i+'" min="0" max="100" value="'+vol+'" style="flex:1;min-width:60px;" title="Volume de la piste"/>';
@@ -2762,6 +2765,7 @@
     {const ab=document.getElementById('tk-all-play');if(ab)ab.addEventListener('click',()=>{state.tracks.forEach(t=>{t.mute=false});pushHistory();renderTracksPanel();if(audio.playing)replayFromCurrent();});}
     {const nb=document.getElementById('tk-none-play');if(nb)nb.addEventListener('click',()=>{state.tracks.forEach(t=>{t.mute=true});pushHistory();renderTracksPanel();if(audio.playing)replayFromCurrent();});}
     body.querySelectorAll('.tk-rename').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);const cur=state.tracks[i].name||('V'+(i+1));const v=prompt('Nom de la piste :',cur);if(v!==null){state.tracks[i].name=v.trim();pushHistory();render();renderTracksPanel();}}));
+    body.querySelectorAll('.tk-sname').forEach(b=>b.addEventListener('change',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);state.tracks[i].sname=b.value.trim();pushHistory();render();}));
     body.querySelectorAll('.tk-del').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();const i=parseInt(b.dataset.idx,10);if(state.tracks.length<=1)return;if(!confirm('Supprimer la piste « '+(state.tracks[i].name||('V'+(i+1)))+' » ?'))return;state.tracks.splice(i,1);if(state.activeTrack>=state.tracks.length)state.activeTrack=state.tracks.length-1;state.sel={m:0,s:0};pushHistory();render();renderTracksPanel();}));
     const addBtn=document.getElementById('tk-add');
     if(addBtn)addBtn.addEventListener('click',()=>{
@@ -4386,7 +4390,7 @@
   document.getElementById('ce-plus').addEventListener('click',()=>{chordEnsureMode();state._chordAddPending=true;render();});
   document.getElementById('ce-minus').addEventListener('click',()=>{chordEnsureMode();const sl=selectedSlot();if(!sl||sl.type!=='note')return;const l=chordList(sl);const ai=chordActiveIdx(sl);if(l.length<=1){const z=state.measures[state.sel.m][state.sel.s];const dur=z.dur,dot=z.dot;state.measures[state.sel.m][state.sel.s]={type:'rest',dur,dot};state.chordActive=0;state._chordAddPending=true;pushHistory();render();return}l.splice(ai,1);chordWrite(sl,l);state.chordActive=Math.max(0,Math.min(ai,l.length-1));state._chordAddPending=false;pushHistory();render();});
 
-  document.getElementById('btn-save-file').addEventListener('click',()=>{const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const fn=proposedBaseName()+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)});
+  document.getElementById('btn-save-file').addEventListener('click',()=>{const def=proposedBaseName();const inp=prompt('Enregistrer sous — nom du fichier (sans extension) :',def);if(inp===null)return;let base=sanitizeFilenameKeepSpaces(inp.replace(/\.abc$/i,''))||def;const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const fn=base+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);state.openedFileName=base;state.openedFileExt='.abc';render();});
   const fileInput=document.getElementById('file-input');
   document.getElementById('btn-open-file').addEventListener('click',()=>fileInput.click());
   // Mémoire du dernier fichier multi-morceaux ouvert (pour le bouton Liste)
@@ -6025,6 +6029,7 @@
   {const fb=document.querySelector('[data-hdr="F"]');if(fb)fb.addEventListener('click',headerPromptSimple('F','URL du fichier (F:)'));}
   {const zb=document.querySelector('[data-hdr="Z"]');if(zb)zb.addEventListener('click',headerPromptSimple('Z','Transcripteur (Z:)'));}
   {const pb=document.querySelector('[data-hdr="P"]');if(pb)pb.addEventListener('click',headerPromptSimple('P','Ordre des parties (P:, ex. (2A2B))'));}
+  {const svb=document.getElementById('btn-scoreversion');if(svb)svb.addEventListener('click',headerPromptSimple('scoreVersion','Version de la partition (ex. 1.0.17 du 11/06/2026)'));}
 
 
   // ⭐ Rythme : applique sur une PLAGE de mesures (X→Y), sur toutes les voix
@@ -6140,18 +6145,21 @@
       onMount:rebind,
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        // Son conservé : on ne transpose pas les notes ; seul l'affichage change selon la clé.
+        // Son conservé : on compense l'octaviation de la clé (sol-8 = -1 octave) pour garder la même hauteur réelle.
         // Plage X→Y : on pose la clé au début, on nettoie l'intérieur, et on restaure après.
         const startMi=Math.min(rg.getFrom(),rg.getTo())-1;
         const endMi=Math.max(rg.getFrom(),rg.getTo())-1;
         const clefAfter=clefAt(Math.min(endMi+1,state.measures.length-1));
         const hadAfter=state.clefChanges[endMi+1]!==undefined;
+        const _oldClefs={};for(let mi=startMi;mi<=endMi;mi++)_oldClefs[mi]=clefAt(mi);
         if(startMi===0){state.pieceClef=pick;delete state.clefChanges[0]}
         else state.clefChanges[startMi]=pick;
         for(let mi=startMi+1;mi<=endMi;mi++)delete state.clefChanges[mi];
         if(endMi+1<state.measures.length&&!hadAfter&&clefAfter!==pick){
           state.clefChanges[endMi+1]=clefAfter;
         }
+        // Hauteur reelle conservee : on compense l'octaviation de la cle (ex. sol-8 -> fa = -1 octave).
+        for(let mi=startMi;mi<=endMi;mi++){const d=(clefSoundShift(_oldClefs[mi])-clefSoundShift(pick))/12;if(d){const meas=state.measures[mi];if(meas)meas.forEach(t=>{if(t.type==='note'){t.octave+=d;if(t.stack)t.stack.forEach(sn=>{sn.octave+=d})}});}}
         state.sel={m:startMi,s:0};
         cleanupAccidentals();pushHistory();closePanel();render();
       }
