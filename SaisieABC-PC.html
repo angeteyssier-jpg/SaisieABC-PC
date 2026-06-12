@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.56 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.57 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -4556,7 +4556,7 @@
     function num(el, tag, def) { const v = txt(el, tag); return v ? parseFloat(v) : def; }
 
     // --- En-têtes globaux ---
-    const headers = { X:'1', T:'', C:'', N:'', H:'', F:'', Z:'', P:'', W:'' };
+    const headers = { X:'1', T:'', C:'', N:'', H:'', F:'', Z:'', P:'', W:'', scoreVersion:'' };
     const workTitle = txt(doc, 'work-title');
     const movTitle  = txt(doc, 'movement-title');
     headers.T = workTitle || movTitle || '';
@@ -4566,6 +4566,8 @@
     // Couplets supplémentaires (W:) éventuellement stockés par cette app à l'export
     const wf = doc.querySelector('miscellaneous-field[name="abc-words"]');
     if (wf) headers.W = wf.textContent.replace(/\r/g,'');
+    const svf = doc.querySelector('miscellaneous-field[name="scoreversion"]');
+    if (svf) headers.scoreVersion = svf.textContent.trim();
     // Accumulateur : les <words> LONGS (blocs de structure/paroles, type EasyABC) ne sont pas des
     // annotations ponctuelles ; on les regroupe en W: d'en-tête plutôt que de les coller sur une note.
     const collectedWords = [];
@@ -4619,10 +4621,13 @@
 
     // map part-id → name
     const partNames = {};
+    const partAbbrevs = {};
     doc.querySelectorAll('score-part').forEach(sp => {
       const id = sp.getAttribute('id') || '';
       const n = txt(sp, 'part-name') || id;
       partNames[id] = n;
+      const ab = txt(sp, 'part-abbreviation');
+      if (ab) partAbbrevs[id] = ab;
     });
 
     const tracks = [];
@@ -5111,6 +5116,7 @@
 
       tracks.push(makeTrack({
         name: trackName,
+        sname: (voiceOrder.length === 1) ? (partAbbrevs[partId] || '') : '',
         measures,
         pieceMeter: pieceMeter || '4/4',
         pieceUnit,
@@ -5560,7 +5566,10 @@
     const extraWords=(state.headers.W||'');
     let ident='';
     if(composer)ident+='<creator type="composer">'+escapeXml(composer)+'</creator>';
-    if(extraWords.trim())ident+='<miscellaneous><miscellaneous-field name="abc-words">'+escapeXml(extraWords)+'</miscellaneous-field></miscellaneous>';
+    let misc='';
+    if(extraWords.trim())misc+='<miscellaneous-field name="abc-words">'+escapeXml(extraWords)+'</miscellaneous-field>';
+    {const sv=(state.headers.scoreVersion||'').trim();if(sv)misc+='<miscellaneous-field name="scoreversion">'+escapeXml(sv)+'</miscellaneous-field>';}
+    if(misc)ident+='<miscellaneous>'+misc+'</miscellaneous>';
     if(ident)xml+='<identification>'+ident+'</identification>\n';
     // part-list : une score-part par piste
     const tracks=(state.tracks&&state.tracks.length)?state.tracks:[null];
@@ -5568,7 +5577,8 @@
     tracks.forEach((tr,i)=>{
       const id='P'+(i+1);
       const name=(tr&&tr.name)?tr.name:'Voix';
-      xml+='<score-part id="'+id+'"><part-name>'+escapeXml(name)+'</part-name></score-part>';
+      const sname=(tr&&tr.sname)?tr.sname:'';
+      xml+='<score-part id="'+id+'"><part-name>'+escapeXml(name)+'</part-name>'+(sname?('<part-abbreviation>'+escapeXml(sname)+'</part-abbreviation>'):'')+'</score-part>';
     });
     xml+='</part-list>\n';
     // Boucler sur les pistes en changeant temporairement activeTrack
