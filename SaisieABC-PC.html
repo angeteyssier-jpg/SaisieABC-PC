@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.57 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.60 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -258,6 +258,7 @@
         <button class="tab" data-tab="fichier" title="Fichier" aria-label="Fichier" style="font-size:20px;">📂</button>
         <button class="tab" data-tab="partition" title="Modifier la partition" aria-label="Modifier la partition"><svg width="20" height="20" viewBox="0 0 24 24" style="vertical-align:middle;" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
         <button class="tab" data-tab="vue" title="Vue" aria-label="Vue">👁</button>
+        <button class="tab" data-tab="tab" title="Tablature" aria-label="Tablature" style="font-size:12px;font-weight:700;letter-spacing:0.5px;">TAB</button>
       </div>
 
       <div class="tab-panel active" data-panel="notes">
@@ -425,6 +426,7 @@
       </div>
 
       <div class="tab-panel" data-panel="vue">
+        <div class="row-grid row-2" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button></div>
         <div class="control-row">
           <button class="k" id="zoom-d">−</button>
           <div class="label">Zoom <b id="zoom-v">100</b></div>
@@ -452,6 +454,16 @@
         <div class="dim-info">
           <span>Zone : <b id="dim-w">0</b>×<b id="dim-h">0</b></span>
           <span>SVG affiché : <b id="svg-h">0</b>px</span>
+        </div>
+      </div>
+      <div class="tab-panel" data-panel="tab">
+        <div style="font-size:12px;color:#5f5e5a;margin:2px 0 8px;">Tablature de la voix active</div>
+        <div class="row-grid row-2">
+          <button class="k" id="btn-tab-guitar" style="font-size:14px;" title="Tablature guitare 6 cordes (E A D G B E)">🎸 Guitare</button>
+          <button class="k" id="btn-tab-banjo" style="font-size:14px;" title="Banjo ténor irlandais 4 cordes (G D A E)">🪕 Banjo</button>
+        </div>
+        <div class="row-grid row-2" style="margin-top:6px;">
+          <button class="k" id="btn-tab-off" style="font-size:13px;grid-column:1 / -1;">↩ Revenir à la portée</button>
         </div>
       </div>
     </div>
@@ -516,7 +528,7 @@
     visible:(opts.visible!==undefined)?opts.visible:true,
     instrument:(opts.instrument!==undefined)?opts.instrument:0
   }}
-  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all'};
+  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all',scoreLayout:'line',tabMode:null};
   // Aliasing : state.<champ> lit/écrit la piste active
   TRACK_FIELDS.forEach(f=>{Object.defineProperty(state,f,{
     get(){const tr=state.tracks[state.activeTrack]||state.tracks[0];return tr?tr[f]:undefined},
@@ -1299,9 +1311,9 @@
     finalVoices.forEach(vid=>{
       const meta=voiceMeta[vid]||{};
       // sous-état temporaire pour parser cette voix
-      const sub={pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:(meta.keySig!==undefined?meta.keySig:ns.pieceKeySig),pieceClef:meta.clef||ns.pieceClef,measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},parts:{}};
+      const sub={pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:(meta.keySig!==undefined?meta.keySig:ns.pieceKeySig),pieceClef:meta.clef||ns.pieceClef,measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},parts:{},breaks:{},tempoChanges:{}};
       let bt=expandGraceNotesBody(bodyByVoice[vid]||'');
-      parseAbcBody(bt,sub);
+      parseAbcBody(bt,sub);if(sub.breaks)Object.assign(ns.breaks,sub.breaks);if(sub.tempoChanges)Object.assign(ns.tempoChanges,sub.tempoChanges);
       ns.tracks.push(makeTrack({name:meta.name||('V'+vid),sname:meta.sname||'',measures:sub.measures,pieceMeter:sub.pieceMeter,pieceUnit:sub.pieceUnit,pieceKeySig:sub.pieceKeySig,pieceClef:sub.pieceClef,timeChanges:sub.timeChanges,keyChanges:sub.keyChanges,clefChanges:sub.clefChanges,repeats:sub.repeats,parts:sub.parts}));
     });
     if(!ns.tracks.length)ns.tracks.push(makeTrack({pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:ns.pieceKeySig,pieceClef:ns.pieceClef}));
@@ -1495,7 +1507,7 @@
     const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0);
     // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SP));
-    const SCORE_W=single?layout.totalUnits:viewW;
+    const SCORE_W=single?layout.totalUnits:((layout&&layout._pageViewW)||viewW);
     const usableLineW=SCORE_W-LEFT_PAD-RIGHT_PAD;
     const N=single?layout.N:state.measures.length;
     // === Regroupement des mesures en lignes ===
@@ -1536,6 +1548,7 @@
     pageLines=allLines.slice(pageStart,pageEnd);
     linesShown=Math.max(1,pageLines.length);
     }
+    if(layout&&layout._pageSystem){pageStart=0;pageLines=[{mIdxs:layout._pageSystem.mIdxs,totalCost:0}];linesShown=1;}
     const ink='#1a1a1a',sel='#e24b4a',dim='#888780';
     const scoreH=STAFF_TOP_Y+linesShown*STAFF_SP+10;
     let svg='<svg viewBox="0 0 '+SCORE_W+' '+scoreH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">';
@@ -1553,12 +1566,13 @@
       if(sc<refScale)refScale=sc;
     }
     if(!isFinite(refScale)||refScale<=0)refScale=1;
+    if(layout&&layout._pageRefScale)refScale=layout._pageRefScale;
     for(let line=0;line<linesShown;line++){
       const lineData=pageLines[line];
       if(!lineData||lineData.mIdxs.length===0)continue;
       const staffTop=STAFF_TOP_Y+line*STAFF_SP;
       const lsm=lineData.mIdxs[0];
-      const isFirstDocLine=(pageStart===0&&line===0);
+      const isFirstDocLine=(layout&&layout._pageSystem)?layout._pageSystem.isFirst:(pageStart===0&&line===0);
       // 5 lignes de portee
       for(let i=0;i<5;i++){
         const y=staffTop+i*LINE_GAP;
@@ -1593,7 +1607,9 @@
       }
       // Positions cumulatives de chaque mesure (xL,xR)
       const measureBounds=[];
-      if(single){
+      if(layout&&layout._pageBounds){
+        for(let i=0;i<lineData.mIdxs.length;i++){const mi=lineData.mIdxs[i];const b=layout._pageBounds[mi]||{xL:LEFT_PAD,xR:LEFT_PAD+24,measureW:24};measureBounds.push({xL:b.xL,xR:b.xR,measureW:b.measureW});}
+      } else if(single){
         let curX=layout.firstX;
         for(let i=0;i<lineData.mIdxs.length;i++){
           const mi=lineData.mIdxs[i];
@@ -2039,12 +2055,159 @@
     return {single:true,N,widthUnits,firstX,totalUnits,headerUnits};
   }
 
+  // ===== MODE PAGE : systèmes empilés (défilement vertical), barres alignées entre voix =====
+  function renderScorePage(cont,tracks,visibleIdx){
+    const maxVersesVisible=state.viewFlags.lyrics?Math.max(1,...visibleIdx.map(i=>countVersesTrack((tracks[i]||{}).measures))):1;
+    const voiceUnitH=STAFF_TOP_Y+(STAFF_SPACING+Math.max(0,maxVersesVisible-1)*10+(state.viewFlags.lyrics?Math.max(0,state.lyricOffset||0):0))+10;
+    const numV=visibleIdx.length;
+    const LABEL_PX=16,GAP=4,SYS_GAP=14;
+    const zoomF=(state.zoom||100)/100;
+    let voicePxH=Math.max(70,Math.round(150*zoomF));
+    const cw=cont.clientWidth||600;
+    const pxPerUnit=voicePxH/voiceUnitH;
+    const sysPxW=Math.max(220,cw-22); // réserve pour l'ascenseur vertical
+    const sysUnitsW=sysPxW/pxPerUnit;
+    const base=computeSharedLayout(visibleIdx);
+    const wu=base.widthUnits, N=base.N, headerStart=base.firstX;
+    const usableW=Math.max(40,sysUnitsW-headerStart-RIGHT_PAD);
+    // 1) découpage en systèmes (largeurs partagées → barres alignées)
+    const systems=[]; let cur=[],curW=0;
+    for(let mi=0;mi<N;mi++){const w=wu[mi];if(cur.length>0&&curW+w>usableW){systems.push(cur);cur=[];curW=0;}cur.push(mi);curW+=w;}
+    if(cur.length)systems.push(cur);
+    if(!systems.length)systems.push([]);
+    // 2) densité de référence (les systèmes pleins fixent l'échelle ; le dernier ne s'étire pas au-delà)
+    let refScale=Infinity;
+    for(let si=0;si<systems.length;si++){const sys=systems[si];if(!sys.length)continue;const sum=sys.reduce((a,mi)=>a+wu[mi],0)||1;const sc=usableW/sum;if(si<systems.length-1&&sc<refScale)refScale=sc;}
+    if(!isFinite(refScale)||refScale<=0){const sum=(systems[0]||[]).reduce((a,mi)=>a+wu[mi],0)||1;refScale=usableW/sum;}
+    // 3) rendu
+    const saved=state.activeTrack;
+    {const tr=state.tracks[saved];const meas=tr&&tr.measures&&tr.measures[state.sel.m];let off=0;if(meas)for(let k=0;k<state.sel.s&&k<meas.length;k++)off+=effDur(meas[k]);state._selTimeOff=off;}
+    const topVisible=(visibleIdx&&visibleIdx.length)?visibleIdx[0]:saved;
+    const single=(numV===1);
+    let html='';
+    systems.forEach((sys,si)=>{
+      const isLast=(si===systems.length-1);
+      const sum=sys.reduce((a,mi)=>a+wu[mi],0)||1;
+      const scale=Math.min(usableW/sum,refScale);
+      const bounds={}; let curX=headerStart;
+      sys.forEach(mi=>{const w=wu[mi]*scale;bounds[mi]={xL:curX,xR:curX+w,measureW:w};curX+=w;});
+      const sysViewW=isLast?Math.min(sysUnitsW,curX+RIGHT_PAD):sysUnitsW;
+      const blockPxW=Math.round(sysViewW*pxPerUnit);
+      const layout={single:false,N:N,widthUnits:wu,firstX:headerStart,totalUnits:sysViewW,headerUnits:base.headerUnits,
+        _pageSystem:{mIdxs:sys,isFirst:(si===0)},_pageBounds:bounds,_pageViewW:sysViewW,_pageRefScale:refScale,
+        _activeTrack:saved,_realActive:saved,_topVisible:topVisible};
+      let sysHtml='<div class="page-system" data-sys="'+si+'" style="margin-bottom:'+SYS_GAP+'px;">';
+      visibleIdx.forEach(i=>{
+        state.activeTrack=i; layout._renderTrack=i;
+        const svg=renderScoreOnce(layout);
+        const tr=tracks[i];
+        const isActive=(i===saved);
+        const label=(tr.name||('V'+(i+1)))+(tr.mute?' [muet]':'');
+        const border=isActive&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
+        const bg=isActive&&!single?'background:#f4f8fd;':'background:#ffffff;';
+        const labelHtml=single?'':'<div style="position:absolute;top:1px;left:8px;font-size:11px;font-weight:700;color:'+(isActive?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';
+        sysHtml+='<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+'border-radius:6px;margin-bottom:'+GAP+'px;padding-top:'+(single?2:LABEL_PX)+'px;width:'+blockPxW+'px;height:'+voicePxH+'px;box-sizing:content-box;">'+labelHtml+'<div class="voice-svg" style="width:'+blockPxW+'px;height:'+voicePxH+'px;">'+svg+'</div></div>';
+      });
+      sysHtml+='</div>';
+      html+=sysHtml;
+    });
+    state.activeTrack=saved;
+    cont.style.overflowX='hidden';
+    cont.style.overflowY='auto';
+    let wordsHtml='';
+    if(state.viewFlags.lyrics){const w=(state.headers.W||'').trim();if(w){const lines=w.split('\n').map(l=>escXml(l)).join('<br>');wordsHtml='<div class="score-words" style="max-width:'+Math.max(sysPxW,320)+'px;margin:8px 2px 4px;padding:8px 12px;border-top:1px solid #e2e0d8;font-size:12px;line-height:1.5;color:#33312c;">'+lines+'</div>';}}
+    cont.innerHTML=html+wordsHtml;
+    if(numV>1){document.querySelectorAll('#score .track-block').forEach(el=>{el.addEventListener('click',(e)=>{const idx=parseInt(el.dataset.track,10);if(!isNaN(idx)&&idx!==state.activeTrack){state.activeTrack=idx;state.sel={m:0,s:0};render();}});});}
+    state._pageCache={systems};
+    ensureSelectionVisible();
+  }
+  function ensureSelectionVisiblePage(cont){
+    const pc=state._pageCache;if(!pc||!pc.systems)return;
+    const mi=state.sel.m; let si=-1;
+    for(let k=0;k<pc.systems.length;k++){if(pc.systems[k].indexOf(mi)>=0){si=k;break;}}
+    if(si<0)return;
+    const el=cont.querySelector('.page-system[data-sys="'+si+'"]');
+    if(!el)return;
+    const r=el.getBoundingClientRect(), rc=cont.getBoundingClientRect();
+    const top=r.top-rc.top+cont.scrollTop, bot=top+r.height;
+    const viewT=cont.scrollTop, viewB=cont.scrollTop+cont.clientHeight, margin=12;
+    if(top<viewT+margin)cont.scrollTop=Math.max(0,top-margin);
+    else if(bot>viewB-margin)cont.scrollTop=Math.max(0,bot-cont.clientHeight+margin);
+  }
+  // ===== TABLATURE (guitare 6 cordes EADGBE / banjo ténor irlandais 4 cordes GDAE) =====
+  function tabFretFor(midi,open){
+    let m=midi; while(m<open[0]&&m<200)m+=12; // remonter par octaves si trop grave pour être jouable
+    let best=null;
+    for(let s=0;s<open.length;s++){const fr=m-open[s];if(fr<0||fr>24)continue;if(best===null||fr<best.fret)best={str:s,fret:fr};}
+    return best;
+  }
+  function renderTablature(cont){
+    const isB=(state.tabMode==='banjo');
+    const tuning=isB?{names:['G','D','A','E'],open:[43,50,57,64]}:{names:['E','A','D','G','B','E'],open:[40,45,50,55,59,64]};
+    const nStr=tuning.open.length;
+    const tr=(state.tracks&&state.tracks[state.activeTrack])||null;
+    const measures=(tr&&tr.measures)?tr.measures:[];
+    const STR_GAP=14,TOP=24,LEFT=44,RIGHT=12,NOTE_W=21,SYS_GAP=26;
+    const ink='#1a1a1a',sel='#e24b4a';
+    const cw=Math.max(320,(cont.clientWidth||700)-18);
+    const usableW=cw-LEFT-RIGHT;
+    const measW=measures.map(m=>Math.max(NOTE_W,(m.length||1)*NOTE_W)+4);
+    const lines=[]; let curL=[],curW=0;
+    for(let mi=0;mi<measures.length;mi++){const w=measW[mi];if(curL.length>0&&curW+w>usableW){lines.push(curL);curL=[];curW=0;}curL.push(mi);curW+=w;}
+    if(curL.length)lines.push(curL);
+    if(!lines.length)lines.push([]);
+    const sysH=TOP+(nStr-1)*STR_GAP+18;
+    const totalH=lines.length*(sysH+SYS_GAP)+10;
+    const selM=state.sel.m,selS=state.sel.s;
+    let svg='<svg width="'+cw+'" height="'+totalH+'" viewBox="0 0 '+cw+' '+totalH+'" xmlns="http://www.w3.org/2000/svg">';
+    let yBase=6;
+    lines.forEach(ln=>{
+      const top=yBase+TOP;
+      const bot=top+(nStr-1)*STR_GAP;
+      for(let s=0;s<nStr;s++){const y=top+s*STR_GAP;svg+='<line x1="'+LEFT+'" y1="'+y+'" x2="'+(cw-RIGHT)+'" y2="'+y+'" stroke="'+ink+'" stroke-width="0.5" opacity="0.6"/>';}
+      // noms de cordes : la plus grave (open[0]) EN BAS, la plus aiguë EN HAUT
+      for(let s=0;s<nStr;s++){const y=bot-s*STR_GAP;svg+='<text x="'+(LEFT-11)+'" y="'+(y+3)+'" font-size="9" font-family="sans-serif" fill="'+ink+'" text-anchor="middle">'+tuning.names[s]+'</text>';}
+      svg+='<line x1="'+LEFT+'" y1="'+top+'" x2="'+LEFT+'" y2="'+bot+'" stroke="'+ink+'" stroke-width="1"/>';
+      let x=LEFT;
+      ln.forEach(mi=>{
+        const m=measures[mi]||[];
+        const n=Math.max(1,m.length);
+        for(let si=0;si<m.length;si++){
+          const sl=m[si];
+          const cx=x+(si+0.5)*NOTE_W;
+          svg+='<rect x="'+(cx-NOTE_W/2)+'" y="'+(top-8)+'" width="'+NOTE_W+'" height="'+((nStr-1)*STR_GAP+16)+'" fill="transparent" data-m="'+mi+'" data-s="'+si+'" style="cursor:pointer"/>';
+          if(sl.type!=='note')continue;
+          const ks=keyAt(mi),shift=clefSoundShift(clefAt(mi));
+          const isSel=(mi===selM&&si===selS);
+          chordList(sl).forEach(nn=>{
+            const midi=midiOfNote(nn.note,nn.octave,nn.acc,ks)+shift;
+            const f=tabFretFor(midi,tuning.open);
+            if(!f)return;
+            const y=bot-f.str*STR_GAP;
+            const t=''+f.fret, w=t.length*6+3;
+            svg+='<rect x="'+(cx-w/2)+'" y="'+(y-6)+'" width="'+w+'" height="12" fill="#ffffff"/>';
+            svg+='<text x="'+cx+'" y="'+(y+3.5)+'" font-size="10" font-family="sans-serif" fill="'+(isSel?sel:ink)+'" font-weight="'+(isSel?'700':'500')+'" text-anchor="middle">'+t+'</text>';
+          });
+        }
+        x+=n*NOTE_W;
+        svg+='<line x1="'+x+'" y1="'+top+'" x2="'+x+'" y2="'+bot+'" stroke="'+ink+'" stroke-width="0.8" opacity="0.8"/>';
+      });
+      yBase+=sysH+SYS_GAP;
+    });
+    svg+='</svg>';
+    cont.style.overflowX='hidden';cont.style.overflowY='auto';
+    const info=(isB?'Banjo ténor irlandais \u2014 accordage G D A E':'Guitare \u2014 accordage E A D G B E')+(tr?(' \u2014 voix : '+escXml(tr.name||('V'+(state.activeTrack+1)))):'');
+    cont.innerHTML='<div style="padding:5px 10px;font-size:12px;color:#5f5e5a;border-bottom:1px solid #ece9e0;margin-bottom:4px;">'+escXml(info)+'</div>'+svg;
+  }
   function renderScore(){
     const cont=document.getElementById('score');if(!cont)return;
+    if(state.tabMode){renderTablature(cont);return;}
     const tracks=state.tracks||[];
     // La piste active est TOUJOURS visible, plus les autres pistes marquées visibles.
     let visibleIdx=tracks.map((t,i)=>(i===state.activeTrack||t.visible!==false)?i:-1).filter(i=>i>=0);
     if(!visibleIdx.length)visibleIdx=[state.activeTrack];
+
+    if((state.scoreLayout||'line')==='page'){renderScorePage(cont,tracks,visibleIdx);return;}
 
     const layout=computeSharedLayout(visibleIdx);
     // Échelle uniforme : on dimensionne chaque voix pour que toutes tiennent en hauteur (scroll vertical en secours)
@@ -2130,6 +2293,7 @@
   // Fait défiler #score horizontalement pour que la mesure sélectionnée soit visible (play + navigation)
   function ensureSelectionVisible(){
     const cont=document.getElementById('score');
+    if(cont&&(state.scoreLayout||'line')==='page'){ensureSelectionVisiblePage(cont);return;}
     const lc=state._layoutCache;
     if(!cont||!lc||!lc.layout)return;
     const mi=state.sel.m;
@@ -2287,7 +2451,7 @@
     {const pb=document.getElementById('btn-pagebreak');if(pb)pb.classList.toggle('active',!!(brA&&brA.page));}
     const partV=state.parts&&state.parts[state.sel.m];const pvEl=document.getElementById('part-val');if(pvEl)pvEl.textContent=partV||'—';const pBtn=document.getElementById('btn-part');if(pBtn)pBtn.classList.toggle('active',!!partV);
     const vmBtn=document.getElementById('btn-viewmode');if(vmBtn)vmBtn.textContent=state.viewmode?'✎':'👁';
-    const tc=document.getElementById('btn-toggle-chords');if(tc)tc.classList.toggle('active',!!state.viewFlags.chords);
+    const tc=document.getElementById('btn-toggle-chords');if(tc)tc.classList.toggle('active',!!state.viewFlags.chords);const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.classList.toggle('active',(state.scoreLayout||'line')!=='page');const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.classList.toggle('active',(state.scoreLayout||'line')==='page');const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.classList.toggle('active',state.tabMode==='guitar');const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.classList.toggle('active',state.tabMode==='banjo');
     const tt=document.getElementById('btn-toggle-text');if(tt)tt.classList.toggle('active',!!state.viewFlags.text);
     const tl=document.getElementById('btn-toggle-lyrics');if(tl)tl.classList.toggle('active',!!state.viewFlags.lyrics);
     const tp=document.getElementById('btn-toggle-parts');if(tp)tp.classList.toggle('active',!!state.viewFlags.parts);
@@ -2861,6 +3025,11 @@
 
   function bindToggle(id,key){const el=document.getElementById(id);if(!el)return;el.addEventListener('click',()=>{state.viewFlags[key]=!state.viewFlags[key];render()})}
   bindToggle('btn-toggle-chords','chords');
+  {const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.addEventListener('click',()=>{state.tabMode=null;state.scoreLayout='line';render();});}
+  {const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.addEventListener('click',()=>{state.tabMode=null;state.scoreLayout='page';if(state._pageCache)state._pageCache=null;render();});}
+  {const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.addEventListener('click',()=>{state.tabMode=(state.tabMode==='guitar')?null:'guitar';render();});}
+  {const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.addEventListener('click',()=>{state.tabMode=(state.tabMode==='banjo')?null:'banjo';render();});}
+  {const _to=document.getElementById('btn-tab-off');if(_to)_to.addEventListener('click',()=>{if(state.tabMode){state.tabMode=null;render();}});}
   bindToggle('btn-toggle-text','text');
   bindToggle('btn-toggle-lyrics','lyrics');
   bindToggle('btn-toggle-parts','parts');
