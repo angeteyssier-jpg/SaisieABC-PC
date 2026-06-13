@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.60 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.62 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -457,7 +457,7 @@
         </div>
       </div>
       <div class="tab-panel" data-panel="tab">
-        <div style="font-size:12px;color:#5f5e5a;margin:2px 0 8px;">Tablature de la voix active</div>
+        <div style="font-size:12px;color:#5f5e5a;margin:2px 0 8px;">Tablature sous la portée</div>
         <div class="row-grid row-2">
           <button class="k" id="btn-tab-guitar" style="font-size:14px;" title="Tablature guitare 6 cordes (E A D G B E)">🎸 Guitare</button>
           <button class="k" id="btn-tab-banjo" style="font-size:14px;" title="Banjo ténor irlandais 4 cordes (G D A E)">🪕 Banjo</button>
@@ -465,6 +465,7 @@
         <div class="row-grid row-2" style="margin-top:6px;">
           <button class="k" id="btn-tab-off" style="font-size:13px;grid-column:1 / -1;">↩ Revenir à la portée</button>
         </div>
+        <div id="tab-voice-list" style="margin-top:10px;"></div>
       </div>
     </div>
 
@@ -526,7 +527,9 @@
     vol:(opts.vol!==undefined)?opts.vol:100,
     mute:!!opts.mute,
     visible:(opts.visible!==undefined)?opts.visible:true,
-    instrument:(opts.instrument!==undefined)?opts.instrument:0
+    instrument:(opts.instrument!==undefined)?opts.instrument:0,
+    tabShow:(opts.tabShow!==undefined)?opts.tabShow:true,
+    tabOctave:opts.tabOctave||0
   }}
   const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:80,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all',scoreLayout:'line',tabMode:null};
   // Aliasing : state.<champ> lit/écrit la piste active
@@ -1504,7 +1507,10 @@
     // Décalage vertical des paroles réglable par l'utilisateur (0 = position par défaut).
     // Positif = paroles plus bas (on réserve alors de la place pour ne pas chevaucher le système suivant).
     const lyricOff=state.lyricOffset||0;
-    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0);
+    const __tabTr=state.tracks[state.activeTrack]||null;const __tabOn=!!state.tabMode&&!!__tabTr&&__tabTr.tabShow!==false;const __tabOct=__tabTr?(__tabTr.tabOctave||0):0;
+    const __tabTun=(state.tabMode==='banjo')?{names:['G','D','A','E'],open:[43,50,57,64]}:{names:['E','A','D','G','B','E'],open:[40,45,50,55,59,64]};
+    const __TAB_GAP=6, __tabH=(__tabTun.open.length-1)*__TAB_GAP+16;
+    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0)+(__tabOn?__tabH:0);
     // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SP));
     const SCORE_W=single?layout.totalUnits:((layout&&layout._pageViewW)||viewW);
@@ -1567,7 +1573,8 @@
     }
     if(!isFinite(refScale)||refScale<=0)refScale=1;
     if(layout&&layout._pageRefScale)refScale=layout._pageRefScale;
-    for(let line=0;line<linesShown;line++){
+    let __tabMarks=[];
+    for(let line=0;line<linesShown;line++){__tabMarks=[];
       const lineData=pageLines[line];
       if(!lineData||lineData.mIdxs.length===0)continue;
       const staffTop=STAFF_TOP_Y+line*STAFF_SP;
@@ -1824,6 +1831,7 @@
         });
         m.forEach((t,si)=>{
           const cx=cxBySlot[si];
+          if(__tabOn&&t.type==='note'){const __set=slotMidiSet(m,si,keyAt(mIdx));const __sh=clefSoundShift(clefAt(mIdx))+12*__tabOct;if(__set)__set.forEach(__md=>{const __f=tabFretFor(__md+__sh,__tabTun.open);if(__f)__tabMarks.push({cx:cx,str:__f.str,fret:__f.fret,sel:(mIdx===state.sel.m&&si===state.sel.s)});});}
           // Rectangle cliquable invisible sur toute la zone du slot (selection par clic)
           svg+='<rect x="'+(cx-wBySlot[si]/2)+'" y="'+staffTop+'" width="'+wBySlot[si]+'" height="'+(4*LINE_GAP+20)+'" fill="transparent" pointer-events="all" data-m="'+mIdx+'" data-s="'+si+'" style="cursor:pointer"/>';
           const iS=(mIdx===hlM&&si===hlS);
@@ -2023,7 +2031,9 @@
         const x2=pp.cx+12;
         svg+='<path d="M '+(pp.cx+3)+' '+(pp.y+3)+' Q '+(pp.cx+8)+' '+(pp.y+8)+' '+x2+' '+(pp.y+3)+'" stroke="#185fa5" stroke-width="1" fill="none" stroke-dasharray="2 2" opacity="0.9"/>';
       });
+      if(__tabOn)svg+=__tabStripSvg(true, staffTop+STAFF_SP-__tabH+6, measureBounds, __tabMarks, __tabTun, __TAB_GAP, LEFT_PAD, SCORE_W-RIGHT_PAD);
     }
+    if(layout)layout._lastScoreH=scoreH;
     svg+='</svg>';
     return svg;
   }
@@ -2100,13 +2110,14 @@
       visibleIdx.forEach(i=>{
         state.activeTrack=i; layout._renderTrack=i;
         const svg=renderScoreOnce(layout);
+        const bH=Math.max(voicePxH,Math.round((layout._lastScoreH||voiceUnitH)*pxPerUnit));
         const tr=tracks[i];
         const isActive=(i===saved);
         const label=(tr.name||('V'+(i+1)))+(tr.mute?' [muet]':'');
         const border=isActive&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
         const bg=isActive&&!single?'background:#f4f8fd;':'background:#ffffff;';
         const labelHtml=single?'':'<div style="position:absolute;top:1px;left:8px;font-size:11px;font-weight:700;color:'+(isActive?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';
-        sysHtml+='<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+'border-radius:6px;margin-bottom:'+GAP+'px;padding-top:'+(single?2:LABEL_PX)+'px;width:'+blockPxW+'px;height:'+voicePxH+'px;box-sizing:content-box;">'+labelHtml+'<div class="voice-svg" style="width:'+blockPxW+'px;height:'+voicePxH+'px;">'+svg+'</div></div>';
+        sysHtml+='<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+'border-radius:6px;margin-bottom:'+GAP+'px;padding-top:'+(single?2:LABEL_PX)+'px;width:'+blockPxW+'px;height:'+bH+'px;box-sizing:content-box;">'+labelHtml+'<div class="voice-svg" style="width:'+blockPxW+'px;height:'+bH+'px;">'+svg+'</div></div>';
       });
       sysHtml+='</div>';
       html+=sysHtml;
@@ -2135,6 +2146,37 @@
     else if(bot>viewB-margin)cont.scrollTop=Math.max(0,bot-cont.clientHeight+margin);
   }
   // ===== TABLATURE (guitare 6 cordes EADGBE / banjo ténor irlandais 4 cordes GDAE) =====
+  function __tabStripSvg(on,tabTop,bounds,marks,tun,gap,xL0,xR0){
+    if(!on||!bounds||!bounds.length)return '';
+    const n=tun.open.length, ink='#1a1a1a', sel='#e24b4a', bot=tabTop+(n-1)*gap;
+    let s='<rect x="'+xL0+'" y="'+(tabTop-3)+'" width="'+(xR0-xL0)+'" height="'+((n-1)*gap+6)+'" fill="#fbf7ec" opacity="0.6"/>';
+    for(let i=0;i<n;i++){const y=tabTop+i*gap;s+='<line x1="'+xL0+'" y1="'+y+'" x2="'+xR0+'" y2="'+y+'" stroke="'+ink+'" stroke-width="0.4" opacity="0.55"/>';}
+    for(let i=0;i<n;i++){const y=bot-i*gap;s+='<text x="'+(xL0-9)+'" y="'+(y+2.4)+'" font-size="6" font-family="sans-serif" fill="'+ink+'" text-anchor="middle">'+tun.names[i]+'</text>';}
+    s+='<line x1="'+xL0+'" y1="'+tabTop+'" x2="'+xL0+'" y2="'+bot+'" stroke="'+ink+'" stroke-width="0.7"/>';
+    bounds.forEach(b=>{s+='<line x1="'+b.xR+'" y1="'+tabTop+'" x2="'+b.xR+'" y2="'+bot+'" stroke="'+ink+'" stroke-width="0.6" opacity="0.7"/>';});
+    marks.forEach(mk=>{const y=bot-mk.str*gap;const t=''+mk.fret;const w=t.length*4.2+2;s+='<rect x="'+(mk.cx-w/2)+'" y="'+(y-4)+'" width="'+w+'" height="8" fill="#fbf7ec"/>';s+='<text x="'+mk.cx+'" y="'+(y+2.7)+'" font-size="7" font-family="sans-serif" fill="'+(mk.sel?sel:ink)+'" font-weight="'+(mk.sel?'700':'600')+'" text-anchor="middle">'+t+'</text>';});
+    return s;
+  }
+  function renderTabPanel(){
+    const host=document.getElementById('tab-voice-list');if(!host)return;
+    if(!state.tabMode){host.innerHTML='<div style="font-size:11px;color:#8a8880;">Choisissez un instrument ci-dessus pour afficher la tablature sous la portée.</div>';return;}
+    const tracks=state.tracks||[];
+    let h='<div style="font-size:11px;color:#5f5e5a;margin-bottom:6px;">Voix en tablature (défaut : toutes) &amp; octave propre à la tab :</div>';
+    tracks.forEach((t,i)=>{
+      const on=t.tabShow!==false, oct=t.tabOctave||0, nm=escXml(t.name||('V'+(i+1)));
+      h+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'
+        +'<button class="k tabv-show'+(on?' active':'')+'" data-i="'+i+'" style="font-size:12px;min-width:30px;" title="Afficher/masquer la tablature de cette voix">'+(on?'\u2611':'\u2610')+'</button>'
+        +'<span style="flex:1;font-size:12px;'+(on?'':'opacity:0.45;')+'">'+nm+'</span>'
+        +'<button class="k tabv-octd" data-i="'+i+'" style="font-size:11px;min-width:30px;" title="Octave tab \u22121">\u22128va</button>'
+        +'<span style="font-size:11px;min-width:26px;text-align:center;">'+(oct>0?'+':'')+oct+'</span>'
+        +'<button class="k tabv-octu" data-i="'+i+'" style="font-size:11px;min-width:30px;" title="Octave tab +1">+8va</button>'
+        +'</div>';
+    });
+    host.innerHTML=h;
+    host.querySelectorAll('.tabv-show').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabShow=!(t.tabShow!==false);renderTabPanel();render();}}));
+    host.querySelectorAll('.tabv-octd').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabOctave=Math.max(-3,(t.tabOctave||0)-1);renderTabPanel();render();}}));
+    host.querySelectorAll('.tabv-octu').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabOctave=Math.min(3,(t.tabOctave||0)+1);renderTabPanel();render();}}));
+  }
   function tabFretFor(midi,open){
     let m=midi; while(m<open[0]&&m<200)m+=12; // remonter par octaves si trop grave pour être jouable
     let best=null;
@@ -2201,7 +2243,6 @@
   }
   function renderScore(){
     const cont=document.getElementById('score');if(!cont)return;
-    if(state.tabMode){renderTablature(cont);return;}
     const tracks=state.tracks||[];
     // La piste active est TOUJOURS visible, plus les autres pistes marquées visibles.
     let visibleIdx=tracks.map((t,i)=>(i===state.activeTrack||t.visible!==false)?i:-1).filter(i=>i>=0);
@@ -2247,6 +2288,7 @@
       // isActiveVoice se compare à la vraie voix active (saved), pas à state.activeTrack (qui boucle)
       layout._realActive=saved;
       const svg=renderScoreOnce(layout);
+      const bH=Math.max(voicePxH,Math.round((layout._lastScoreH||voiceUnitH)*pxPerUnit));
       const tr=tracks[i];
       const isActive=(i===saved);
       const single=(numV===1);
@@ -2257,9 +2299,9 @@
       blocks.push(
         '<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+'border-radius:6px;'
         +'margin-bottom:'+GAP+'px;padding-top:'+(single?2:LABEL_PX)+'px;'
-        +'width:'+contentPxW+'px;height:'+voicePxH+'px;box-sizing:content-box;">'
+        +'width:'+contentPxW+'px;height:'+bH+'px;box-sizing:content-box;">'
         +labelHtml
-        +'<div class="voice-svg" style="width:'+contentPxW+'px;height:'+voicePxH+'px;">'+svg+'</div>'
+        +'<div class="voice-svg" style="width:'+contentPxW+'px;height:'+bH+'px;">'+svg+'</div>'
         +'</div>'
       );
     });
@@ -2883,6 +2925,7 @@
       if(state.viewmode){state.viewmode=false;document.getElementById('app').classList.remove('viewmode');render()}
     }
     if(name==='pistes')renderTracksPanel();
+    if(name==='tab')renderTabPanel();
   }
   // Panneau Pistes : un bloc par piste avec sélection active + Voir + Renommer + Supprimer + Ajouter
   function renderTracksPanel(){
@@ -3025,11 +3068,11 @@
 
   function bindToggle(id,key){const el=document.getElementById(id);if(!el)return;el.addEventListener('click',()=>{state.viewFlags[key]=!state.viewFlags[key];render()})}
   bindToggle('btn-toggle-chords','chords');
-  {const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.addEventListener('click',()=>{state.tabMode=null;state.scoreLayout='line';render();});}
-  {const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.addEventListener('click',()=>{state.tabMode=null;state.scoreLayout='page';if(state._pageCache)state._pageCache=null;render();});}
-  {const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.addEventListener('click',()=>{state.tabMode=(state.tabMode==='guitar')?null:'guitar';render();});}
-  {const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.addEventListener('click',()=>{state.tabMode=(state.tabMode==='banjo')?null:'banjo';render();});}
-  {const _to=document.getElementById('btn-tab-off');if(_to)_to.addEventListener('click',()=>{if(state.tabMode){state.tabMode=null;render();}});}
+  {const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='line'){state.scoreLayout='line';render();}});}
+  {const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='page'){state.scoreLayout='page';if(state._pageCache)state._pageCache=null;render();}});}
+  {const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.addEventListener('click',()=>{state.tabMode=(state.tabMode==='guitar')?null:'guitar';renderTabPanel();render();});}
+  {const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.addEventListener('click',()=>{state.tabMode=(state.tabMode==='banjo')?null:'banjo';renderTabPanel();render();});}
+  {const _to=document.getElementById('btn-tab-off');if(_to)_to.addEventListener('click',()=>{if(state.tabMode){state.tabMode=null;renderTabPanel();render();}});}
   bindToggle('btn-toggle-text','text');
   bindToggle('btn-toggle-lyrics','lyrics');
   bindToggle('btn-toggle-parts','parts');
