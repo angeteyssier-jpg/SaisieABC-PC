@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.62 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.64 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -574,6 +574,63 @@
     if(state.openedFileName)return sanitizeFilenameKeepSpaces(state.openedFileName);
     const title=(state.headers.T&&state.headers.T.trim().split('\n')[0])||'';
     return title?sanitizeFilenameKeepSpaces(title):'morceau';
+  }
+
+  // ===== Enregistrement fichier : présaisie (nom + extension) + Enregistrer / Enregistrer sous =====
+  let savedFileHandle=null, savedFileHandleExt=null;   // handle File System Access du dernier fichier ecrit (si dispo)
+  function buildMxlBytes(){
+    const xml=buildMusicXml();
+    const containerXml='<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="score.xml" media-type="application/vnd.recordare.musicxml"/></rootfiles></container>\n';
+    const files=[
+      {name:'mimetype',data:strToUint8('application/vnd.recordare.musicxml')},
+      {name:'META-INF/container.xml',data:strToUint8(containerXml)},
+      {name:'score.xml',data:strToUint8(xml)}
+    ];
+    return makeZip(files);
+  }
+  async function doSave(base,ext,mode){
+    // ext : '.abc' ou '.mxl' ; mode : 'save' (reutilise le fichier precedent si possible) ou 'saveas'
+    let data, ctype, accept;
+    if(ext==='.mxl'){ data=buildMxlBytes(); ctype='application/vnd.recordare.musicxml'; accept={'application/vnd.recordare.musicxml':['.mxl']}; }
+    else { data=buildAbcText(); ctype='text/plain'; accept={'text/plain':['.abc']}; }
+    const blob=new Blob([data],{type:ctype});
+    if(window.showSaveFilePicker){
+      try{
+        let handle=null;
+        if(mode==='save' && savedFileHandle && savedFileHandleExt===ext){
+          handle=savedFileHandle;            // Enregistrer : reecriture directe du meme fichier, sans boite de dialogue
+        } else {
+          handle=await window.showSaveFilePicker({suggestedName:base+ext,types:[{description:ext.slice(1).toUpperCase(),accept:accept}]});
+        }
+        const w=await handle.createWritable(); await w.write(blob); await w.close();
+        savedFileHandle=handle; savedFileHandleExt=ext;
+        const nm=(handle.name||(base+ext)); state.openedFileName=nm.replace(/\.[^.]+$/,''); state.openedFileExt=ext; render();
+        flash('Enregistre : '+nm); return;
+      }catch(e){ if(e&&e.name==='AbortError')return; /* sinon : repli telechargement ci-dessous */ }
+    }
+    // Repli (Firefox/Safari ou API indisponible) : telechargement classique
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=base+ext;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+    state.openedFileName=base; state.openedFileExt=ext; render(); flash('Telecharge : '+base+ext);
+  }
+  function openSavePanel(kind){
+    const ext=(kind==='mxl')?'.mxl':'.abc';
+    const base=proposedBaseName();
+    const body='<div class="row" style="display:flex;align-items:center;gap:6px;"><span class="field-label">Nom :</span>'
+      +'<input id="save-name" type="text" value="'+base.replace(/"/g,'&quot;')+'" style="flex:1;"/>'
+      +'<span style="color:#888;font-weight:600;">'+ext+'</span></div>'
+      +'<small style="color:#888;display:block;margin-top:6px;">\u00ab Enregistrer \u00bb reecrit le fichier precedent sans redemander (Chrome/Edge). \u00ab Enregistrer sous\u2026 \u00bb ouvre toujours la boite de dialogue Windows.</small>';
+    openPanel({title:'Enregistrer ('+ext.slice(1).toUpperCase()+')',body:body,hideActions:true,
+      extraButtons:['Annuler','Enregistrer sous\u2026','Enregistrer'],
+      onMount:()=>{const el=document.getElementById('save-name');if(el){el.focus();el.select();}},
+      onExtra:(w)=>{
+        if(w==='Annuler'){closePanel();return;}
+        const raw=document.getElementById('save-name').value;
+        const base2=sanitizeFilenameKeepSpaces(raw.replace(new RegExp('\\'+ext+'$','i'),''))||proposedBaseName();
+        const mode=(w==='Enregistrer')?'save':'saveas';
+        closePanel();
+        doSave(base2,ext,mode);
+      }
+    });
   }
 
   const history={stack:[],pos:-1,max:100};
@@ -1394,7 +1451,7 @@
   function slotChordNotes(slot){if(!slot||slot.type!=='note')return [];const out=[{note:slot.note,octave:slot.octave,acc:slot.acc||''}];if(slot.stack)slot.stack.forEach(s=>out.push({note:s.note,octave:s.octave,acc:s.acc||''}));return out;}
   // Y des têtes communes entre deux slots (pour tracer un tie PAR hauteur tenue, accords inclus).
   function sharedTieYs(prevSlot,curSlot,staffTop,c){const A=slotChordNotes(prevSlot),B=slotChordNotes(curSlot),res=[];A.forEach(a=>{if(B.some(b=>b.note===a.note&&b.octave===a.octave&&(b.acc||'')===(a.acc||''))){res.push(noteY(staffTop,stepIndex(a.note,a.octave),c));}});return res;}
-  const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:-4,C:-7,G:-3,D:-6,A:-9,E:-5,B:-8},BFS={B:-8,E:-5,A:-9,D:-6,G:-10,C:-7,F:-4};
+  const TSS={F:10,C:7,G:11,D:8,A:5,E:9,B:6},TFS={B:6,E:9,A:5,D:8,G:4,C:7,F:10},BSS={F:3,C:0,G:4,D:1,A:-2,E:2,B:-1},BFS={B:-1,E:2,A:-2,D:1,G:-3,C:0,F:3};
   // Clés d'ut : positions des altérations d'armure (indices de pas), dérivées du placement standard.
   const ASS={F:3,C:0,G:4,D:1,A:-2,E:2,B:-1},AFS={B:-1,E:2,A:-2,D:1,G:-3,C:0,F:3};            // alto (ut 3e)
   const NSS={F:-4,C:0,G:-3,D:1,A:-2,E:2,B:-1},NFS={B:-1,E:2,A:-2,D:1,G:-3,C:0,F:-4};          // tenor (ut 4e)
@@ -1507,10 +1564,10 @@
     // Décalage vertical des paroles réglable par l'utilisateur (0 = position par défaut).
     // Positif = paroles plus bas (on réserve alors de la place pour ne pas chevaucher le système suivant).
     const lyricOff=state.lyricOffset||0;
-    const __tabTr=state.tracks[state.activeTrack]||null;const __tabOn=!!state.tabMode&&!!__tabTr&&__tabTr.tabShow!==false;const __tabOct=__tabTr?(__tabTr.tabOctave||0):0;
+    const __tabTr=state.tracks[state.activeTrack]||null;const __tabOn=!!state.tabMode&&!!__tabTr&&__tabTr.tabShow!==false;const __tabOct=__tabTr?(__tabTr.tabOctave||0):0;const __tabGap=__tabTr?(__tabTr.tabGap||0):0;
     const __tabTun=(state.tabMode==='banjo')?{names:['G','D','A','E'],open:[43,50,57,64]}:{names:['E','A','D','G','B','E'],open:[40,45,50,55,59,64]};
     const __TAB_GAP=6, __tabH=(__tabTun.open.length-1)*__TAB_GAP+16;
-    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0)+(__tabOn?__tabH:0);
+    const STAFF_SP=STAFF_SPACING+Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0)+(__tabOn?(__tabH+__tabGap):0);
     // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SP));
     const SCORE_W=single?layout.totalUnits:((layout&&layout._pageViewW)||viewW);
@@ -2163,19 +2220,25 @@
     const tracks=state.tracks||[];
     let h='<div style="font-size:11px;color:#5f5e5a;margin-bottom:6px;">Voix en tablature (défaut : toutes) &amp; octave propre à la tab :</div>';
     tracks.forEach((t,i)=>{
-      const on=t.tabShow!==false, oct=t.tabOctave||0, nm=escXml(t.name||('V'+(i+1)));
+      const on=t.tabShow!==false, oct=t.tabOctave||0, gp=t.tabGap||0, nm=escXml(t.name||('V'+(i+1)));
       h+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'
         +'<button class="k tabv-show'+(on?' active':'')+'" data-i="'+i+'" style="font-size:12px;min-width:30px;" title="Afficher/masquer la tablature de cette voix">'+(on?'\u2611':'\u2610')+'</button>'
         +'<span style="flex:1;font-size:12px;'+(on?'':'opacity:0.45;')+'">'+nm+'</span>'
         +'<button class="k tabv-octd" data-i="'+i+'" style="font-size:11px;min-width:30px;" title="Octave tab \u22121">\u22128va</button>'
         +'<span style="font-size:11px;min-width:26px;text-align:center;">'+(oct>0?'+':'')+oct+'</span>'
         +'<button class="k tabv-octu" data-i="'+i+'" style="font-size:11px;min-width:30px;" title="Octave tab +1">+8va</button>'
+        +'<span style="font-size:10px;color:#8a8880;margin-left:6px;" title="Ecart portee/tablature">\u21d5</span>'
+        +'<button class="k tabv-gapd" data-i="'+i+'" style="font-size:12px;min-width:24px;" title="Rapprocher la tablature de la portee">\u2212</button>'
+        +'<span style="font-size:11px;min-width:22px;text-align:center;">'+gp+'</span>'
+        +'<button class="k tabv-gapu" data-i="'+i+'" style="font-size:12px;min-width:24px;" title="Eloigner la tablature de la portee">+</button>'
         +'</div>';
     });
     host.innerHTML=h;
     host.querySelectorAll('.tabv-show').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabShow=!(t.tabShow!==false);renderTabPanel();render();}}));
     host.querySelectorAll('.tabv-octd').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabOctave=Math.max(-3,(t.tabOctave||0)-1);renderTabPanel();render();}}));
     host.querySelectorAll('.tabv-octu').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabOctave=Math.min(3,(t.tabOctave||0)+1);renderTabPanel();render();}}));
+    host.querySelectorAll('.tabv-gapd').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabGap=Math.max(-80,(t.tabGap||0)-2);renderTabPanel();render();}}));
+    host.querySelectorAll('.tabv-gapu').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,t=state.tracks[i];if(t){t.tabGap=Math.min(80,(t.tabGap||0)+2);renderTabPanel();render();}}));
   }
   function tabFretFor(midi,open){
     let m=midi; while(m<open[0]&&m<200)m+=12; // remonter par octaves si trop grave pour être jouable
@@ -3537,8 +3600,8 @@
   document.getElementById('btn-volta2').addEventListener('click',()=>{const m=state.sel.m;const nv=(state.repeats[m]&&state.repeats[m].volta===2)?0:2;applyToAllTracks(()=>{ensureRepeat(m).volta=nv;});pushHistory();render()});
   // Sauts de mise en page (communs à toutes les voix) : fin de ligne / fin de page après la mesure.
   function ensureBreak(m){if(!state.breaks)state.breaks={};if(!state.breaks[m])state.breaks[m]={};return state.breaks[m]}
-  document.getElementById('btn-linebreak').addEventListener('click',()=>{const m=state.sel.m;const b=ensureBreak(m);b.line=!b.line;if(!b.line&&!b.page)delete state.breaks[m];pushHistory();render()});
-  document.getElementById('btn-pagebreak').addEventListener('click',()=>{const m=state.sel.m;const b=ensureBreak(m);b.page=!b.page;if(!b.line&&!b.page)delete state.breaks[m];pushHistory();render()});
+  document.getElementById('btn-linebreak').addEventListener('click',()=>{const m=state.sel.m;const b=ensureBreak(m);b.line=!b.line;if(b.line)b.page=false;if(!b.line&&!b.page)delete state.breaks[m];pushHistory();render()});
+  document.getElementById('btn-pagebreak').addEventListener('click',()=>{const m=state.sel.m;const b=ensureBreak(m);b.page=!b.page;if(b.page)b.line=false;if(!b.line&&!b.page)delete state.breaks[m];pushHistory();render()});
   document.getElementById('btn-part').addEventListener('click',()=>{
     if(!state.parts)state.parts={};
     const cur=state.parts[state.sel.m]||'';
@@ -4602,7 +4665,7 @@
   document.getElementById('ce-plus').addEventListener('click',()=>{chordEnsureMode();state._chordAddPending=true;render();});
   document.getElementById('ce-minus').addEventListener('click',()=>{chordEnsureMode();const sl=selectedSlot();if(!sl||sl.type!=='note')return;const l=chordList(sl);const ai=chordActiveIdx(sl);if(l.length<=1){const z=state.measures[state.sel.m][state.sel.s];const dur=z.dur,dot=z.dot;state.measures[state.sel.m][state.sel.s]={type:'rest',dur,dot};state.chordActive=0;state._chordAddPending=true;pushHistory();render();return}l.splice(ai,1);chordWrite(sl,l);state.chordActive=Math.max(0,Math.min(ai,l.length-1));state._chordAddPending=false;pushHistory();render();});
 
-  document.getElementById('btn-save-file').addEventListener('click',()=>{const def=proposedBaseName();const inp=prompt('Enregistrer sous — nom du fichier (sans extension) :',def);if(inp===null)return;let base=sanitizeFilenameKeepSpaces(inp.replace(/\.abc$/i,''))||def;const abc=buildAbcText();const blob=new Blob([abc],{type:'application/octet-stream'});const url=URL.createObjectURL(blob);const a=document.createElement('a');const fn=base+'.abc';a.href=url;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);state.openedFileName=base;state.openedFileExt='.abc';render();});
+  document.getElementById('btn-save-file').addEventListener('click',()=>{openSavePanel('abc');});
   const fileInput=document.getElementById('file-input');
   document.getElementById('btn-open-file').addEventListener('click',()=>fileInput.click());
   // Mémoire du dernier fichier multi-morceaux ouvert (pour le bouton Liste)
@@ -5966,29 +6029,7 @@
     let pos=0;parts.forEach(p=>{out.set(p,pos);pos+=p.length});
     return out;
   }
-  document.getElementById('btn-export-mxl').addEventListener('click',()=>{
-    try{
-      const xml=buildMusicXml();
-      const containerXml='<?xml version="1.0" encoding="UTF-8"?>\n<container><rootfiles><rootfile full-path="score.xml" media-type="application/vnd.recordare.musicxml"/></rootfiles></container>\n';
-      // Note : pour un .mxl strict, "mimetype" doit etre stocke en premier et non compresse.
-      // Comme on n'utilise que stored partout, c'est OK.
-      const files=[
-        {name:'mimetype',data:strToUint8('application/vnd.recordare.musicxml')},
-        {name:'META-INF/container.xml',data:strToUint8(containerXml)},
-        {name:'score.xml',data:strToUint8(xml)}
-      ];
-      const zipBytes=makeZip(files);
-      const blob=new Blob([zipBytes],{type:'application/vnd.recordare.musicxml'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      const fn=proposedBaseName()+'.mxl';
-      a.href=url;a.download=fn;
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }catch(e){
-      alert('Erreur export MusicXML : '+e.message);
-    }
-  });
+  document.getElementById('btn-export-mxl').addEventListener('click',()=>{openSavePanel('mxl');});
 
   document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.tempoChanges={};state.breaks={};state.openedFileName=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();pushHistory();render()}closePanel()}})});
 
