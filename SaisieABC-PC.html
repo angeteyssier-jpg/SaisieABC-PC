@@ -66,7 +66,7 @@
   .row-7 { grid-template-columns: repeat(7, 1fr); }
 
   /* Navigation : 6 boutons (à droite, au-dessus partition) */
-  .nav-bar { display: grid; grid-template-columns: repeat(6, 1fr);
+  .nav-bar { display: grid; grid-template-columns: repeat(8, 1fr);
     gap: 5px;
     background: #fdf1d8; border: 2px solid #e2b840; padding: 5px;
     border-radius: 10px; }
@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.74 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.80 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -243,8 +243,10 @@
       <div class="nav-bar">
         <button class="k" id="cur-prev">←</button>
         <button class="k" id="meas-prev">⟪</button>
+        <button class="k dbtxt" id="meas-back10">-10</button>
         <button class="k dbtxt" id="meas-start">Deb</button>
         <button class="k dbtxt" id="meas-end">Fin</button>
+        <button class="k dbtxt" id="meas-fwd10">+10</button>
         <button class="k" id="meas-next">⟫</button>
         <button class="k" id="cur-next">→</button>
       </div>
@@ -328,14 +330,14 @@
           <button class="k" id="btn-pagebreak" title="Forcer une fin de page après cette mesure (mise en page, toutes voix)" style="font-size:13px;">⤓ Fin page</button>
         </div>
         <div class="row-grid">
-          <button class="k" id="btn-shift">⇦ Décaler ⇨</button>
+          <button class="k" id="btn-shift" hidden>⇦ Décaler ⇨</button>
         </div>
         <div class="row-grid row-2">
           <button class="k" id="btn-copy-mes">📋</button>
           <button class="k" id="btn-paste-mes">📥</button>
         </div>
         <div class="row-grid">
-          <button class="k" id="btn-noterange" title="Transposer / copier / coller une portion de notes (de la note X à la note Y)" style="font-size:13px;">✂ Portion de notes…</button>
+          <button class="k" id="btn-noterange" hidden title="Transposer / copier / coller une portion de notes (de la note X à la note Y)" style="font-size:13px;">✂ Portion de notes…</button>
         </div>
         <div class="row-grid row-3">
           <button class="k" id="btn-undo-mes">↶</button>
@@ -413,6 +415,11 @@
 
       <div class="tab-panel" data-panel="partition">
         <div class="row-grid"><button class="k" id="btn-groove" style="font-size:15px;">⮂ Changer le groove…</button></div>
+        <div style="border-top:1px solid #d8d6ce;margin:8px 0 4px;"></div>
+        <div class="stepper-label">Modifier (portée au choix : note à note / voix active / toutes voix)</div>
+        <div class="row-grid" style="margin-top:4px;"><button class="k" id="btn-mod-shift" style="font-size:22px;" title="Décaler : voix active ou toutes les voix">⇦ Décaler ⇨</button></div>
+        <div class="row-grid" style="margin-top:4px;"><button class="k" id="btn-mod-transp" style="font-size:22px;" title="Transposer : note à note / voix active / toutes les voix">⇅ Transposer</button></div>
+        <div class="row-grid" style="margin-top:4px;"><button class="k" id="btn-mod-clip" style="font-size:22px;" title="Copier / Coller : note à note / voix active">📋 Copier / Coller</button></div>
         <div style="border-top:1px solid #d8d6ce;margin:8px 0 4px;"></div>
         <div class="row-grid row-2" style="margin-bottom:5px;">
           <button class="k" id="btn-scope-one" style="font-size:13px;" title="Transposer / Armure → C : voix active seulement">Voix active</button>
@@ -1908,7 +1915,8 @@
           // Rectangle cliquable invisible sur toute la zone du slot (selection par clic)
           svg+='<rect x="'+(cx-wBySlot[si]/2)+'" y="'+staffTop+'" width="'+wBySlot[si]+'" height="'+(4*LINE_GAP+20)+'" fill="transparent" pointer-events="all" data-m="'+mIdx+'" data-s="'+si+'" style="cursor:pointer"/>';
           const iS=(mIdx===hlM&&si===hlS);
-          const cl=iS?sel:ink;
+          const _inRng=isActiveVoice&&state._noteRangeHL&&state._noteRangeHL.has(mIdx+':'+si);
+          const cl=(iS||_inRng)?sel:ink;
           if(t.chord&&state.viewFlags.chords)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+escXml(t.chord)+'</text>';
           if(t.text&&state.viewFlags.text)svg+='<text x="'+cx+'" y="'+(staffTop-(t.chord&&state.viewFlags.chords?13:3))+'" font-size="6" font-style="italic" fill="'+ink+'" text-anchor="middle">'+escXml(t.text)+'</text>';
           if(t.orn&&t.orn.length){
@@ -2630,6 +2638,7 @@
   function jumpMeasure(delta){leaveChordSlot();const cur=state.sel.m;if(delta>0&&cur===state.measures.length-1){state.measures.push(buildEmptyMeasure(meterAt(cur)));state.sel={m:state.measures.length-1,s:0};pushHistory();render();return}const t=cur+delta;if(t<0||t>=state.measures.length)return;state.sel={m:t,s:0};render()}
   function jumpToStart(){state.sel={m:0,s:0};render()}
   function jumpToEnd(){state.sel={m:state.measures.length-1,s:0};render()}
+  function jumpMeasures(n){leaveChordSlot();const len=state.measures.length;let t=Math.max(0,Math.min(len-1,state.sel.m+n));state.sel={m:t,s:0};render()}
 
   const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null,events:[],eventIdx:0,markers:[],markerIdx:0,voiceMarkers:{},voiceIdx:{}};
   function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.comp=audio.ctx.createDynamicsCompressor();audio.comp.threshold.value=-10;audio.comp.knee.value=20;audio.comp.ratio.value=8;audio.comp.attack.value=0.003;audio.comp.release.value=0.25;audio.limiter=audio.ctx.createDynamicsCompressor();audio.limiter.threshold.value=-2;audio.limiter.knee.value=0;audio.limiter.ratio.value=20;audio.limiter.attack.value=0.001;audio.limiter.release.value=0.1;audio.master.connect(audio.comp);audio.comp.connect(audio.limiter);audio.limiter.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/100;if(audio.ctx.state==='suspended')audio.ctx.resume()}
@@ -3144,6 +3153,8 @@
   document.getElementById('meas-next').addEventListener('click',()=>jumpMeasure(+1));
   document.getElementById('meas-start').addEventListener('click',jumpToStart);
   document.getElementById('meas-end').addEventListener('click',jumpToEnd);
+  document.getElementById('meas-back10').addEventListener('click',()=>jumpMeasures(-10));
+  document.getElementById('meas-fwd10').addEventListener('click',()=>jumpMeasures(10));
   document.getElementById('btn-del').addEventListener('click',()=>{const sl=selectedSlot();if(state.graceMode&&sl&&sl.type==='note'&&sl.grace&&sl.grace.length){sl.grace.pop();if(!sl.grace.length){delete sl.grace;delete sl.graceSlash;}pushHistory();render();return;}if(sl){const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}});
   {const b=document.getElementById('btn-beam-cutL');if(b)b.addEventListener('click',()=>{const meas=state.measures[state.sel.m];if(!meas)return;const sl=meas[state.sel.s];if(!sl||sl.type!=='note')return;if(sl.beamBreak)delete sl.beamBreak;else sl.beamBreak=true;pushHistory();render();});}
   {const b=document.getElementById('btn-beam-cutR');if(b)b.addEventListener('click',()=>{const meas=state.measures[state.sel.m];if(!meas)return;const sl=meas[state.sel.s];if(!sl||sl.type!=='note')return;const nx=meas[state.sel.s+1];if(!nx||nx.type!=='note')return;if(nx.beamBreak)delete nx.beamBreak;else nx.beamBreak=true;pushHistory();render();});}
@@ -4383,16 +4394,19 @@
   function pasteOverwriteAt(startIdx){
     if(!noteClip||!noteClip.length)return false;
     const flat=flatSlots();
-    let i=startIdx;
-    for(let k=0;k<noteClip.length&&i<flat.length;k++,i++){
-      const pos=flat[i];
-      state.measures[pos.m][pos.s]=cloneSlot(noteClip[k]);
-    }
-    // Re-découper proprement chaque mesure touchée pour respecter les temps (notes liées),
-    // puis nettoyer les altérations.
+    // Séquence cible : avant + portion collée (écrase) + reste après. Si le collage dépasse
+    // la fin du morceau, l'excédent le prolonge (mesures ajoutées) au lieu d'être perdu.
+    const before=flat.slice(0,startIdx).map(f=>cloneSlot(f.slot));
+    const pasted=noteClip.map(s=>cloneSlot(s));
+    const after=flat.slice(startIdx+noteClip.length).map(f=>cloneSlot(f.slot));
+    const newSlots=before.concat(pasted,after);
+    // Capacités : assez de mesures pour tout contenir (extension avec la métrique de la dernière mesure).
     const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
-    const {slots}=flattenSlots();
-    state.measures=rebuildMeasuresFromSlots(slots,caps);
+    const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;
+    const totalDur=newSlots.reduce((a,s)=>a+effDur(s),0);
+    let capSum=caps.reduce((a,b)=>a+b,0);
+    while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}
+    state.measures=rebuildMeasuresFromSlots(newSlots.map(s=>({slot:s})),caps);
     cleanupAccidentals();
     return true;
   }
@@ -4403,6 +4417,7 @@
     let toIdx=fromIdx;
     let semi=0;
     let picking=0; // 0=inactif, 1=attend note début, 2=attend note fin
+    function setRangeHL(){const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);const set=new Set();for(let i=a;i<=b&&i<flat.length;i++)set.add(flat[i].m+':'+flat[i].s);state._noteRangeHL=set;}
     function rangeLabel(){
       const flat=flatSlots();
       const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);
@@ -4430,7 +4445,7 @@
     function refresh(){
       const r=document.getElementById('nr-range');if(r)r.innerHTML=rangeLabel();
       const sv=document.getElementById('nr-semi');if(sv)sv.textContent=semi;
-      const pk=document.getElementById('nr-pick');if(pk)pk.classList.toggle('active',picking>0);
+      const pk=document.getElementById('nr-pick');if(pk){pk.classList.toggle('active',picking>0);pk.textContent=(picking===1?'🎯 Cliquez la note de DÉBUT':picking===2?'🎯 Cliquez la note de FIN (début ✓)':'🎯 Sélectionner (2 clics)');}
       const pb=document.getElementById('nr-paste');if(pb){pb.disabled=!(noteClip&&noteClip.length);pb.style.opacity=(noteClip&&noteClip.length)?'':'0.5';}
     }
     function setSemi(d){semi+=d;const sv=document.getElementById('nr-semi');if(sv)sv.textContent=semi;}
@@ -4440,8 +4455,8 @@
           picking=1;
           state._notePick=(mi,si)=>{
             const idx=flatIndexOf(mi,si);
-            if(picking===1){fromIdx=idx;toIdx=idx;picking=2;state.sel={m:mi,s:si};renderState();refresh();}
-            else if(picking===2){toIdx=idx;picking=0;state._notePick=null;render();refresh();}
+            if(picking===1){fromIdx=idx;toIdx=idx;picking=2;state.sel={m:mi,s:si};setRangeHL();render();refresh();}
+            else if(picking===2){toIdx=idx;picking=0;state._notePick=null;setRangeHL();render();refresh();}
           };
           refresh();
         });
@@ -4461,12 +4476,152 @@
           const startIdx=flatIndexOf(state.sel.m,state.sel.s);
           if(pasteOverwriteAt(startIdx)){pushHistory();render();refresh();}
         });
-        refresh();
+        setRangeHL();render();refresh();
       },
       onExtra:()=>{state._notePick=null;closePanel();}
     });
   });
 
+
+  // ===== Engrenage : Décaler / Transposer / Copier-Coller avec portée (note à note / voix active / toutes voix) =====
+  // Sélecteur de portée partagé + sélection 2 clics (réutilise le surlignage rouge) pour « note à note ».
+  function makeScopeNoteSel(onChange,allRange){
+    let scope='voice';
+    let fromIdx=flatIndexOf(state.sel.m,state.sel.s), toIdx=fromIdx, picking=0;
+    function withSel(){return scope==='sel'||(scope==='all'&&allRange);}
+    function setHL(){if(!withSel()){state._noteRangeHL=null;return;}const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);const set=new Set();for(let i=a;i<=b&&i<flat.length;i++)set.add(flat[i].m+':'+flat[i].s);state._noteRangeHL=set;}
+    function nLabel(){const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);return Math.max(0,b-a+1);}
+    function measLabel(){const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.min(Math.max(fromIdx,toIdx),Math.max(0,flat.length-1));const mA=(flat[a]?flat[a].m:state.sel.m)+1,mB=(flat[b]?flat[b].m:state.sel.m)+1;return mA+' à '+mB;}
+    function html(){
+      let h='<div class="row-grid row-3" style="margin-bottom:6px;">'
+        +'<button class="k scp" data-scp="sel" style="font-size:20px;">Note à note</button>'
+        +'<button class="k scp" data-scp="voice" style="font-size:20px;">Voix active</button>'
+        +'<button class="k scp" data-scp="all" style="font-size:20px;">Toutes voix</button></div>';
+      h+='<div id="scp-sel" style="display:none;">'
+        +'<div class="row-grid"><button class="k" id="scp-pick">🎯 Sélectionner (2 clics)</button></div>'
+        +'<div class="label" id="scp-rg" style="margin:4px 0;"></div></div>';
+      return h;
+    }
+    function refresh(root){
+      root=root||document.getElementById('panel-body');if(!root)return;
+      root.querySelectorAll('.scp').forEach(b=>b.classList.toggle('active',b.dataset.scp===scope));
+      const sr=root.querySelector('#scp-sel');if(sr)sr.style.display=withSel()?'':'none';
+      const rg=root.querySelector('#scp-rg');if(rg)rg.innerHTML=(scope==='all')?('Mesures <b>'+measLabel()+'</b> (toutes voix)'):('Portion : <b>'+nLabel()+'</b> note(s)/silence(s)');
+      const pk=root.querySelector('#scp-pick');if(pk){pk.classList.toggle('active',picking>0);pk.textContent=(picking===1?'🎯 Cliquez la 1re note':picking===2?'🎯 Cliquez la 2e note (1re ✓)':'🎯 Sélectionner (2 clics)');}
+    }
+    function bind(root){
+      root.querySelectorAll('.scp').forEach(b=>b.addEventListener('click',()=>{scope=b.dataset.scp;if(!withSel()){picking=0;state._notePick=null;}setHL();render();refresh(root);if(onChange)onChange(scope);}));
+      const pk=root.querySelector('#scp-pick');
+      if(pk)pk.addEventListener('click',()=>{picking=1;state._notePick=(mi,si)=>{const idx=flatIndexOf(mi,si);if(picking===1){fromIdx=idx;toIdx=idx;picking=2;state.sel={m:mi,s:si};setHL();render();refresh(root);}else if(picking===2){toIdx=idx;picking=0;state._notePick=null;setHL();render();refresh(root);}};refresh(root);});
+      setHL();refresh(root);if(onChange)onChange(scope);
+    }
+    return {html,bind,refresh:()=>refresh(),getScope:()=>scope,
+      getFrom:()=>Math.min(fromIdx,toIdx),getTo:()=>Math.max(fromIdx,toIdx),
+      getFromM:()=>{const flat=flatSlots();const i=Math.min(fromIdx,toIdx);return flat[i]?flat[i].m:state.sel.m;},
+      getToM:()=>{const flat=flatSlots();const i=Math.min(Math.max(fromIdx,toIdx),Math.max(0,flat.length-1));return flat[i]?flat[i].m:state.sel.m;},
+      nudge:(d)=>{fromIdx=Math.max(0,fromIdx+d);toIdx=Math.max(0,toIdx+d);setHL();}};
+  }
+
+  function openTransposerPanel(){
+    const sc=makeScopeNoteSel();
+    let semi=0;
+    function body(){return sc.html()
+      +'<div class="stepper-label" style="margin-top:8px;">Transposer</div>'
+      +'<div class="control-row" style="justify-content:center;gap:6px;margin-bottom:4px;">'
+      +'<button class="k" id="tp-d12">−8ve</button><button class="k" id="tp-d">−½</button>'
+      +'<div class="label" style="min-width:54px;text-align:center;"><b id="tp-semi">0</b> ½t</div>'
+      +'<button class="k" id="tp-u">+½</button><button class="k" id="tp-u12">+8ve</button></div>'
+      +'<div class="row-grid"><button class="k primary" id="tp-go">Transposer</button></div>';
+    }
+    openPanel({title:'Transposer',body:body(),hideActions:true,extraButtons:['Fermer'],
+      onMount:()=>{const root=document.getElementById('panel-body');sc.bind(root);
+        function ss(d){semi+=d;const v=document.getElementById('tp-semi');if(v)v.textContent=semi;}
+        document.getElementById('tp-u').addEventListener('click',()=>ss(1));
+        document.getElementById('tp-d').addEventListener('click',()=>ss(-1));
+        document.getElementById('tp-u12').addEventListener('click',()=>ss(12));
+        document.getElementById('tp-d12').addEventListener('click',()=>ss(-12));
+        document.getElementById('tp-go').addEventListener('click',()=>{
+          if(semi===0)return;
+          const scope=sc.getScope();
+          if(scope==='sel'){transposeRange(sc.getFrom(),sc.getTo(),semi);}
+          else if(scope==='voice'){transposePiece(semi);}
+          else {applyToAllTracks(()=>transposePiece(semi));}
+          pushHistory();render();semi=0;const v=document.getElementById('tp-semi');if(v)v.textContent='0';
+        });
+      },
+      onExtra:()=>{state._notePick=null;closePanel();}
+    });
+  }
+  function openClipPanel(){
+    const sc=makeScopeNoteSel(null,true);
+    function body(){return sc.html()
+      +'<div class="stepper-label" style="margin-top:8px;">Copier / Coller</div>'
+      +'<div class="row-grid row-2"><button class="k" id="cl-copy">📋 Copier</button><button class="k" id="cl-paste">📥 Coller ici</button></div>'
+      +'<p class="lyr-hint">Note à note / voix active : copie de notes, collage à partir de la note active. Toutes les voix : copie/colle des mesures sur toutes les pistes à la fois.</p>';
+    }
+    openPanel({title:'Copier / Coller',body:body(),hideActions:true,extraButtons:['Fermer'],
+      onMount:()=>{const root=document.getElementById('panel-body');sc.bind(root);
+        document.getElementById('cl-copy').addEventListener('click',()=>{
+          const scope=sc.getScope();
+          if(scope==='all'){copyAllVoices(sc.getFromM(),sc.getToM());flash('Copié (toutes voix).');return;}
+          if(scope==='sel'){copyRange(sc.getFrom(),sc.getTo());}
+          else {const flat=flatSlots();copyRange(0,flat.length-1);}
+          flash('Copié.');
+        });
+        document.getElementById('cl-paste').addEventListener('click',()=>{
+          const scope=sc.getScope();
+          if(scope==='all'){if(pasteAllVoices(state.sel.m)){pushHistory();render();flash('Collé (toutes voix).');}return;}
+          const startIdx=flatIndexOf(state.sel.m,state.sel.s);
+          if(pasteOverwriteAt(startIdx)){pushHistory();render();}
+        });
+      },
+      onExtra:()=>{state._notePick=null;closePanel();}
+    });
+  }
+  // --- Décalage borné (note à note) : déplace la portion d'UN slot, ne touche qu'aux bords. ---
+  function shiftSelOneSlot(fromIdx,toIdx,dir){
+    const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);
+    if(dir<0&&a<=0)return false;if(dir>0&&b>=flat.length-1)return false;
+    const S=flat.map(f=>cloneSlot(f.slot));const restLike=(sl)=>({type:'rest',dur:sl.dur,dot:!!sl.dot});
+    let seq;
+    if(dir<0){seq=S.slice(0,a-1).concat(S.slice(a,b+1),[restLike(S[a-1])],S.slice(b+1));}
+    else{seq=S.slice(0,a).concat([restLike(S[b+1])],S.slice(a,b+1),S.slice(b+2));}
+    const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
+    state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);cleanupAccidentals();return true;
+  }
+  // --- Presse-papier multi-pistes (toutes les voix), par mesures ---
+  let clipMesAll=null;
+  function copyAllVoices(mFrom,mTo){const a=Math.min(mFrom,mTo),b=Math.max(mFrom,mTo);clipMesAll=[];applyToAllTracks(()=>{const seg=[];for(let mi=a;mi<=b&&mi<state.measures.length;mi++)seg.push(state.measures[mi].map(cloneSlot));clipMesAll.push(seg);});return clipMesAll.some(s=>s.length);}
+  function pasteAllVoices(atM){if(!clipMesAll||!clipMesAll.length)return false;let ti=0;applyToAllTracks(()=>{const seg=clipMesAll[ti++]||[];for(let k=0;k<seg.length;k++){const mi=atM+k;while(state.measures.length<=mi)state.measures.push(buildEmptyMeasure(meterAt(Math.max(0,state.measures.length-1))));state.measures[mi]=seg[k].map(cloneSlot);}});return true;}
+  function openDecalerPanel(){
+    const sc=makeScopeNoteSel((scope)=>{const dd=document.getElementById('dc-dur');if(dd)dd.style.display=(scope==='sel')?'none':'';const sh=document.getElementById('dc-selhint');if(sh)sh.style.display=(scope==='sel')?'':'none';});
+    const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
+    let chosen=1,chosenDot=false;
+    function body(){return sc.html()
+      +'<div class="stepper-label" style="margin-top:8px;">Décaler</div>'
+      +'<div id="dc-dur"><div style="font-size:16px;margin-bottom:4px;">Durée (voix active / toutes voix) :</div>'
+      +'<div class="row-grid row-6" style="margin-bottom:6px;">'+DURS.map(d=>'<button class="k symbol" data-dcdur="'+d.d+'">'+d.label+'</button>').join('')+'</div>'
+      +'<div class="row-grid" style="margin-bottom:6px;"><button class="k" id="dc-dot">Pointée : <b id="dc-dot-v">non</b></button></div></div>'
+      +'<p class="lyr-hint" id="dc-selhint" style="display:none;">Note à note : déplace la portion d\'un cran (mange d\'un côté, silence de l\'autre, ne touche qu\'aux bords).</p>'
+      +'<div class="row-grid row-3"><button class="k" id="dc-left">⇦</button><button class="k primary" id="dc-done">Fini</button><button class="k" id="dc-right">⇨</button></div>';
+    }
+    openPanel({title:'Décaler',body:body(),hideActions:true,extraButtons:['Fermer'],
+      onMount:()=>{const root=document.getElementById('panel-body');sc.bind(root);
+        function rfDur(){root.querySelectorAll('[data-dcdur]').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.dcdur)===chosen));const dv=document.getElementById('dc-dot-v');if(dv)dv.textContent=chosenDot?'oui':'non';}
+        rfDur();
+        root.querySelectorAll('[data-dcdur]').forEach(b=>b.addEventListener('click',()=>{chosen=parseFloat(b.dataset.dcdur);rfDur();}));
+        document.getElementById('dc-dot').addEventListener('click',()=>{chosenDot=!chosenDot;rfDur();});
+        function go(dir){const scope=sc.getScope();if(scope==='sel'){if(shiftSelOneSlot(sc.getFrom(),sc.getTo(),dir)){sc.nudge(dir);pushHistory();render();sc.refresh();}}else{shiftPiece(dir,chosen,chosenDot,scope==='all'?'all':'one');}}
+        document.getElementById('dc-left').addEventListener('click',()=>go(-1));
+        document.getElementById('dc-right').addEventListener('click',()=>go(1));
+        document.getElementById('dc-done').addEventListener('click',()=>{state._notePick=null;closePanel();});
+      },
+      onExtra:()=>{state._notePick=null;closePanel();}
+    });
+  }
+  document.getElementById('btn-mod-shift').addEventListener('click',openDecalerPanel);
+  document.getElementById('btn-mod-transp').addEventListener('click',openTransposerPanel);
+  document.getElementById('btn-mod-clip').addEventListener('click',openClipPanel);
 
   function updatePasteButton(){
     const b=document.getElementById('btn-paste-mes');
@@ -4721,7 +4876,7 @@
 
   document.getElementById('btn-save-file').addEventListener('click',()=>{openSavePanel('abc');});
   const fileInput=document.getElementById('file-input');
-  document.getElementById('btn-open-file').addEventListener('click',async()=>{if(window.showOpenFilePicker){try{const [h]=await window.showOpenFilePicker({types:[{description:'Partition (ABC, MusicXML)',accept:{'text/plain':['.abc'],'application/xml':['.xml','.musicxml'],'application/vnd.recordare.musicxml':['.mxl']}}]});if(h){savedFileHandle=h;const _n=(h.name||'').toLowerCase();savedFileHandleExt=_n.endsWith('.mxl')?'.mxl':_n.endsWith('.musicxml')?'.musicxml':_n.endsWith('.xml')?'.xml':'.abc';const f=await h.getFile();processOpenedFile(f);}return;}catch(e){if(e&&e.name==='AbortError')return;}}fileInput.click();});
+  document.getElementById('btn-open-file').addEventListener('click',async()=>{if(window.showOpenFilePicker){try{const [h]=await window.showOpenFilePicker({startIn:(savedFileHandle||'documents'),types:[{description:'Partition (ABC, MusicXML)',accept:{'text/plain':['.abc'],'application/xml':['.xml','.musicxml'],'application/vnd.recordare.musicxml':['.mxl']}}]});if(h){savedFileHandle=h;const _n=(h.name||'').toLowerCase();savedFileHandleExt=_n.endsWith('.mxl')?'.mxl':_n.endsWith('.musicxml')?'.musicxml':_n.endsWith('.xml')?'.xml':'.abc';const f=await h.getFile();processOpenedFile(f);}return;}catch(e){if(e&&e.name==='AbortError')return;}}fileInput.click();});
   // Mémoire du dernier fichier multi-morceaux ouvert (pour le bouton Liste)
   let lastMultiTunes=null, lastMultiFileName=null, lastMultiIndex=-1;
   function updateListBtn(){const b=document.getElementById('btn-list');if(b){const on=!!(lastMultiTunes&&lastMultiTunes.length>1);b.classList.toggle('primary',on);b.disabled=!on;b.style.opacity=on?'':'0.5'}}
@@ -6206,7 +6361,10 @@
         +'<button class="k rg-step" data-d="1" style="font-size:13px;padding:0;">+1</button>'
         +'<button class="k rg-step" data-d="10" style="font-size:12px;padding:0;">+10</button>'
         +'</div>';
-      return '<div class="rg-wrap">'+fieldRow('from','De la mesure',from)+fieldRow('to','à la mesure',to)+stepRow+'</div>';
+      // Plus de boutons −10/−1/déb/fin/+1/+10 ici (doublon de la barre) : on règle la borne active
+      // avec la barre de déplacement principale, ou en touchant une mesure sur la partition. stepRow non utilisé.
+      const hint='<div style="font-size:13px;color:#555;margin-top:6px;text-align:center;line-height:1.25;">Touchez « De la » ou « à la », puis réglez avec la barre&nbsp;← ⟪ -10 Deb Fin +10 ⟫ →&nbsp;(ou touchez une mesure).</div>';
+      return '<div class="rg-wrap">'+fieldRow('from','De la mesure',from)+fieldRow('to','à la mesure',to)+hint+'</div>';
     }
     function refresh(root){
       clamp();
@@ -6308,10 +6466,12 @@
     if(onMount)setTimeout(onMount,50);
     if(extraButtons)setTimeout(()=>{panelBody.querySelectorAll('[data-extra]').forEach(b=>{b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)})})},50);
   }
-  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;state._notePick=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
+  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;state._notePick=null;state._noteRangeHL=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
   function notifyPanelMeasureChanged(){
     if(!panel.classList.contains('open'))return;
     if(cShowMes)panelMes.textContent='Mes '+(state.sel.m+1);
+    // La barre de déplacement principale pilote la borne active du sélecteur de plage (si présent).
+    if(state._rangePick)state._rangePick(state.sel.m+1);
     if(cOnMeasureChange)cOnMeasureChange();
   }
   panelOk.addEventListener('click',()=>{if(cOnOk)cOnOk();closePanel();render()});
