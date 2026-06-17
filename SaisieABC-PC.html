@@ -211,7 +211,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v1.80 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v1.87 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -329,14 +329,14 @@
           <button class="k" id="btn-linebreak" title="Forcer une fin de ligne après cette mesure (mise en page, toutes voix)" style="font-size:13px;">⏎ Fin ligne</button>
           <button class="k" id="btn-pagebreak" title="Forcer une fin de page après cette mesure (mise en page, toutes voix)" style="font-size:13px;">⤓ Fin page</button>
         </div>
-        <div class="row-grid">
+        <div class="row-grid" style="display:none;">
           <button class="k" id="btn-shift" hidden>⇦ Décaler ⇨</button>
         </div>
-        <div class="row-grid row-2">
+        <div class="row-grid row-2" style="display:none;">
           <button class="k" id="btn-copy-mes">📋</button>
           <button class="k" id="btn-paste-mes">📥</button>
         </div>
-        <div class="row-grid">
+        <div class="row-grid" style="display:none;">
           <button class="k" id="btn-noterange" hidden title="Transposer / copier / coller une portion de notes (de la note X à la note Y)" style="font-size:13px;">✂ Portion de notes…</button>
         </div>
         <div class="row-grid row-3">
@@ -421,11 +421,11 @@
         <div class="row-grid" style="margin-top:4px;"><button class="k" id="btn-mod-transp" style="font-size:22px;" title="Transposer : note à note / voix active / toutes les voix">⇅ Transposer</button></div>
         <div class="row-grid" style="margin-top:4px;"><button class="k" id="btn-mod-clip" style="font-size:22px;" title="Copier / Coller : note à note / voix active">📋 Copier / Coller</button></div>
         <div style="border-top:1px solid #d8d6ce;margin:8px 0 4px;"></div>
-        <div class="row-grid row-2" style="margin-bottom:5px;">
+        <div class="row-grid row-2" style="margin-bottom:5px;display:none;">
           <button class="k" id="btn-scope-one" style="font-size:13px;" title="Transposer / Armure → C : voix active seulement">Voix active</button>
           <button class="k" id="btn-scope-all" style="font-size:13px;" title="Transposer / Armure → C : toutes les voix">Toutes</button>
         </div>
-        <div class="transpose-row">
+        <div class="transpose-row" style="display:none;">
           <div class="label">Transp.</div>
           <button class="k" id="btn-trans-down">↓</button>
           <button class="k" id="btn-trans-up">↑</button>
@@ -757,10 +757,13 @@
   function noteToken(note,octave,acc){let s=acc||'';let n=note;if(octave>=1)n=n.toLowerCase();s+=n;if(octave>=2)s+="'".repeat(octave-1);else if(octave<=-1)s+=",".repeat(-octave);return s}
   function slotStr(t){let s='';if(t.chord)s+='"'+t.chord+'"';if(t.text)s+='"^'+t.text+'"';if(t.orn&&t.orn.length)t.orn.forEach(o=>{if(o==='~')s+='~';else if('TMPHLRuv'.includes(o))s+=o;else if(o==='.')s+='.';else s+='!'+o+'!'});const durStr=effDToAbc(nominalDur(t));if(t.type==='note'){if(t.grace&&t.grace.length){s+='{'+(t.graceSlash?'/':'')+t.grace.map(g=>noteToken(g.note,g.octave,g.acc||'')).join('')+'}';}if(t.stack&&t.stack.length){s+='['+noteToken(t.note,t.octave,t.acc||'')+durStr;t.stack.forEach(x=>{s+=noteToken(x.note,x.octave,x.acc||'')+durStr});s+=']'}else{s+=noteToken(t.note,t.octave,t.acc||'')+durStr}}else{s+='z'+durStr}if(t.tieToNext)s+='-';return s}
   function keyAbc(sig){if(sig===0)return'C';if(sig>0)return['C','G','D','A','E','B','F#','C#'][sig];return['C','F','Bb','Eb','Ab','Db','Gb','Cb'][-sig]}
-  function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='treble8')return' clef=treble-8';if(c==='alto')return' clef=alto';if(c==='tenor')return' clef=tenor';if(c==='perc')return' clef=perc';return''}
-  function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='treble8')return'Sol-8';if(c==='alto')return'Ut 3 (alto)';if(c==='tenor')return'Ut 4 (ténor)';if(c==='perc')return'Percussion';return'Sol'}
+  function clefAbcSuffix(c){if(c==='bass')return' clef=bass';if(c==='bass+8')return' clef=bass+8';if(c==='bass-8')return' clef=bass-8';if(c==='treble+8')return' clef=treble+8';if(c==='treble8')return' clef=treble-8';if(c==='alto')return' clef=alto';if(c==='tenor')return' clef=tenor';if(c==='perc')return' clef=perc';return''}
+  function clefHumanLabel(c){if(c==='bass')return'Fa';if(c==='bass+8')return'Fa+8';if(c==='bass-8')return'Fa-8';if(c==='treble+8')return'Sol+8';if(c==='treble8')return'Sol-8';if(c==='alto')return'Ut 3 (alto)';if(c==='tenor')return'Ut 4 (ténor)';if(c==='perc')return'Percussion';return'Sol'}
   // Décode un jeton de clé ABC (valeur de clef=…) vers notre code interne. def=valeur si non reconnu.
   function clefFromAbcToken(cc,def){cc=(cc||'').toLowerCase();
+    if(cc.indexOf('treble+8')>=0)return'treble+8';
+    if(cc.indexOf('bass+8')>=0)return'bass+8';
+    if(cc.indexOf('bass-8')>=0)return'bass-8';
     if(cc.indexOf('bass')>=0||cc==='f')return'bass';
     if(cc.indexOf('treble-8')>=0||cc.indexOf('treble_8')>=0||cc==='treble8')return'treble8';
     if(cc==='alto'||cc==='c'||cc==='alto3')return'alto';
@@ -769,7 +772,7 @@
     if(cc.indexOf('treble')>=0)return'treble';
     return def;}
   // Code interne → nom de clé ABC pour l'en-tête V:
-  function clefToAbcName(c){return c==='bass'?'bass':c==='treble8'?'treble-8':c==='alto'?'alto':c==='tenor'?'tenor':c==='perc'?'perc':'treble'}
+  function clefToAbcName(c){return c==='bass'?'bass':c==='bass+8'?'bass+8':c==='bass-8'?'bass-8':c==='treble+8'?'treble+8':c==='treble8'?'treble-8':c==='alto'?'alto':c==='tenor'?'tenor':c==='perc'?'perc':'treble'}
   function keyHumanLabel(sig){if(sig===0)return'C maj : 0';if(sig>0)return KEY_NAMES_MAJOR[sig]+' maj : '+sig+' ♯';return KEY_NAMES_MAJOR_FLAT[-sig]+' maj : '+Math.abs(sig)+' ♭'}
   // Étiquette « X maj / Y min » avec le mineur relatif et le nombre d'altérations
   function keyMajMinLabel(sig){
@@ -777,6 +780,45 @@
     const min=(sig>=0)?KEY_NAMES_MINOR[sig]:KEY_NAMES_MINOR_FLAT[-sig];
     const acc=(sig===0)?'0':(sig>0?sig+' ♯':Math.abs(sig)+' ♭');
     return maj+' maj / '+min+' min ('+acc+')';
+  }
+  // Altération effective d'une hauteur (note+octave) à l'index uptoSi : altération explicite antérieure
+  // dans la mesure (tête ou note d'accord) sinon l'armure. Sert à « figer » les altérations fantômes.
+  function effAccFor(meas,uptoSi,note,octave,sig){
+    for(let k=uptoSi-1;k>=0;k--){const p=meas[k];if(p.type!=='note')continue;if(p.note===note&&p.octave===octave&&p.acc)return p.acc;if(p.stack){for(const sn of p.stack){if(sn.note===note&&sn.octave===octave&&sn.acc)return sn.acc;}}}
+    if(sig>0&&SHARP_NOTES.slice(0,sig).includes(note))return '^';
+    if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(note))return '_';
+    return '';
+  }
+  // Rend explicites toutes les altérations implicites (avant un décalage/transposition partielle),
+  // pour que la hauteur sonore des notes suivantes soit préservée. cleanupAccidentals() enlève
+  // ensuite les altérations redevenues redondantes.
+  function freezeAccidentals(){
+    state.measures.forEach((meas,mi)=>{const sig=keyAt(mi);meas.forEach((slot,si)=>{
+      if(slot.type!=='note')return;
+      if(!slot.acc){const ea=effAccFor(meas,si,slot.note,slot.octave,sig);if(ea)slot.acc=ea;}
+      if(slot.stack&&slot.stack.length){slot.stack.forEach(sn=>{if(!sn.acc){const ea=effAccFor(meas,si,sn.note,sn.octave,sig);if(ea)sn.acc=ea;}});}
+    });});
+  }
+  // Réécrit les altérations d'une voix de gauche à droite : pose l'altération MINIMALE pour
+  // chaque hauteur voulue, en AJOUTANT les bécarres/dièses/bémols nécessaires quand le contexte
+  // de mesure porte déjà une altération (et en retirant les redondances). À utiliser après une
+  // opération qui change des hauteurs (transposition) ou déplace des notes (décalage).
+  function respellAccidentals(){
+    function altVal(acc){return acc==='^'?1:acc==='_'?-1:acc==='='?0:acc==='^^'?2:acc==='__'?-2:null;}
+    function altToSym(a){return a===1?'^':a===-1?'_':a===0?'=':a===2?'^^':a===-2?'__':'';}
+    state.measures.forEach((meas,mi)=>{
+      const sig=keyAt(mi);const ctx={};
+      function handle(n){
+        const ex=(n.acc!==undefined&&n.acc!=='')?altVal(n.acc):null;
+        const intended=(ex!==null)?ex:keyAccVal(n.note,sig);
+        if(intended===null)return;
+        const k=n.note+n.octave;
+        const cur=(ctx[k]!==undefined)?ctx[k]:keyAccVal(n.note,sig);
+        if(intended===cur){if(n.acc)delete n.acc;}
+        else{n.acc=altToSym(intended);ctx[k]=intended;}
+      }
+      meas.forEach(slot=>{if(slot.type!=='note')return;handle(slot);if(slot.stack&&slot.stack.length)slot.stack.forEach(handle);});
+    });
   }
   function cleanupAccidentals(){
     state.measures.forEach((meas,mi)=>{
@@ -1246,7 +1288,7 @@
     return out.join('\n');
   }
 
-  function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1].toLowerCase();if(c==='bass'||c==='f')clef='bass';else if(c==='treble-8'||c==='treble_8'||c==='treble8')clef='treble8';else if(c==='alto'||c==='c'||c==='alto3')clef='alto';else if(c==='tenor'||c==='alto4')clef='tenor';else if(c==='perc'||c==='percussion'||c==='drum')clef='perc';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
+  function parseKeyDef(s){s=s.trim();let sig=0,clef='treble';const cm=s.match(/clef=(\S+)/);if(cm){const c=cm[1].toLowerCase();if(c==='treble+8')clef='treble+8';else if(c==='bass+8')clef='bass+8';else if(c==='bass-8')clef='bass-8';else if(c==='bass'||c==='f')clef='bass';else if(c==='treble-8'||c==='treble_8'||c==='treble8')clef='treble8';else if(c==='alto'||c==='c'||c==='alto3')clef='alto';else if(c==='tenor'||c==='alto4')clef='tenor';else if(c==='perc'||c==='percussion'||c==='drum')clef='perc';s=s.replace(cm[0],'').trim()}const km=s.match(/^([A-G])([#b]?)(.*)$/);if(km){const root=km[1],acc=km[2],mode=(km[3]||'').toLowerCase().trim();const M={'C':0,'G':1,'D':2,'A':3,'E':4,'B':5,'F#':6,'C#':7,'F':-1,'Bb':-2,'Eb':-3,'Ab':-4,'Db':-5,'Gb':-6,'Cb':-7};let bs=M[root+acc];if(bs===undefined){bs=M[root]||0;if(acc==='#')bs+=7;else if(acc==='b')bs-=7}sig=bs;if(mode.startsWith('m')&&!mode.startsWith('maj')&&!mode.startsWith('mix'))sig-=3;else if(mode.startsWith('dor'))sig-=2;else if(mode.startsWith('phr'))sig-=4;else if(mode.startsWith('lyd'))sig+=1;else if(mode.startsWith('mix'))sig-=1;else if(mode.startsWith('aeo'))sig-=3;else if(mode.startsWith('loc'))sig-=5}return{sig:Math.max(-7,Math.min(7,sig)),clef}}
   // Repartit les syllabes des lignes w: sur les notes. CHAQUE ligne w: = UN couplet
   // (l'indice de ligne donne le numéro de couplet ; chaque couplet repart de la 1re note).
   function assignLyrics(ns,lines){
@@ -1460,10 +1502,10 @@
   // treble8 (Sol-8) : MÊME affichage que la clé de sol ; le « 8 » indique que le SON est une octave
   // plus bas (géré à la lecture/export). Les clés d'ut ne transposent PAS le son.
   function percClefSvg(x,staffTop,ink){const y1=staffTop+LINE_GAP,h=2*LINE_GAP;return '<rect x="'+(x-3)+'" y="'+y1+'" width="2.4" height="'+h+'" fill="'+ink+'" opacity="0.85"/><rect x="'+(x+1)+'" y="'+y1+'" width="2.4" height="'+h+'" fill="'+ink+'" opacity="0.85"/>';}
-  function clefRefStep(c){if(c==='bass')return -3;if(c==='alto')return -4;if(c==='tenor')return -6;return 2}
+  function clefRefStep(c){if(c==='bass'||c==='bass+8'||c==='bass-8')return -3;if(c==='alto')return -4;if(c==='tenor')return -6;return 2}
   // Décalage SONORE dû à la clé : Sol-8 (treble8) sonne une octave plus bas (−12 demi-tons).
   // N'affecte que la lecture/preview, jamais le modèle ni l'affichage. (alto/tenor : aucun décalage.)
-  function clefSoundShift(clef){return clef==='treble8'?-12:0;}
+  function clefSoundShift(clef){if(clef==='treble8'||clef==='bass-8')return -12;if(clef==='treble+8'||clef==='bass+8')return 12;return 0;}
   function noteY(staffTop,step,c){const r=clefRefStep(c);const bl=staffTop+4*LINE_GAP;return bl-(step-r)*(LINE_GAP/2)}
   function stepIndex(note,oct){const m={C:0,D:1,E:2,F:3,G:4,A:5,B:6};return m[note]+7*oct}
   // Notes (note+octave+altération) d'un slot : note principale + empilées (accord).
@@ -1663,8 +1705,10 @@
       }
       const hC=clefAt(lsm),hK=keyAt(lsm),hM=meterAt(lsm);
       // Cle
-      if(hC==='bass'){
+      if(hC==='bass'||hC==='bass+8'||hC==='bass-8'){
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.6*LINE_GAP+5)+'" font-size="22" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+        if(hC==='bass+8')svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop-0.2*LINE_GAP)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+        else if(hC==='bass-8')svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
       } else if(hC==='alto'||hC==='tenor'){
         const cy=staffTop+(hC==='alto'?2:1)*LINE_GAP;
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+cy+'" font-size="21" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle" dominant-baseline="central">𝄡</text>';
@@ -1674,6 +1718,8 @@
         svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+2.4*LINE_GAP+5)+'" font-size="26" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
         if(hC==='treble8'){
           svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop+4.6*LINE_GAP+5)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+        } else if(hC==='treble+8'){
+          svg+='<text x="'+(LEFT_PAD-32)+'" y="'+(staffTop-0.2*LINE_GAP)+'" font-size="7" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
         }
       }
       // Armure
@@ -1808,8 +1854,10 @@
             // Cle (en premier, juste apres la barre)
             if(hasClefChange){
               cx+=5;
-              if(lC==='bass'){
+              if(lC==='bass'||lC==='bass+8'||lC==='bass-8'){
                 svg+='<text x="'+cx+'" y="'+(staffTop+2.6*LINE_GAP+4)+'" font-size="18" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄢</text>';
+                if(lC==='bass+8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop-0.2*LINE_GAP)+'" font-size="6" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+                else if(lC==='bass-8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+4)+'" font-size="6" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
               } else if(lC==='alto'||lC==='tenor'){
                 const cyy=staffTop+(lC==='alto'?2:1)*LINE_GAP;
                 svg+='<text x="'+cx+'" y="'+cyy+'" font-size="17" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle" dominant-baseline="central">𝄡</text>';
@@ -1817,7 +1865,7 @@
                 svg+=percClefSvg(cx,staffTop,ink);
               } else {
                 svg+='<text x="'+cx+'" y="'+(staffTop+2.4*LINE_GAP+4)+'" font-size="21" font-family="serif" fill="'+ink+'" opacity="0.85" text-anchor="middle">𝄞</text>';
-                if(lC==='treble8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+4)+'" font-size="6" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
+                if(lC==='treble8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop+4.6*LINE_GAP+4)+'" font-size="6" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';else if(lC==='treble+8')svg+='<text x="'+(cx+3)+'" y="'+(staffTop-0.2*LINE_GAP)+'" font-size="6" fill="'+ink+'" opacity="0.85" text-anchor="middle">8</text>';
               }
               cx+=8;
             }
@@ -1915,7 +1963,7 @@
           // Rectangle cliquable invisible sur toute la zone du slot (selection par clic)
           svg+='<rect x="'+(cx-wBySlot[si]/2)+'" y="'+staffTop+'" width="'+wBySlot[si]+'" height="'+(4*LINE_GAP+20)+'" fill="transparent" pointer-events="all" data-m="'+mIdx+'" data-s="'+si+'" style="cursor:pointer"/>';
           const iS=(mIdx===hlM&&si===hlS);
-          const _inRng=isActiveVoice&&state._noteRangeHL&&state._noteRangeHL.has(mIdx+':'+si);
+          const _inRng=(isActiveVoice&&state._noteRangeHL&&state._noteRangeHL.has(mIdx+':'+si))||(state._measRangeHL&&mIdx>=state._measRangeHL.a&&mIdx<=state._measRangeHL.b);
           const cl=(iS||_inRng)?sel:ink;
           if(t.chord&&state.viewFlags.chords)svg+='<text x="'+cx+'" y="'+(staffTop-3)+'" font-size="9" font-weight="bold" fill="'+ink+'" text-anchor="middle">'+escXml(t.chord)+'</text>';
           if(t.text&&state.viewFlags.text)svg+='<text x="'+cx+'" y="'+(staffTop-(t.chord&&state.viewFlags.chords?13:3))+'" font-size="6" font-style="italic" fill="'+ink+'" text-anchor="middle">'+escXml(t.text)+'</text>';
@@ -2635,9 +2683,9 @@
     pushHistory();render();playSelectedSlot();
   }
   function selectPrev(){leaveChordSlot();let{m,s}=state.sel;if(s>0){state.sel={m,s:s-1};onSelMoved();render();playSelectedSlot();return}if(m>0){state.sel={m:m-1,s:state.measures[m-1].length-1};onSelMoved();render();playSelectedSlot();return}}
-  function jumpMeasure(delta){leaveChordSlot();const cur=state.sel.m;if(delta>0&&cur===state.measures.length-1){state.measures.push(buildEmptyMeasure(meterAt(cur)));state.sel={m:state.measures.length-1,s:0};pushHistory();render();return}const t=cur+delta;if(t<0||t>=state.measures.length)return;state.sel={m:t,s:0};render()}
+  function jumpMeasure(delta){leaveChordSlot();const cur=state.sel.m;if(delta>0&&cur===state.measures.length-1){const m=state.measures[cur];state.sel={m:cur,s:Math.max(0,(m?m.length:1)-1)};render();return}const t=cur+delta;if(t<0||t>=state.measures.length)return;state.sel={m:t,s:0};render()}
   function jumpToStart(){state.sel={m:0,s:0};render()}
-  function jumpToEnd(){state.sel={m:state.measures.length-1,s:0};render()}
+  function jumpToEnd(){const last=state.measures.length-1;const m=state.measures[last];state.sel={m:last,s:Math.max(0,(m?m.length:1)-1)};render()}
   function jumpMeasures(n){leaveChordSlot();const len=state.measures.length;let t=Math.max(0,Math.min(len-1,state.sel.m+n));state.sel={m:t,s:0};render()}
 
   const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null,events:[],eventIdx:0,markers:[],markerIdx:0,voiceMarkers:{},voiceIdx:{}};
@@ -3571,10 +3619,11 @@
           '<button class="k" data-side="end">Fin</button>'+
         '</div>'+
         '<div class="stepper-label">Nombre de mesures à ajouter</div>'+
-        '<div class="stepper">'+
+        '<div class="stepper" style="grid-template-columns:repeat(4,1fr);">'+
           '<button class="k" id="cnt-d">−</button>'+
           '<div class="val"><b id="cnt-v">'+count+'</b></div>'+
           '<button class="k" id="cnt-u">+</button>'+
+          '<button class="k" id="cnt-u10">+10</button>'+
         '</div>';
     }
     function rebind(){
@@ -3582,6 +3631,7 @@
       document.querySelectorAll('#side-pick .k').forEach(b=>b.addEventListener('click',()=>{side=b.dataset.side;rs()}));
       rs();
       document.getElementById('cnt-u').addEventListener('click',()=>{if(count<200){count++;document.getElementById('cnt-v').textContent=count;document.getElementById('add-total-mes').textContent=endTotal()}});
+      document.getElementById('cnt-u10').addEventListener('click',()=>{count=Math.min(200,count+10);document.getElementById('cnt-v').textContent=count;document.getElementById('add-total-mes').textContent=endTotal()});
       document.getElementById('cnt-d').addEventListener('click',()=>{if(count>1){count--;document.getElementById('cnt-v').textContent=count;document.getElementById('add-total-mes').textContent=endTotal()}});
     }
     openPanel({
@@ -4370,6 +4420,7 @@
   // Transpose une PLAGE de slots (de from..to inclus, indices globaux) de la voix active.
   function transposeRange(fromIdx,toIdx,semitones){
     const preferFlats=(semitones<0);
+    freezeAccidentals();
     const flat=flatSlots();
     if(fromIdx>toIdx){const t=fromIdx;fromIdx=toIdx;toIdx=t;}
     for(let i=fromIdx;i<=toIdx&&i<flat.length;i++){
@@ -4378,8 +4429,8 @@
       transposeNoteObj(slot,semitones,preferFlats);
       if(slot.stack&&slot.stack.length)slot.stack.forEach(o=>transposeNoteObj(o,semitones,preferFlats));
     }
-    // Re-résoudre proprement les altérations affichées de tout le morceau (simple et sûr).
-    cleanupAccidentals();
+    // Réécrit les altérations (ajoute les bécarres nécessaires, retire les redondances).
+    respellAccidentals();
   }
   // Copie une plage (clones) dans noteClip.
   function copyRange(fromIdx,toIdx){
@@ -4483,42 +4534,85 @@
   });
 
 
-  // ===== Engrenage : Décaler / Transposer / Copier-Coller avec portée (note à note / voix active / toutes voix) =====
-  // Sélecteur de portée partagé + sélection 2 clics (réutilise le surlignage rouge) pour « note à note ».
-  function makeScopeNoteSel(onChange,allRange){
-    let scope='voice';
-    let fromIdx=flatIndexOf(state.sel.m,state.sel.s), toIdx=fromIdx, picking=0;
-    function withSel(){return scope==='sel'||(scope==='all'&&allRange);}
-    function setHL(){if(!withSel()){state._noteRangeHL=null;return;}const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);const set=new Set();for(let i=a;i<=b&&i<flat.length;i++)set.add(flat[i].m+':'+flat[i].s);state._noteRangeHL=set;}
-    function nLabel(){const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);return Math.max(0,b-a+1);}
-    function measLabel(){const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.min(Math.max(fromIdx,toIdx),Math.max(0,flat.length-1));const mA=(flat[a]?flat[a].m:state.sel.m)+1,mB=(flat[b]?flat[b].m:state.sel.m)+1;return mA+' à '+mB;}
+  // ===== Sélecteur note-à-note + bascule « Toutes voix » (partagé par Décaler/Transposer/Copier-Coller) =====
+  function voiceAbsTimes(measures){let t=0;const out=[];for(let mi=0;mi<measures.length;mi++){const meas=measures[mi]||[];for(let si=0;si<meas.length;si++){const d=effDur(meas[si]);out.push({m:mi,s:si,t0:t,t1:t+d,isNote:meas[si].type==='note'});t+=d;}}return out;}
+  function zoneTimeActive(fromIdx,toIdx){const at=voiceAbsTimes(state.measures);const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);const t0=at[a]?at[a].t0:0;const t1=at[b]?at[b].t1:(at.length?at[at.length-1].t1:0);return {t0,t1};}
+  // Avertissement : une note d'une AUTRE voix est-elle traversée par t0 ou t1 ?
+  function cutWarnings(t0,t1){const out=[];for(let ti=0;ti<state.tracks.length;ti++){if(ti===state.activeTrack)continue;const vt=voiceAbsTimes(state.tracks[ti].measures||[]);for(const s of vt){if(!s.isNote)continue;if((s.t0<t0-1e-6&&s.t1>t0+1e-6)||(s.t0<t1-1e-6&&s.t1>t1+1e-6)){out.push(ti+1);break;}}}return out;}
+  function flatRangeOfMeasures(mA,mB){const flat=flatSlots();let a=-1,b=-1;for(let i=0;i<flat.length;i++){if(flat[i].m>=mA&&flat[i].m<=mB){if(a<0)a=i;b=i;}}return [a,b];}
+  function transposeMeasuresAllVoices(mA,mB,semis){applyToAllTracks(()=>{const [a,b]=flatRangeOfMeasures(mA,mB);if(a>=0)transposeRange(a,b,semis);});}
+  function shiftZoneAllVoices(t0,dir){applyToAllTracks(()=>{const vt=voiceAbsTimes(state.measures);let idx=vt.findIndex(s=>s.t0<=t0+1e-6&&s.t1>t0+1e-6);if(idx<0)idx=Math.max(0,vt.length-1);shiftSelOneSlot(idx,idx,dir);});}
+  // Décompose une durée d en figures représentables (liées si note), via splitDurationByBeat.
+  function durToSlots(template,d){const pieces=splitDurationByBeat(0,d,4);return pieces.map((p,i)=>{const c=Object.assign({},template,{dur:p.dur,dot:p.dot});if(template.stack)c.stack=template.stack.map(x=>Object.assign({},x));if(template.type==='note'){if(i>0){delete c.chord;delete c.text;delete c.orn;delete c.grace;}if(i<pieces.length-1)c.tieToNext=true;else{if(template.tieToNext)c.tieToNext=true;else delete c.tieToNext;}}else{delete c.tieToNext;delete c.chord;delete c.text;}return c;});}
+  function flatIndexAtTime(t,which){const vt=voiceAbsTimes(state.measures);let best=0,bd=Infinity;for(let i=0;i<vt.length;i++){const dd=Math.abs(vt[i][which]-t);if(dd<1e-4)return i;if(dd<bd){bd=dd;best=i;}}return best;}
+  // Décalage borné de la durée D : la portion bouge de D ; la note voisine est fractionnée, un silence de D apparaît de l'autre côté.
+  function shiftSelByDur(fromIdx,toIdx,dir,D){
+    freezeAccidentals();
+    const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);
+    if(a<0||b>=flat.length)return false;
+    const at=voiceAbsTimes(state.measures);const t0sel=at[a]?at[a].t0:0,t1sel=at[b]?at[b].t1:0;
+    const S=flat.map(f=>cloneSlot(f.slot));const eps=1e-6;let seq;
+    if(dir<0){
+      if(t0sel-D<-eps)return false;
+      const before=S.slice(0,a),sel=S.slice(a,b+1),after=S.slice(b+1);let need=D;
+      while(need>eps&&before.length>0){const last=before[before.length-1];const e=effDur(last);if(e<=need+eps){before.pop();need=+(need-e).toFixed(6);}else{before.pop();durToSlots(last,e-need).forEach(p=>before.push(p));need=0;}}
+      if(need>eps)return false;
+      seq=before.concat(sel,durToSlots({type:'rest',dur:0,dot:false},D),after);
+    } else {
+      const before=S.slice(0,a),sel=S.slice(a,b+1),after=S.slice(b+1);let need=D,i=0;const head=[];
+      while(need>eps&&i<after.length){const first=after[i];const e=effDur(first);if(e<=need+eps){need=+(need-e).toFixed(6);i++;}else{durToSlots(first,e-need).forEach(p=>head.push(p));i++;need=0;}}
+      if(need>eps)return false;
+      seq=before.concat(durToSlots({type:'rest',dur:0,dot:false},D),sel,head,after.slice(i));
+    }
+    const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
+    state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);respellAccidentals();
+    const nt0=dir<0?t0sel-D:t0sel+D, nt1=dir<0?t1sel-D:t1sel+D;
+    const na=flatIndexAtTime(nt0,'t0'),nb=flatIndexAtTime(nt1,'t1');
+    const flat2=flatSlots();const ci=dir<0?na:nb;const cur=flat2[ci]?{m:flat2[ci].m,s:flat2[ci].s}:state.sel;
+    return {a:na,b:nb,cursor:cur};
+  }
+  function makeScopeNoteSel(onChange){
+    let fromIdx=flatIndexOf(state.sel.m,state.sel.s), toIdx=fromIdx;
+    let allVoix=false, firstSet=false, lastSet=false;
+    function lo(){return Math.min(fromIdx,toIdx);}
+    function hi(){return Math.max(fromIdx,toIdx);}
+    function setHL(){
+      if(allVoix){const flat=flatSlots();const a=lo(),b=Math.min(hi(),Math.max(0,flat.length-1));state._measRangeHL={a:(flat[a]?flat[a].m:state.sel.m),b:(flat[b]?flat[b].m:state.sel.m)};state._noteRangeHL=null;return;}
+      state._measRangeHL=null;
+      const flat=flatSlots();const set=new Set();for(let i=lo();i<=hi()&&i<flat.length;i++)set.add(flat[i].m+':'+flat[i].s);state._noteRangeHL=set;
+    }
+    function posLabel(idx){const flat=flatSlots();const f=flat[Math.min(Math.max(0,idx),Math.max(0,flat.length-1))];return f?('mesure '+(f.m+1)+' position '+(f.s+1)):'—';}
     function html(){
-      let h='<div class="row-grid row-3" style="margin-bottom:6px;">'
-        +'<button class="k scp" data-scp="sel" style="font-size:20px;">Note à note</button>'
-        +'<button class="k scp" data-scp="voice" style="font-size:20px;">Voix active</button>'
-        +'<button class="k scp" data-scp="all" style="font-size:20px;">Toutes voix</button></div>';
-      h+='<div id="scp-sel" style="display:none;">'
-        +'<div class="row-grid"><button class="k" id="scp-pick">🎯 Sélectionner (2 clics)</button></div>'
-        +'<div class="label" id="scp-rg" style="margin:4px 0;"></div></div>';
+      let h='<div class="row-grid"><button class="k" id="scp-allvoix" style="font-size:16px;">Toutes voix : <b id="scp-av">non</b></button></div>';
+      h+='<div class="row-grid row-2" style="margin-top:6px;">'
+        +'<button class="k" id="scp-first" style="font-size:16px;">1ière note</button>'
+        +'<button class="k" id="scp-last" style="font-size:16px;">2ième note</button></div>';
+      h+='<div class="label" id="scp-l1" style="margin:3px 0 0;text-align:left;"></div>';
+      h+='<div class="label" id="scp-l2" style="margin:0;text-align:left;"></div>';
+      h+='<div class="label" id="scp-rg" style="margin:2px 0;"></div>';
       return h;
     }
     function refresh(root){
       root=root||document.getElementById('panel-body');if(!root)return;
-      root.querySelectorAll('.scp').forEach(b=>b.classList.toggle('active',b.dataset.scp===scope));
-      const sr=root.querySelector('#scp-sel');if(sr)sr.style.display=withSel()?'':'none';
-      const rg=root.querySelector('#scp-rg');if(rg)rg.innerHTML=(scope==='all')?('Mesures <b>'+measLabel()+'</b> (toutes voix)'):('Portion : <b>'+nLabel()+'</b> note(s)/silence(s)');
-      const pk=root.querySelector('#scp-pick');if(pk){pk.classList.toggle('active',picking>0);pk.textContent=(picking===1?'🎯 Cliquez la 1re note':picking===2?'🎯 Cliquez la 2e note (1re ✓)':'🎯 Sélectionner (2 clics)');}
+      const av=root.querySelector('#scp-av');if(av)av.textContent=allVoix?'oui':'non';
+      const ab=root.querySelector('#scp-allvoix');if(ab)ab.classList.toggle('active',allVoix);
+      const f=root.querySelector('#scp-first');if(f)f.classList.toggle('active',firstSet);
+      const l=root.querySelector('#scp-last');if(l)l.classList.toggle('active',lastSet);
+      const l1=root.querySelector('#scp-l1');if(l1)l1.innerHTML='1ière note : <b>'+posLabel(fromIdx)+'</b>';
+      const l2=root.querySelector('#scp-l2');if(l2)l2.innerHTML='2ième note : <b>'+posLabel(toIdx)+'</b>';
+      const rg=root.querySelector('#scp-rg');if(rg)rg.innerHTML=allVoix?'(zone appliquée à toutes les voix)':'';
     }
     function bind(root){
-      root.querySelectorAll('.scp').forEach(b=>b.addEventListener('click',()=>{scope=b.dataset.scp;if(!withSel()){picking=0;state._notePick=null;}setHL();render();refresh(root);if(onChange)onChange(scope);}));
-      const pk=root.querySelector('#scp-pick');
-      if(pk)pk.addEventListener('click',()=>{picking=1;state._notePick=(mi,si)=>{const idx=flatIndexOf(mi,si);if(picking===1){fromIdx=idx;toIdx=idx;picking=2;state.sel={m:mi,s:si};setHL();render();refresh(root);}else if(picking===2){toIdx=idx;picking=0;state._notePick=null;setHL();render();refresh(root);}};refresh(root);});
-      setHL();refresh(root);if(onChange)onChange(scope);
+      const ab=root.querySelector('#scp-allvoix');if(ab)ab.addEventListener('click',()=>{allVoix=!allVoix;setHL();render();refresh(root);if(onChange)onChange(allVoix);});
+      const f=root.querySelector('#scp-first');if(f)f.addEventListener('click',()=>{fromIdx=flatIndexOf(state.sel.m,state.sel.s);firstSet=true;setHL();render();refresh(root);});
+      const l=root.querySelector('#scp-last');if(l)l.addEventListener('click',()=>{toIdx=flatIndexOf(state.sel.m,state.sel.s);lastSet=true;setHL();render();refresh(root);});
+      setHL();refresh(root);
     }
-    return {html,bind,refresh:()=>refresh(),getScope:()=>scope,
-      getFrom:()=>Math.min(fromIdx,toIdx),getTo:()=>Math.max(fromIdx,toIdx),
-      getFromM:()=>{const flat=flatSlots();const i=Math.min(fromIdx,toIdx);return flat[i]?flat[i].m:state.sel.m;},
-      getToM:()=>{const flat=flatSlots();const i=Math.min(Math.max(fromIdx,toIdx),Math.max(0,flat.length-1));return flat[i]?flat[i].m:state.sel.m;},
+    return {html,bind,refresh:()=>refresh(),isAllVoix:()=>allVoix,
+      getFrom:()=>lo(),getTo:()=>hi(),
+      getFromM:()=>{const flat=flatSlots();const i=lo();return flat[i]?flat[i].m:state.sel.m;},
+      getToM:()=>{const flat=flatSlots();const i=Math.min(hi(),Math.max(0,flat.length-1));return flat[i]?flat[i].m:state.sel.m;},
+      setBounds:(a,b)=>{fromIdx=a;toIdx=b;firstSet=true;lastSet=true;setHL();},
       nudge:(d)=>{fromIdx=Math.max(0,fromIdx+d);toIdx=Math.max(0,toIdx+d);setHL();}};
   }
 
@@ -4527,9 +4621,9 @@
     let semi=0;
     function body(){return sc.html()
       +'<div class="stepper-label" style="margin-top:8px;">Transposer</div>'
-      +'<div class="control-row" style="justify-content:center;gap:6px;margin-bottom:4px;">'
+      +'<div class="label" style="text-align:center;margin-bottom:4px;">Transposition : <b id="tp-semi">0</b> ½ ton</div>'
+      +'<div class="row-grid row-4" style="margin-bottom:6px;">'
       +'<button class="k" id="tp-d12">−8ve</button><button class="k" id="tp-d">−½</button>'
-      +'<div class="label" style="min-width:54px;text-align:center;"><b id="tp-semi">0</b> ½t</div>'
       +'<button class="k" id="tp-u">+½</button><button class="k" id="tp-u12">+8ve</button></div>'
       +'<div class="row-grid"><button class="k primary" id="tp-go">Transposer</button></div>';
     }
@@ -4542,35 +4636,32 @@
         document.getElementById('tp-d12').addEventListener('click',()=>ss(-12));
         document.getElementById('tp-go').addEventListener('click',()=>{
           if(semi===0)return;
-          const scope=sc.getScope();
-          if(scope==='sel'){transposeRange(sc.getFrom(),sc.getTo(),semi);}
-          else if(scope==='voice'){transposePiece(semi);}
-          else {applyToAllTracks(()=>transposePiece(semi));}
-          pushHistory();render();semi=0;const v=document.getElementById('tp-semi');if(v)v.textContent='0';
+          if(!sc.isAllVoix()){transposeRange(sc.getFrom(),sc.getTo(),semi);}
+          else {transposeMeasuresAllVoices(sc.getFromM(),sc.getToM(),semi);}
+          pushHistory();render();
         });
       },
       onExtra:()=>{state._notePick=null;closePanel();}
     });
   }
   function openClipPanel(){
-    const sc=makeScopeNoteSel(null,true);
+    const sc=makeScopeNoteSel();
     function body(){return sc.html()
       +'<div class="stepper-label" style="margin-top:8px;">Copier / Coller</div>'
       +'<div class="row-grid row-2"><button class="k" id="cl-copy">📋 Copier</button><button class="k" id="cl-paste">📥 Coller ici</button></div>'
-      +'<p class="lyr-hint">Note à note / voix active : copie de notes, collage à partir de la note active. Toutes les voix : copie/colle des mesures sur toutes les pistes à la fois.</p>';
+      +'<p class="lyr-hint">Placez le curseur puis touchez « 1ière note » et « 2ième note ». Toutes voix : copie/colle les mesures concernées sur toutes les pistes (vous serez prévenu si une note d\'une autre voix est coupée).</p>';
     }
     openPanel({title:'Copier / Coller',body:body(),hideActions:true,extraButtons:['Fermer'],
       onMount:()=>{const root=document.getElementById('panel-body');sc.bind(root);
         document.getElementById('cl-copy').addEventListener('click',()=>{
-          const scope=sc.getScope();
-          if(scope==='all'){copyAllVoices(sc.getFromM(),sc.getToM());flash('Copié (toutes voix).');return;}
-          if(scope==='sel'){copyRange(sc.getFrom(),sc.getTo());}
-          else {const flat=flatSlots();copyRange(0,flat.length-1);}
-          flash('Copié.');
+          if(!sc.isAllVoix()){copyRange(sc.getFrom(),sc.getTo());flash('Copié.');return;}
+          const z=zoneTimeActive(sc.getFrom(),sc.getTo());const w=cutWarnings(z.t0,z.t1);
+          copyAllVoices(sc.getFromM(),sc.getToM());
+          if(w.length)flash('\u26A0 Copié — cette sélection coupe une note des voix '+w.join(', ')+'. Ajustez les bornes si besoin.');
+          else flash('Copié (toutes voix).');
         });
         document.getElementById('cl-paste').addEventListener('click',()=>{
-          const scope=sc.getScope();
-          if(scope==='all'){if(pasteAllVoices(state.sel.m)){pushHistory();render();flash('Collé (toutes voix).');}return;}
+          if(sc.isAllVoix()){if(pasteAllVoices(state.sel.m)){pushHistory();render();flash('Collé (toutes voix).');}return;}
           const startIdx=flatIndexOf(state.sel.m,state.sel.s);
           if(pasteOverwriteAt(startIdx)){pushHistory();render();}
         });
@@ -4594,15 +4685,15 @@
   function copyAllVoices(mFrom,mTo){const a=Math.min(mFrom,mTo),b=Math.max(mFrom,mTo);clipMesAll=[];applyToAllTracks(()=>{const seg=[];for(let mi=a;mi<=b&&mi<state.measures.length;mi++)seg.push(state.measures[mi].map(cloneSlot));clipMesAll.push(seg);});return clipMesAll.some(s=>s.length);}
   function pasteAllVoices(atM){if(!clipMesAll||!clipMesAll.length)return false;let ti=0;applyToAllTracks(()=>{const seg=clipMesAll[ti++]||[];for(let k=0;k<seg.length;k++){const mi=atM+k;while(state.measures.length<=mi)state.measures.push(buildEmptyMeasure(meterAt(Math.max(0,state.measures.length-1))));state.measures[mi]=seg[k].map(cloneSlot);}});return true;}
   function openDecalerPanel(){
-    const sc=makeScopeNoteSel((scope)=>{const dd=document.getElementById('dc-dur');if(dd)dd.style.display=(scope==='sel')?'none':'';const sh=document.getElementById('dc-selhint');if(sh)sh.style.display=(scope==='sel')?'':'none';});
+    const sc=makeScopeNoteSel();
     const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
-    let chosen=1,chosenDot=false;
+    let chosen=0.5,chosenDot=false;
+    function curD(){return chosen*(chosenDot?1.5:1);}
     function body(){return sc.html()
-      +'<div class="stepper-label" style="margin-top:8px;">Décaler</div>'
-      +'<div id="dc-dur"><div style="font-size:16px;margin-bottom:4px;">Durée (voix active / toutes voix) :</div>'
+      +'<div class="stepper-label" style="margin-top:8px;">Décaler de :</div>'
       +'<div class="row-grid row-6" style="margin-bottom:6px;">'+DURS.map(d=>'<button class="k symbol" data-dcdur="'+d.d+'">'+d.label+'</button>').join('')+'</div>'
-      +'<div class="row-grid" style="margin-bottom:6px;"><button class="k" id="dc-dot">Pointée : <b id="dc-dot-v">non</b></button></div></div>'
-      +'<p class="lyr-hint" id="dc-selhint" style="display:none;">Note à note : déplace la portion d\'un cran (mange d\'un côté, silence de l\'autre, ne touche qu\'aux bords).</p>'
+      +'<div class="row-grid" style="margin-bottom:6px;"><button class="k" id="dc-dot">Pointée : <b id="dc-dot-v">non</b></button></div>'
+      +'<p class="lyr-hint">Déplace la portion de la durée choisie : la note voisine est fractionnée, un silence de cette durée apparaît de l\'autre côté. « Toutes voix » décale aussi les autres pistes au même endroit.</p>'
       +'<div class="row-grid row-3"><button class="k" id="dc-left">⇦</button><button class="k primary" id="dc-done">Fini</button><button class="k" id="dc-right">⇨</button></div>';
     }
     openPanel({title:'Décaler',body:body(),hideActions:true,extraButtons:['Fermer'],
@@ -4611,14 +4702,26 @@
         rfDur();
         root.querySelectorAll('[data-dcdur]').forEach(b=>b.addEventListener('click',()=>{chosen=parseFloat(b.dataset.dcdur);rfDur();}));
         document.getElementById('dc-dot').addEventListener('click',()=>{chosenDot=!chosenDot;rfDur();});
-        function go(dir){const scope=sc.getScope();if(scope==='sel'){if(shiftSelOneSlot(sc.getFrom(),sc.getTo(),dir)){sc.nudge(dir);pushHistory();render();sc.refresh();}}else{shiftPiece(dir,chosen,chosenDot,scope==='all'?'all':'one');}}
+        function go(dir){
+          const D=curD();
+          if(!sc.isAllVoix()){
+            const r=shiftSelByDur(sc.getFrom(),sc.getTo(),dir,D);
+            if(r){state.sel=r.cursor;sc.setBounds(r.a,r.b);pushHistory();render();sc.refresh();}
+            else flash('Pas assez de place de ce côté.');
+          } else {
+            const z=zoneTimeActive(sc.getFrom(),sc.getTo());let any=false;
+            applyToAllTracks(()=>{const vt=voiceAbsTimes(state.measures);let idx=vt.findIndex(s=>s.t0<=z.t0+1e-6&&s.t1>z.t0+1e-6);if(idx<0)return;if(shiftSelByDur(idx,idx,dir,D))any=true;});
+            if(any){pushHistory();render();sc.refresh();}else flash('Décalage toutes voix impossible ici.');
+          }
+        }
         document.getElementById('dc-left').addEventListener('click',()=>go(-1));
         document.getElementById('dc-right').addEventListener('click',()=>go(1));
-        document.getElementById('dc-done').addEventListener('click',()=>{state._notePick=null;closePanel();});
+        document.getElementById('dc-done').addEventListener('click',()=>{closePanel();});
       },
-      onExtra:()=>{state._notePick=null;closePanel();}
+      onExtra:()=>{closePanel();}
     });
   }
+
   document.getElementById('btn-mod-shift').addEventListener('click',openDecalerPanel);
   document.getElementById('btn-mod-transp').addEventListener('click',openTransposerPanel);
   document.getElementById('btn-mod-clip').addEventListener('click',openClipPanel);
@@ -6466,7 +6569,7 @@
     if(onMount)setTimeout(onMount,50);
     if(extraButtons)setTimeout(()=>{panelBody.querySelectorAll('[data-extra]').forEach(b=>{b.addEventListener('click',()=>{if(cOnExtra)cOnExtra(b.dataset.extra)})})},50);
   }
-  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;state._notePick=null;state._noteRangeHL=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
+  function closePanel(){panel.classList.remove('open');panel.style.top='';panel.style.bottom='';panel.style.left='';panel.style.width='';panel.style.maxHeight='';{const ct=document.getElementById('panel-close-top');if(ct)ct.style.display='none';}cOnOk=null;cOnExtra=null;cOnMeasureChange=null;cShowMes=false;state._rangePick=null;state._notePick=null;state._noteRangeHL=null;state._measRangeHL=null;const wasChord=state._chordEditMode;if(wasChord){const sl=selectedSlot();if(sl&&sl.type==='note')dedupeChord(sl);}state._chordEditMode=false;state._chordAddPending=false;if(wasChord)renderScore()}
   function notifyPanelMeasureChanged(){
     if(!panel.classList.contains('open'))return;
     if(cShowMes)panelMes.textContent='Mes '+(state.sel.m+1);
@@ -6624,6 +6727,9 @@
         '<button class="k clef-small" data-clef="alto" title="Clé d\'ut 3e ligne (alto)"><svg width="34" height="30" viewBox="0 0 34 30" style="vertical-align:middle;"><text x="11" y="15" font-size="21" font-family="serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">𝄡</text><text x="26" y="15" font-size="9" font-weight="bold" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">alto</text></svg></button>'+
         '<button class="k clef-small" data-clef="tenor" title="Clé d\'ut 4e ligne (ténor)"><svg width="40" height="30" viewBox="0 0 40 30" style="vertical-align:middle;"><text x="11" y="15" font-size="21" font-family="serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">𝄡</text><text x="29" y="15" font-size="9" font-weight="bold" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">tén.</text></svg></button>'+
         '<button class="k clef-small" data-clef="perc" title="Percussion (batterie)"><svg width="30" height="30" viewBox="0 0 30 30" style="vertical-align:middle;"><rect x="7" y="8" width="3" height="14" fill="currentColor"/><rect x="12" y="8" width="3" height="14" fill="currentColor"/><text x="23" y="15" font-size="8" font-weight="bold" font-family="sans-serif" text-anchor="middle" dominant-baseline="central" fill="currentColor">perc</text></svg></button>'+
+        '<button class="k clef-small" data-clef="treble+8" title="Sol +8 (sonne une octave plus haut)"><svg width="20" height="30" viewBox="0 0 20 30" style="vertical-align:middle;"><text x="10" y="9" font-size="8" font-weight="bold" font-family="serif" text-anchor="middle" fill="currentColor">8</text><text x="10" y="28" font-size="22" font-family="serif" text-anchor="middle" fill="currentColor">𝄞</text></svg></button>'+
+        '<button class="k clef-small" data-clef="bass+8" title="Fa +8 (sonne une octave plus haut)"><svg width="20" height="30" viewBox="0 0 20 30" style="vertical-align:middle;"><text x="10" y="9" font-size="8" font-weight="bold" font-family="serif" text-anchor="middle" fill="currentColor">8</text><text x="10" y="26" font-size="19" font-family="serif" text-anchor="middle" fill="currentColor">𝄢</text></svg></button>'+
+        '<button class="k clef-small" data-clef="bass-8" title="Fa −8 (sonne une octave plus bas)"><svg width="20" height="30" viewBox="0 0 20 30" style="vertical-align:middle;"><text x="10" y="19" font-size="19" font-family="serif" text-anchor="middle" fill="currentColor">𝄢</text><text x="10" y="29" font-size="8" font-weight="bold" font-family="serif" text-anchor="middle" fill="currentColor">8</text></svg></button>'+
       '</div>'}
     function rebind(){
       rg.bind(document.getElementById('panel-body'));
