@@ -444,7 +444,7 @@
       </div>
 
       <div class="tab-panel" data-panel="vue">
-        <div class="row-grid row-3" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button><button class="k" id="btn-a4" style="font-size:13px;" title="Mise en page A4 du morceau en cours">📄 A4</button></div>
+        <div class="row-grid row-4" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button><button class="k" id="btn-layout-a4" style="font-size:13px;" title="Page A4 à l'écran (défilement vertical)">▭ A4</button><button class="k" id="btn-a4" style="font-size:13px;" title="Mise en page A4 du morceau en cours">📄 A4</button></div><div id="view-ctrls" style="display:none;margin:0 0 6px;"><div id="vc-gaps"><div class="row-grid row-3" style="margin:0 0 6px;"><button class="k" id="vg-sys-d" style="font-size:13px;">−</button><div class="label">Éc. syst. <b id="vg-sys-v">14</b></div><button class="k" id="vg-sys-u" style="font-size:13px;">+</button></div><div class="row-grid row-3" style="margin:0 0 6px;"><button class="k" id="vg-vox-d" style="font-size:13px;">−</button><div class="label">Esp. voix <b id="vg-vox-v">4</b></div><button class="k" id="vg-vox-u" style="font-size:13px;">+</button></div></div><div id="vc-a4"><div class="row-grid row-3" style="margin:0 0 6px;"><button class="k" id="a4-mrg-d" style="font-size:13px;">−</button><div class="label">Marge <b id="a4-mrg-v">6%</b></div><button class="k" id="a4-mrg-u" style="font-size:13px;">+</button></div><div class="row-grid row-3" style="margin:0 0 6px;"><button class="k" id="a4-w-d" style="font-size:13px;">−</button><div class="label">Larg. <b id="a4-w-v">900</b></div><button class="k" id="a4-w-u" style="font-size:13px;">+</button></div><div style="margin:0 0 6px;text-align:center;"><button class="k" id="a4-justify" style="font-size:13px;">Justifier</button></div></div></div>
         <div class="control-row">
           <button class="k" id="zoom-d">−</button>
           <div class="label">Zoom <b id="zoom-v">100</b></div>
@@ -579,7 +579,7 @@
     tabShow:(opts.tabShow!==undefined)?opts.tabShow:true,
     tabOctave:opts.tabOctave||0
   }}
-  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:130,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all',scoreLayout:'line',tabMode:null,graceMode:false,diatoOn:false,diatoSystem:'corgeron',diatoOuter:55,diatoRows:2,diatoStrategy:'tirepousse',diatoOv:{},diatoLh:false};
+  const state={headers:{X:'1',T:'',C:'',N:'',H:'',F:'',Z:'',P:'',W:'',scoreVersion:''},tracks:[makeTrack()],activeTrack:0,sel:{m:0,s:0},octave:0,chordActive:0,tempo:80,tempoDotted:false,tempoBeatUnit:1,tempoBeatDotted:false,tempoChanges:{},breaks:{},volume:60,fullscreen:false,viewmode:true,activeTab:'notes',loop:false,scoreScale:130,lyricOffset:0,zoom:100,openedFileName:null,openedFileExt:null,viewFlags:{chords:true,text:true,lyrics:true,parts:true,measureNums:true},transposeScope:'all',scoreLayout:'line',tabMode:null,graceMode:false,diatoOn:false,diatoSystem:'corgeron',diatoOuter:55,diatoRows:2,diatoStrategy:'tirepousse',diatoOv:{},diatoLh:false,view:{systemGap:14,voiceGap:4,a4:{marginPct:6,maxW:900,justify:0}}};
   // Aliasing : state.<champ> lit/écrit la piste active
   TRACK_FIELDS.forEach(f=>{Object.defineProperty(state,f,{
     get(){const tr=state.tracks[state.activeTrack]||state.tracks[0];return tr?tr[f]:undefined},
@@ -1461,6 +1461,7 @@
       // Ligne V: dans le corps -> change la voix courante
       const vline=t.match(/^V:\s*(\S+)(.*)$/);
       if(vline){const vid=vline[1];usedVoices=true;ensureVoice(vid);curVoice=vid;const cl=t.match(/clef\s*=\s*(\S+)/i);if(cl){const cc=cl[1].toLowerCase();voiceMeta[vid].clef=clefFromAbcToken(cc,voiceMeta[vid].clef)}const nm=t.match(/(?:^|\s)(?:name|nm)\s*=\s*"([^"]*)"/i);if(nm)voiceMeta[vid].name=nm[1];const snm=t.match(/(?:^|\s)(?:sname|snm)\s*=\s*"([^"]*)"/i);if(snm)voiceMeta[vid].sname=snm[1];continue}
+      if(/^I:/.test(t)){continue;}
       const wf=t.match(/^([A-Za-z]):\s*(.*)$/);if(wf&&'PwWslmreds'.includes(wf[1])){const fk=wf[1],fv=wf[2];if(fk==='P'){addBody(' [P:'+fv.trim()+'] ')}else if(fk==='w'||fk==='W'){ns._lyricLinesByVoice=ns._lyricLinesByVoice||{};(ns._lyricLinesByVoice[curVoice]=ns._lyricLinesByVoice[curVoice]||[]).push(fv)}continue}
       const hf=t.match(/^([MLQK]):\s*(.*)$/);
       if(hf){const hk=hf[1],hv=hf[2].trim();const seenMusic=/[A-Ga-gz]/.test(bodyByVoice[curVoice]||'');
@@ -2296,19 +2297,19 @@
     const maxVersesVisible=state.viewFlags.lyrics?Math.max(1,...visibleIdx.map(i=>countVersesTrack((tracks[i]||{}).measures))):1;
     const voiceUnitH=STAFF_TOP_Y+(STAFF_SPACING+Math.max(0,maxVersesVisible-1)*10+(state.viewFlags.lyrics?Math.max(0,state.lyricOffset||0):0))+10;
     const numV=visibleIdx.length;
-    const LABEL_PX=16,GAP=4,SYS_GAP=14;
+    const LABEL_PX=16,GAP=((state.view&&state.view.voiceGap!==undefined)?state.view.voiceGap:4),SYS_GAP=((state.view&&state.view.systemGap!==undefined)?state.view.systemGap:14);
     const zoomF=(state.zoom||100)/100;
     let voicePxH=Math.max(70,Math.round(150*zoomF));
     const cw=cont.clientWidth||600;
     const pxPerUnit=voicePxH/voiceUnitH;
-    const sysPxW=Math.max(220,cw-22); // réserve pour l'ascenseur vertical
+    const _a4Mode=(state.scoreLayout==='a4');const _a4V=(state.view&&state.view.a4)||{};const _a4Mrg=(_a4V.marginPct!==undefined?_a4V.marginPct:6)/100;const _a4OuterW=_a4Mode?Math.max(240,Math.min(cw-22,(_a4V.maxW!==undefined?_a4V.maxW:900))):0;const _a4PadX=_a4Mode?Math.round(_a4OuterW*_a4Mrg):0;const _a4PadY=_a4Mode?Math.round(_a4OuterW*_a4Mrg):0;const sysPxW=_a4Mode?(_a4OuterW-2*_a4PadX):Math.max(220,cw-22); // réserve pour l'ascenseur vertical
     const sysUnitsW=sysPxW/pxPerUnit;
     const base=computeSharedLayout(visibleIdx);
     const wu=base.widthUnits, N=base.N, headerStart=base.firstX;
     const usableW=Math.max(40,sysUnitsW-headerStart-RIGHT_PAD);
     // 1) découpage en systèmes (largeurs partagées → barres alignées)
     const systems=[]; let cur=[],curW=0;
-    for(let mi=0;mi<N;mi++){const w=wu[mi];if(cur.length>0&&curW+w>usableW){systems.push(cur);cur=[];curW=0;}cur.push(mi);curW+=w;}
+    for(let mi=0;mi<N;mi++){const w=wu[mi];if(cur.length>0&&curW+w>usableW){systems.push(cur);cur=[];curW=0;}cur.push(mi);curW+=w;const _br=_a4Mode&&state.breaks&&state.breaks[mi];if(_br&&(_br.line||_br.page)){systems.push(cur);cur=[];curW=0;}}
     if(cur.length)systems.push(cur);
     if(!systems.length)systems.push([]);
     // 2) densité de référence (les systèmes pleins fixent l'échelle ; le dernier ne s'étire pas au-delà)
@@ -2322,10 +2323,11 @@
     const single=(numV===1);
     let html='';
     const sysLayouts=[];
+    const sysBlocks=[];
     systems.forEach((sys,si)=>{
       const isLast=(si===systems.length-1);
       const sum=sys.reduce((a,mi)=>a+wu[mi],0)||1;
-      const scale=Math.min(usableW/sum,refScale);
+      const _jm=_a4Mode?((state.view&&state.view.a4&&state.view.a4.justify)||0):0;const _doJust=(_jm===2)||(_jm===1&&!isLast);const scale=_doJust?(usableW/sum):Math.min(usableW/sum,refScale);
       const bounds={}; let curX=headerStart;
       sys.forEach(mi=>{const w=wu[mi]*scale;bounds[mi]={xL:curX,xR:curX+w,measureW:w};curX+=w;});
       const sysViewW=isLast?Math.min(sysUnitsW,curX+RIGHT_PAD):sysUnitsW;
@@ -2333,11 +2335,11 @@
       const layout={single:false,N:N,widthUnits:wu,firstX:headerStart,totalUnits:sysViewW,headerUnits:base.headerUnits,
         _pageSystem:{mIdxs:sys,isFirst:(si===0)},_pageBounds:bounds,_pageViewW:sysViewW,_pageRefScale:refScale,
         _activeTrack:saved,_realActive:saved,_topVisible:topVisible};sysLayouts[si]=layout;
-      let sysHtml='<div class="page-system" data-sys="'+si+'" style="margin-bottom:'+SYS_GAP+'px;">';
+      let sysHtml='<div class="page-system" data-sys="'+si+'" style="margin-bottom:'+SYS_GAP+'px;">';let _sysPxH=SYS_GAP;
       visibleIdx.forEach(i=>{
         state.activeTrack=i; layout._renderTrack=i;
         const svg=renderScoreOnce(layout);
-        const bH=Math.max(voicePxH,Math.round((layout._lastScoreH||voiceUnitH)*pxPerUnit));
+        const bH=Math.max(voicePxH,Math.round((layout._lastScoreH||voiceUnitH)*pxPerUnit));_sysPxH+=(single?2:LABEL_PX)+bH+GAP;
         const tr=tracks[i];
         const isActive=(i===saved);
         const label=(tr.name||('V'+(i+1)))+(tr.mute?' [muet]':'');
@@ -2347,13 +2349,14 @@
         sysHtml+='<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+'border-radius:6px;margin-bottom:'+GAP+'px;padding-top:'+(single?2:LABEL_PX)+'px;width:'+blockPxW+'px;height:'+bH+'px;box-sizing:content-box;">'+labelHtml+'<div class="voice-svg" style="width:'+blockPxW+'px;height:'+bH+'px;">'+svg+'</div></div>';
       });
       sysHtml+='</div>';
-      html+=sysHtml;
+      const _lastM=sys[sys.length-1];const _pbk=!!(state.breaks&&state.breaks[_lastM]&&state.breaks[_lastM].page);sysBlocks.push({html:sysHtml,h:_sysPxH,pb:_pbk});
     });
     state.activeTrack=saved;
     cont.style.overflowX='hidden';
     cont.style.overflowY='auto';
     let wordsHtml='';
     if(state.viewFlags.lyrics){const w=(state.headers.W||'').trim();if(w){const lines=w.split('\n').map(l=>escXml(l)).join('<br>');wordsHtml='<div class="score-words" style="max-width:'+Math.max(sysPxW,320)+'px;margin:8px 2px 4px;padding:8px 12px;border-top:1px solid #e2e0d8;font-size:12px;line-height:1.5;color:#33312c;">'+lines+'</div>';}}
+    if(_a4Mode){const _sheetPxH=Math.round(_a4OuterW*297/210);const _contentH=Math.max(80,_sheetPxH-2*_a4PadY);const _pStyle='width:'+_a4OuterW+'px;height:'+_sheetPxH+'px;margin:0 auto 16px;background:#fff;border:1px solid #cfcdc6;box-shadow:0 1px 8px rgba(0,0,0,0.25);padding:'+_a4PadY+'px '+_a4PadX+'px;box-sizing:border-box;overflow:hidden;';let _pages='',_cur='',_curH=0;sysBlocks.forEach(function(b){if(_cur!==''&&_curH+b.h>_contentH){_pages+='<div class="a4-sheet" style="'+_pStyle+'">'+_cur+'</div>';_cur='';_curH=0;}_cur+=b.html;_curH+=b.h;if(b.pb){_pages+='<div class="a4-sheet" style="'+_pStyle+'">'+_cur+'</div>';_cur='';_curH=0;}});if(wordsHtml){_cur+=wordsHtml;wordsHtml='';}if(_cur!==''||_pages===''){_pages+='<div class="a4-sheet" style="'+_pStyle+'">'+_cur+'</div>';}html=_pages;}else{html=sysBlocks.map(function(b){return b.html;}).join('');}
     cont.innerHTML=html+wordsHtml;
     if(numV>1){document.querySelectorAll('#score .track-block').forEach(el=>{el.addEventListener('click',(e)=>{const idx=parseInt(el.dataset.track,10);if(!isNaN(idx)&&idx!==state.activeTrack){state.activeTrack=idx;state.sel={m:0,s:0};render();}});});}
     state._pageCache={systems,sysLayouts};
@@ -2702,7 +2705,7 @@
     let visibleIdx=tracks.map((t,i)=>(i===state.activeTrack||t.visible!==false)?i:-1).filter(i=>i>=0);
     if(!visibleIdx.length)visibleIdx=[state.activeTrack];
 
-    if((state.scoreLayout||'line')==='page'){renderScorePage(cont,tracks,visibleIdx);return;}
+    if((state.scoreLayout||'line')==='page'||(state.scoreLayout||'line')==='a4'){renderScorePage(cont,tracks,visibleIdx);return;}
 
     const layout=computeSharedLayout(visibleIdx);
     // Échelle uniforme : on dimensionne chaque voix pour que toutes tiennent en hauteur (scroll vertical en secours)
@@ -2789,7 +2792,7 @@
   // Fait défiler #score horizontalement pour que la mesure sélectionnée soit visible (play + navigation)
   function ensureSelectionVisible(){
     const cont=document.getElementById('score');
-    if(cont&&(state.scoreLayout||'line')==='page'){ensureSelectionVisiblePage(cont);return;}
+    if(cont&&((state.scoreLayout||'line')==='page'||(state.scoreLayout||'line')==='a4')){ensureSelectionVisiblePage(cont);return;}
     const lc=state._layoutCache;
     if(!cont||!lc||!lc.layout)return;
     const mi=state.sel.m;
@@ -2952,7 +2955,7 @@
     {const pb=document.getElementById('btn-pagebreak');if(pb)pb.classList.toggle('active',!!(brA&&brA.page));}
     const partV=state.parts&&state.parts[state.sel.m];const pvEl=document.getElementById('part-val');if(pvEl)pvEl.textContent=partV||'—';const pBtn=document.getElementById('btn-part');if(pBtn)pBtn.classList.toggle('active',!!partV);
     const vmBtn=document.getElementById('btn-viewmode');if(vmBtn)vmBtn.textContent=state.viewmode?'✎':'👁';
-    const tc=document.getElementById('btn-toggle-chords');if(tc)tc.classList.toggle('active',!!state.viewFlags.chords);const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.classList.toggle('active',(state.scoreLayout||'line')!=='page');const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.classList.toggle('active',(state.scoreLayout||'line')==='page');const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.classList.toggle('active',state.tabMode==='guitar');const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.classList.toggle('active',state.tabMode==='banjo');const _trh=document.getElementById('btn-tab-rhythm');if(_trh){_trh.classList.toggle('active',!!state.tabRhythm);_trh.disabled=!(state.tabMode||state.diatoOn);}const _tda=document.getElementById('btn-tab-diato');if(_tda)_tda.classList.toggle('active',!!state.diatoOn);const _tlh=document.getElementById('btn-tab-lh');if(_tlh)_tlh.classList.toggle('active',!!state.diatoLh);const _cpb=document.getElementById('btn-chord-pos');if(_cpb){const _ct=(state.chordPos==='tab');_cpb.classList.toggle('active',_ct);_cpb.textContent='Accords : au-dessus de la '+(_ct?'tablature':'portée');_cpb.disabled=!(state.tabMode||state.diatoOn);}const _sgEnable=!!(state.tabMode||state.diatoOn);['btn-strip-gap-d','btn-strip-gap-u'].forEach(function(id){const e=document.getElementById(id);if(e)e.disabled=!_sgEnable;});
+    const tc=document.getElementById('btn-toggle-chords');if(tc)tc.classList.toggle('active',!!state.viewFlags.chords);const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.classList.toggle('active',(state.scoreLayout||'line')==='line');const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.classList.toggle('active',(state.scoreLayout||'line')==='page');const _ba=document.getElementById('btn-layout-a4');if(_ba)_ba.classList.toggle('active',(state.scoreLayout||'line')==='a4');const _a4vs=(state.view&&state.view.a4)||{};const _amv=document.getElementById('a4-mrg-v');if(_amv)_amv.textContent=(_a4vs.marginPct||6)+'%';const _awv=document.getElementById('a4-w-v');if(_awv)_awv.textContent=(_a4vs.maxW||900);const _lmv=(state.scoreLayout||'line');const _vc=document.getElementById('view-ctrls');if(_vc)_vc.style.display=(_lmv==='page'||_lmv==='a4')?'block':'none';const _vca4=document.getElementById('vc-a4');if(_vca4)_vca4.style.display=(_lmv==='a4')?'':'none';const _aj=document.getElementById('a4-justify');if(_aj){const _jv=((state.view&&state.view.a4&&state.view.a4.justify)||0);_aj.textContent='Justifier : '+(_jv===2?'tout':_jv===1?'sauf dernier':'non');_aj.classList.toggle('active',_jv>0);}const _vgv=(state.view||{});const _vs=document.getElementById('vg-sys-v');if(_vs)_vs.textContent=(_vgv.systemGap!==undefined?_vgv.systemGap:14);const _vv=document.getElementById('vg-vox-v');if(_vv)_vv.textContent=(_vgv.voiceGap!==undefined?_vgv.voiceGap:4);const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.classList.toggle('active',state.tabMode==='guitar');const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.classList.toggle('active',state.tabMode==='banjo');const _trh=document.getElementById('btn-tab-rhythm');if(_trh){_trh.classList.toggle('active',!!state.tabRhythm);_trh.disabled=!(state.tabMode||state.diatoOn);}const _tda=document.getElementById('btn-tab-diato');if(_tda)_tda.classList.toggle('active',!!state.diatoOn);const _tlh=document.getElementById('btn-tab-lh');if(_tlh)_tlh.classList.toggle('active',!!state.diatoLh);const _cpb=document.getElementById('btn-chord-pos');if(_cpb){const _ct=(state.chordPos==='tab');_cpb.classList.toggle('active',_ct);_cpb.textContent='Accords : au-dessus de la '+(_ct?'tablature':'portée');_cpb.disabled=!(state.tabMode||state.diatoOn);}const _sgEnable=!!(state.tabMode||state.diatoOn);['btn-strip-gap-d','btn-strip-gap-u'].forEach(function(id){const e=document.getElementById(id);if(e)e.disabled=!_sgEnable;});
     const tt=document.getElementById('btn-toggle-text');if(tt)tt.classList.toggle('active',!!state.viewFlags.text);
     const tl=document.getElementById('btn-toggle-lyrics');if(tl)tl.classList.toggle('active',!!state.viewFlags.lyrics);
     const tp=document.getElementById('btn-toggle-parts');if(tp)tp.classList.toggle('active',!!state.viewFlags.parts);
@@ -3118,7 +3121,7 @@
   }
   function renderVoiceSvg(ti){
     const cont=document.getElementById('score');if(!cont)return;
-    if((state.scoreLayout||'line')==='page'){if(!renderVoiceSvgPage(ti))renderScore();return;}
+    if((state.scoreLayout||'line')==='page'||(state.scoreLayout||'line')==='a4'){if(!renderVoiceSvgPage(ti))renderScore();return;}
     const lc=state._layoutCache;if(!lc||!lc.layout){renderScore();return}
     const blk=cont.querySelector('.track-block[data-track="'+ti+'"] .voice-svg');
     if(!blk){renderScore();return}
@@ -3659,6 +3662,7 @@
   bindToggle('btn-toggle-chords','chords');
   {const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='line'){state.scoreLayout='line';render();}});}
   {const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='page'){state.scoreLayout='page';if(state._pageCache)state._pageCache=null;render();}});}
+  {const _ba=document.getElementById('btn-layout-a4');if(_ba)_ba.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();}});}
   {const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.addEventListener('click',()=>{state.tabMode=(state.tabMode==='guitar')?null:'guitar';if(state.tabMode)state.diatoOn=false;renderTabPanel();renderDiatoPanel();render();});}
   {const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.addEventListener('click',()=>{state.tabMode=(state.tabMode==='banjo')?null:'banjo';if(state.tabMode)state.diatoOn=false;renderTabPanel();renderDiatoPanel();render();});}
   {const _tr=document.getElementById('btn-tab-rhythm');if(_tr)_tr.addEventListener('click',()=>{state.tabRhythm=!state.tabRhythm;renderTabPanel();render();});}
@@ -3994,18 +3998,20 @@
       title:'Suppr plage de mesure(s)',
       body:'<div class="mes-active" style="color:#8a5a00;">⊕ S\'applique à <b>toutes les voix</b></div>'+rg.html(),
       hideActions:true,
-      extraButtons:['Annuler','Supprimer'],
+      extraButtons:['Fini','Supprimer'],
       onMount:()=>{rg.bind(document.getElementById('panel-body'));},
       onExtra:(w)=>{
-        if(w==='Annuler'){closePanel();return}
+        if(w==='Fini'){closePanel();return}
         const from=rg.getFrom()-1, to=rg.getTo()-1;
         const m=Math.min(from,to);
         let count=Math.abs(to-from)+1;
         if(count>=state.measures.length){count=state.measures.length-1}
         if(count<=0){closePanel();return}
+        const cDel=Math.min(count,state.measures.length-m);
+        if(cDel<=0){closePanel();return}
         applyToAllTracks(()=>{
           if(m>=state.measures.length)return;
-          const c=Math.min(count,state.measures.length-m);
+          const c=Math.min(cDel,state.measures.length-m);
           if(c<=0)return;
           state.measures.splice(m,c);
           function sk(map,fromI,toI){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);if(i<fromI)out[i]=map[k];else if(i>=toI)out[i-c]=map[k]}return out}
@@ -4016,12 +4022,14 @@
           if(state.parts)state.parts=sk(state.parts,m,m+c);
         });
         // breaks / tempoChanges sont au niveau du morceau (non par-voix) : décaler UNE seule fois.
-        {const c2=c;function sk1(map){const out={};for(const k of Object.keys(map||{})){const i=parseInt(k,10);if(i<m)out[i]=map[k];else if(i>=m+c2)out[i-c2]=map[k]}return out}
+        {const c2=cDel;function sk1(map){const out={};for(const k of Object.keys(map||{})){const i=parseInt(k,10);if(i<m)out[i]=map[k];else if(i>=m+c2)out[i-c2]=map[k]}return out}
           if(state.tempoChanges)state.tempoChanges=sk1(state.tempoChanges);
           if(state.breaks)state.breaks=sk1(state.breaks);}
         if(state.sel.m>=state.measures.length)state.sel.m=state.measures.length-1;
         state.sel.s=0;
-        pushHistory();closePanel();render();
+        pushHistory();render();
+        var _mx=state.measures.length, _cur=Math.min(m+1,_mx);
+        if(rg&&rg.setFrom){rg.setFrom(_cur);rg.setTo(_cur);var _pb=document.getElementById('panel-body');if(_pb&&rg.refresh)rg.refresh(_pb);}
       }
     });
   });
@@ -5333,6 +5341,15 @@
   });}
   {const zu=document.getElementById('zoom-u');if(zu)zu.addEventListener('click',()=>{state.zoom=Math.min(300,(state.zoom||100)+10);render()});}
   {const zd=document.getElementById('zoom-d');if(zd)zd.addEventListener('click',()=>{state.zoom=Math.max(50,(state.zoom||100)-10);render()});}
+  {const e=document.getElementById('a4-mrg-d');if(e)e.addEventListener('click',()=>{state.view.a4.marginPct=(state.view.a4.marginPct!==undefined?state.view.a4.marginPct:6)-1;render()});}
+  {const e=document.getElementById('a4-mrg-u');if(e)e.addEventListener('click',()=>{state.view.a4.marginPct=(state.view.a4.marginPct!==undefined?state.view.a4.marginPct:6)+1;render()});}
+  {const e=document.getElementById('a4-w-d');if(e)e.addEventListener('click',()=>{state.view.a4.maxW=Math.max(240,(state.view.a4.maxW!==undefined?state.view.a4.maxW:900)-40);render()});}
+  {const e=document.getElementById('a4-w-u');if(e)e.addEventListener('click',()=>{state.view.a4.maxW=(state.view.a4.maxW!==undefined?state.view.a4.maxW:900)+40;render()});}
+  {const e=document.getElementById('a4-justify');if(e)e.addEventListener('click',()=>{state.view.a4.justify=(((state.view.a4.justify||0)+1)%3);render()});}
+  {const e=document.getElementById('vg-sys-d');if(e)e.addEventListener('click',()=>{state.view.systemGap=(state.view.systemGap!==undefined?state.view.systemGap:14)-2;render()});}
+  {const e=document.getElementById('vg-sys-u');if(e)e.addEventListener('click',()=>{state.view.systemGap=(state.view.systemGap!==undefined?state.view.systemGap:14)+2;render()});}
+  {const e=document.getElementById('vg-vox-d');if(e)e.addEventListener('click',()=>{state.view.voiceGap=(state.view.voiceGap!==undefined?state.view.voiceGap:4)-2;render()});}
+  {const e=document.getElementById('vg-vox-u');if(e)e.addEventListener('click',()=>{state.view.voiceGap=(state.view.voiceGap!==undefined?state.view.voiceGap:4)+2;render()});}
   document.getElementById('size-u').addEventListener('click',()=>{state.scoreScale=Math.min(250,(state.scoreScale||100)+10);render()});
   document.getElementById('size-d').addEventListener('click',()=>{state.scoreScale=Math.max(40,(state.scoreScale||100)-10);render()});
   {const lu=document.getElementById('lyr-y-u');if(lu)lu.addEventListener('click',()=>{state.lyricOffset=Math.min(40,(state.lyricOffset||0)+2);render()});}
@@ -7376,8 +7393,8 @@
   function buildAtmText(payload){ let abc=buildAbcText(); if(abc.charAt(abc.length-1)!=='\n')abc+='\n'; return abc+'%%atm-layout '+JSON.stringify(payload||{})+'\n'; }
   async function gzipText(t){ const cs=new CompressionStream('gzip'); const w=cs.writable.getWriter(); w.write(new TextEncoder().encode(t)); w.close(); return new Uint8Array(await new Response(cs.readable).arrayBuffer()); }
   async function gunzipToText(b){ const ds=new DecompressionStream('gzip'); const w=ds.writable.getWriter(); w.write(b); w.close(); return new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()); }
-  async function saveAtm(){ const base=(state.openedFileName||(typeof proposedBaseName==='function'?proposedBaseName():'partition')); const text=buildAtmText(_a4AtmPayload()); if(window.showSaveFilePicker){ try{ const handle=await window.showSaveFilePicker({suggestedName:base+'.atm',types:[{description:'ATM (texte éditable)',accept:{'application/octet-stream':['.atm']}},{description:'ATMZ (compressé)',accept:{'application/gzip':['.atmz']}}]}); const nm=handle.name||(base+'.atm'); const isZ=/\.atmz$/i.test(nm); const data=isZ?await gzipText(text):text; const w=await handle.createWritable(); await w.write(new Blob([data])); await w.close(); state.openedFileName=nm.replace(/\.[^.]+$/,''); state.openedFileExt=isZ?'.atmz':'.atm'; if(typeof render==='function')render(); if(typeof flash==='function')flash('Enregistré : '+nm); return; }catch(e){ if(e&&e.name==='AbortError')return; } } const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=base+'.atm'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); if(typeof flash==='function')flash('Téléchargé : '+base+'.atm'); }
-  function loadAtm(text,fileName){ let obj=null; const m=text.match(/^%%atm-layout[ \t]+(.+)$/m); if(m){ try{ obj=JSON.parse(m[1]); }catch(e){} } const abc=text.replace(/^%%atm-layout[ \t]+.*$/m,'').replace(/\n{3,}/g,'\n\n'); let tab=null; if(obj&&obj.__tab!==undefined){ tab=obj.__tab; delete obj.__tab; } let _lhArr=null,_lhOn=false; if(obj){ if(obj.__lh!==undefined){_lhArr=obj.__lh;delete obj.__lh;} if(obj.__lhOn!==undefined){_lhOn=!!obj.__lhOn;delete obj.__lhOn;} } loadTuneAbc(abc,fileName); _a4Pending=obj; if(_lhArr){Object.keys(_lhArr).forEach(function(k){var pp=k.split(':');var tr=state.tracks[+pp[0]];if(tr&&tr.measures&&tr.measures[+pp[1]]&&tr.measures[+pp[1]][+pp[2]])tr.measures[+pp[1]][+pp[2]].lh=_lhArr[k];});} state.diatoLh=_lhOn; if(tab&&tab.mode){ state.tabMode=tab.mode; (state.tracks||[]).forEach(function(t,i){ const v=tab.voices&&tab.voices[i]; if(v){ t.tabShow=v.show!==false; t.tabOctave=v.octave||0; if(v.gap!==undefined)t.tabGap=v.gap; } }); if(typeof renderTabPanel==='function')renderTabPanel(); render(); } else { state.tabMode=null; render(); } _a4Init(); if(typeof flash==='function')flash('Fichier .atm chargé — mise en page incluse'); }
+  async function saveAtm(){ const base=(state.openedFileName||(typeof proposedBaseName==='function'?proposedBaseName():'partition')); const text=buildAtmText(Object.assign({},_a4AtmPayload(),{__view:Object.assign({},state.view,{zoom:state.zoom,scoreScale:state.scoreScale,lyricOffset:state.lyricOffset})})); if(window.showSaveFilePicker){ try{ const handle=await window.showSaveFilePicker({suggestedName:base+'.atm',types:[{description:'ATM (texte éditable)',accept:{'application/octet-stream':['.atm']}},{description:'ATMZ (compressé)',accept:{'application/gzip':['.atmz']}}]}); const nm=handle.name||(base+'.atm'); const isZ=/\.atmz$/i.test(nm); const data=isZ?await gzipText(text):text; const w=await handle.createWritable(); await w.write(new Blob([data])); await w.close(); state.openedFileName=nm.replace(/\.[^.]+$/,''); state.openedFileExt=isZ?'.atmz':'.atm'; if(typeof render==='function')render(); if(typeof flash==='function')flash('Enregistré : '+nm); return; }catch(e){ if(e&&e.name==='AbortError')return; } } const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=base+'.atm'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); if(typeof flash==='function')flash('Téléchargé : '+base+'.atm'); }
+  function loadAtm(text,fileName){ let obj=null; const m=text.match(/^%%atm-layout[ \t]+(.+)$/m); if(m){ try{ obj=JSON.parse(m[1]); }catch(e){} } const abc=text.replace(/^%%atm-layout[ \t]+.*$/m,'').replace(/\n{3,}/g,'\n\n'); let tab=null; if(obj&&obj.__tab!==undefined){ tab=obj.__tab; delete obj.__tab; } let _lhArr=null,_lhOn=false; if(obj){ if(obj.__lh!==undefined){_lhArr=obj.__lh;delete obj.__lh;} if(obj.__lhOn!==undefined){_lhOn=!!obj.__lhOn;delete obj.__lhOn;} } let _a4v=null; if(obj&&obj.__view){_a4v=obj.__view;delete obj.__view;} loadTuneAbc(abc,fileName); _a4Pending=obj; if(_lhArr){Object.keys(_lhArr).forEach(function(k){var pp=k.split(':');var tr=state.tracks[+pp[0]];if(tr&&tr.measures&&tr.measures[+pp[1]]&&tr.measures[+pp[1]][+pp[2]])tr.measures[+pp[1]][+pp[2]].lh=_lhArr[k];});} state.diatoLh=_lhOn; if(_a4v&&typeof _a4v==='object'){state.view=Object.assign({a4:{}},_a4v);state.view.a4=Object.assign({marginPct:6,maxW:900,justify:0},_a4v.a4||{});if(_a4v.zoom!==undefined)state.zoom=_a4v.zoom;if(_a4v.scoreScale!==undefined)state.scoreScale=_a4v.scoreScale;if(_a4v.lyricOffset!==undefined)state.lyricOffset=_a4v.lyricOffset;} if(tab&&tab.mode){ state.tabMode=tab.mode; (state.tracks||[]).forEach(function(t,i){ const v=tab.voices&&tab.voices[i]; if(v){ t.tabShow=v.show!==false; t.tabOctave=v.octave||0; if(v.gap!==undefined)t.tabGap=v.gap; } }); if(typeof renderTabPanel==='function')renderTabPanel(); render(); } else { state.tabMode=null; render(); } _a4Init(); if(typeof flash==='function')flash('Fichier .atm chargé — mise en page incluse'); }
   { const b=document.getElementById('btn-a4'); if(b)b.addEventListener('click',openA4); }
   { const b=document.getElementById('a4-close'); if(b)b.addEventListener('click',closeA4); }
   { const b=document.getElementById('a4-refresh'); if(b)b.addEventListener('click',_a4Feed); }
