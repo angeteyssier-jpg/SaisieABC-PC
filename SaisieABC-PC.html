@@ -235,7 +235,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.47 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.52 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -1096,33 +1096,6 @@
   }
   // Geler les alterations effectives a partir d'un index de mesure (utilise avant un changement d'armure)
   // newSigAtStart : nouvelle armure qui s'appliquera a partir de startMi (pour poser un becarre si necessaire)
-  function freezeAccidentalsFrom(startMi,newSigAtStart){
-    for(let mi=startMi;mi<state.measures.length;mi++){
-      const meas=state.measures[mi];const sig=keyAt(mi);
-      // Si une armure changeait deja a une mesure ulterieure, elle restera. Sinon on utilise newSig.
-      let effSig=sig;
-      if(mi===startMi)effSig=sig;
-      meas.forEach((slot,si)=>{
-        if(slot.type!=='note')return;
-        // Alteration effective dans l'ancienne armure
-        const oldEff=effectiveAcc(meas,si,sig);
-        // Determiner la future armure pour cette mesure (apres changement)
-        let futSig=newSigAtStart;
-        // Si une autre armure change avant cette mesure, on ne devrait pas surecrire
-        // Simplification : on prend newSigAtStart pour toutes les mesures >= startMi
-        // (les keyChanges entre temps seront gerees ailleurs)
-        // Alteration que donnerait la nouvelle armure pour cette note (sans acc explicite)
-        let futKeyAcc='';
-        if(futSig>0&&SHARP_NOTES.slice(0,futSig).includes(slot.note))futKeyAcc='^';
-        else if(futSig<0&&FLAT_NOTES.slice(0,-futSig).includes(slot.note))futKeyAcc='_';
-        // On veut que la note conserve oldEff
-        // Si oldEff === futKeyAcc : laisser sans acc (la nouvelle armure le donnera)
-        // Sinon : poser un acc explicite (oldEff ou '=' si oldEff est vide)
-        if(oldEff===futKeyAcc)slot.acc='';
-        else slot.acc=oldEff||'=';
-      });
-    }
-  }
   function disarmKey(){
     // Geler les alterations effectives (armure + heritage de mesure) avant de modifier
     const frozen=state.measures.map((meas,mi)=>{
@@ -1153,7 +1126,7 @@
   function midiToNote(midi,preferFlats){const oct=Math.floor(midi/12)-5;const pc=((midi%12)+12)%12;const names=preferFlats?NOTE_NAMES_FLAT:NOTE_NAMES;const accs=preferFlats?NOTE_ACCS_FLAT:NOTE_ACCS;return{note:names[pc],octave:oct,acc:accs[pc]}}
   function midiOfSlot(slot,sig){const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[slot.note];let midi=60+baseSemi+slot.octave*12;if(slot.acc==='^')midi+=1;else if(slot.acc==='_')midi-=1;else if(slot.acc==='='){}else{if(sig>0&&SHARP_NOTES.slice(0,sig).includes(slot.note))midi+=1;else if(sig<0&&FLAT_NOTES.slice(0,-sig).includes(slot.note))midi-=1}return midi}
   // Altération effective d'un slot en tenant compte de l'héritage dans la mesure
-  function effectiveAcc(meas,slotIdx,keySig){const t=meas[slotIdx];if(!t||t.type!=='note')return '';if(t.acc)return t.acc;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type==='note'&&s.note===t.note&&s.octave===t.octave&&s.acc)return s.acc}if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))return '^';if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))return '_';return ''}
+  function effectiveAcc(meas,slotIdx,keySig){const t=meas[slotIdx];if(!t||t.type!=='note')return '';if(t.acc)return t.acc;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type!=='note')continue;if(s.note===t.note&&s.octave===t.octave&&s.acc)return s.acc;if(s.stack&&s.stack.length){for(const sn of s.stack){if(sn.note===t.note&&sn.octave===t.octave&&sn.acc)return sn.acc;}}}if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))return '^';if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))return '_';return ''}
   // Altération que l'armure `sig` applique d'office à une lettre (en demi-tons : +1, -1, 0)
   function keyAccVal(letter,sig){
     if(sig>0&&SHARP_NOTES.slice(0,sig).includes(letter))return 1;
@@ -1218,6 +1191,10 @@
       // On fige d'abord les altérations effectives héritées (snapshot) pour ne pas être pollué
       // par les réécritures successives dans la même mesure.
       const effs=meas.map((s,i)=>s.type==='note'?effectiveAcc(meas,i,oldSig):'');
+      // Meme instantane pour les notes empilees : sans lui, effAccFor relirait des
+      // slots deja reecrits plus haut dans la boucle.
+      const stackEffs=meas.map((s,i)=>(s.type==='note'&&s.stack&&s.stack.length)
+        ?s.stack.map(x=>x.acc||effAccFor(meas,i,x.note,x.octave,oldSig)):null);
       meas.forEach((slot,si)=>{
         if(slot.type!=='note')return;
         // note principale
@@ -1229,8 +1206,8 @@
         if(spMain.acc)slot.acc=spMain.acc;else delete slot.acc;
         // notes empilées (accord)
         if(slot.stack&&slot.stack.length){
-          slot.stack.forEach(x=>{
-            const xEff=x.acc||(keyAccVal(x.note,oldSig)?(keyAccVal(x.note,oldSig)>0?'^':'_'):'');
+          slot.stack.forEach((x,xi)=>{
+            const xEff=(stackEffs[si]&&stackEffs[si][xi]!==undefined)?stackEffs[si][xi]:(x.acc||(keyAccVal(x.note,oldSig)?(keyAccVal(x.note,oldSig)>0?'^':'_'):''));
             const xMidi=midiOfNote(x.note,x.octave,xEff,oldSig);
             const sp=spellPitchKeepLetter(((xMidi%12)+12)%12,newSig,x.note);
             const en=(sp.acc==='^')?1:(sp.acc==='_')?-1:(sp.acc==='=')?0:keyAccVal(sp.note,newSig);
@@ -1247,7 +1224,7 @@
   // ou de l'armure sinon. On affiche acc uniquement s'il diffère de cet héritage.
   function accToDrawFor(meas,slotIdx,keySig){const t=meas[slotIdx];if(!t||t.type!=='note')return '';// Note sans acc explicite : rien à dessiner (elle hérite simplement)
   if(!t.acc)return '';// Note avec acc explicite : afficher si différent du contexte
-  let priorAcc=null;for(let k=slotIdx-1;k>=0;k--){const s=meas[k];if(s.type==='note'&&s.note===t.note&&s.octave===t.octave&&s.acc){priorAcc=s.acc;break}}let keyAcc='';if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))keyAcc='^';else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))keyAcc='_';const ctx=(priorAcc!==null)?priorAcc:keyAcc;if(t.acc===ctx)return '';return t.acc}
+  let priorAcc=null;for(let k=slotIdx-1;k>=0&&priorAcc===null;k--){const s=meas[k];if(s.type!=='note')continue;if(s.note===t.note&&s.octave===t.octave&&s.acc){priorAcc=s.acc;break}if(s.stack&&s.stack.length){for(const sn of s.stack){if(sn.note===t.note&&sn.octave===t.octave&&sn.acc){priorAcc=sn.acc;break}}}}let keyAcc='';if(keySig>0&&SHARP_NOTES.slice(0,keySig).includes(t.note))keyAcc='^';else if(keySig<0&&FLAT_NOTES.slice(0,-keySig).includes(t.note))keyAcc='_';const ctx=(priorAcc!==null)?priorAcc:keyAcc;if(t.acc===ctx)return '';return t.acc}
   function transposePiece(semitones){
     // Choix simple : monter -> dieses, descendre -> bemols (ignore l'armure)
     const preferFlats=(semitones<0);
@@ -2940,7 +2917,7 @@
     // --- nombre de notes injouables sur ce clavier (voix active) ---
     {let nMiss=0;const ms=state.measures||[];ms.forEach((mm,mi)=>{const sg=keyAt(mi);const sh=clefSoundShift(clefAt(mi));mm.forEach((tt,si)=>{if(tt&&tt.type==='note'){const md=midiOfNote(tt.note,tt.octave,effectiveAcc(mm,si,sg),sg)+sh;if(diatoResolve(md).length===0)nMiss++;}});});h+='<div style="font-size:15px;margin:8px 0 2px;font-weight:600;'+(nMiss>0?'color:#1565c0;':'color:#2a8a3e;')+'">'+(nMiss>0?(nMiss+' note'+(nMiss>1?'s':'')+' injouable'+(nMiss>1?'s':'')+' sur ce clavier (en bleu dans la portée)'):'Toutes les notes sont jouables ✓')+'</div>';}
     // --- correction note par note sur la note sélectionnée ---
-    h+='<div style="font-size:11px;color:#5f5e5a;margin:8px 0 2px;">Note sélectionnée</div>';
+    h+='<div style="font-size:15px;color:#5f5e5a;margin:8px 0 2px;">Note sélectionnée</div>';
     if(sel&&sel.type==='note'){
       const sig=keyAt(state.sel.m);
       const midi=midiOfNote(sel.note,sel.octave,effectiveAcc(state.measures[state.sel.m],state.sel.s,sig),sig)+clefSoundShift(clefAt(state.sel.m));
@@ -3442,7 +3419,7 @@
   let _toastTimer=null;
   function flash(msg){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.classList.add('show');if(_toastTimer)clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>{el.classList.remove('show')},3600);}
   // Ensemble des hauteurs réelles (MIDI, trié) d'un slot note/accord, armure et altérations comprises
-  function slotMidiSet(meas,idx,sig){const t=meas[idx];if(!t||t.type!=='note')return null;const set=[midiOfNote(t.note,t.octave,effectiveAcc(meas,idx,sig),sig)];if(t.stack&&t.stack.length)t.stack.forEach(x=>{set.push(midiOfNote(x.note,x.octave,x.acc||'',sig))});return set.sort((a,b)=>a-b);}
+  function slotMidiSet(meas,idx,sig){const t=meas[idx];if(!t||t.type!=='note')return null;const set=[midiOfNote(t.note,t.octave,effectiveAcc(meas,idx,sig),sig)];if(t.stack&&t.stack.length)t.stack.forEach(x=>{set.push(midiOfNote(x.note,x.octave,x.acc||effAccFor(meas,idx,x.note,x.octave,sig),sig))});return set.sort((a,b)=>a-b);}
   // Localise la note suivante (même mesure, sinon début de la mesure suivante)
   function nextNoteRef(){const meas=state.measures[state.sel.m];if(!meas)return null;if(state.sel.s<meas.length-1)return{meas:meas,idx:state.sel.s+1,sig:keyAt(state.sel.m)};if(state.sel.m<state.measures.length-1){const nm=state.measures[state.sel.m+1];if(nm&&nm.length)return{meas:nm,idx:0,sig:keyAt(state.sel.m+1)}}return null;}
   // Résout l'intention de liaison (linkToNext) en tie (même hauteur réelle) ou slur (hauteur différente),
@@ -3911,6 +3888,31 @@
   function setRestAtSelection(){const sl=selectedSlot();if(!sl)return;const newSlot={type:'rest',dur:sl.dur,dot:sl.dot};if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}state.measures[state.sel.m][state.sel.s]=newSlot;pushHistory();render()}
   function setDurAtSelection(d){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dur=d;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi,Math.min(0.4,effDur(c)*60/state.tempo))}render()}
   function toggleDotAtSelection(){const sl=selectedSlot();if(!sl)return;const oE=effDur(sl);sl.dot=!sl.dot;rebalanceMeasure(state.sel.m,state.sel.s,oE);const nl=state.measures[state.sel.m].length;if(state.sel.s>=nl)state.sel.s=nl-1;pushHistory();const c=selectedSlot();if(c&&c.type==='note'){const meas=state.measures[state.sel.m];const sig=keyAt(state.sel.m);const midi=midiOfNote(c.note,c.octave,effectiveAcc(meas,state.sel.s,sig),sig);previewNote(midi)}render()}
+  // Instantane des alterations EFFECTIVES des notes suivantes de la mesure
+  // (tetes et notes d'accord), avant de modifier quoi que ce soit.
+  function __snapAccAfter(meas,si,sig){
+    const out=[];
+    for(let k=si+1;k<meas.length;k++){
+      const s=meas[k]; if(!s||s.type!=='note')continue;
+      const e={i:k,head:effectiveAcc(meas,k,sig),stack:null};
+      if(s.stack&&s.stack.length)e.stack=s.stack.map(x=>x.acc||effAccFor(meas,k,x.note,x.octave,sig));
+      out.push(e);
+    }
+    return out;
+  }
+  // Rend leur SON aux notes suivantes : celles dont l'alteration effective a
+  // bouge recoivent l'alteration explicite de l'instantane. Dans l'ordre, pour
+  // que chaque correction serve de contexte a la suivante (notation minimale).
+  function __restoreAccAfter(meas,si,sig,snap){
+    snap.forEach(e=>{
+      const s=meas[e.i]; if(!s||s.type!=='note')return;
+      if(effectiveAcc(meas,e.i,sig)!==e.head)s.acc=e.head||'=';
+      if(e.stack&&s.stack&&s.stack.length)s.stack.forEach((x,j)=>{
+        const cur=x.acc||effAccFor(meas,e.i,x.note,x.octave,sig);
+        if(cur!==e.stack[j])x.acc=e.stack[j]||'=';
+      });
+    });
+  }
   function toggleAccAtSelection(acc){if(state.graceMode){const _g=selectedSlot();if(_g&&_g.type==='note'&&_g.grace&&_g.grace.length){const gg=_g.grace[_g.grace.length-1];gg.acc=(gg.acc===acc)?'':acc;pushHistory();previewNote(midiOfNote(gg.note,gg.octave,gg.acc||'',keyAt(state.sel.m))+clefSoundShift(clefAt(state.sel.m)));render();return;}}const sl=selectedSlot();if(sl&&sl.type==='note'){
     if(state._chordEditMode&&!state._chordAddPending){
       const list=chordList(sl);const ai=chordActiveIdx(sl);const a=list[ai];
@@ -3919,7 +3921,16 @@
       chordWrite(sl,list);const nl=chordList(sl);let bi=0,bd=Infinity;nl.forEach((x,i)=>{const dd=Math.abs(midiOfNote(x.note,x.octave,x.acc,sig)-tm);if(dd<bd){bd=dd;bi=i}});state.chordActive=bi;
       pushHistory();previewNote(tm);render();return;
     }
-    sl.acc=(sl.acc===acc)?'':acc;state.accMem=state.accMem||{};{const _a=accToAlt(sl.acc);state.accMem[sl.note]=(_a!==null)?_a:keyAccVal(sl.note,keyAt(state.sel.m));}pushHistory();const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi);render()}}
+    {const _m=state.sel.m,_s=state.sel.s,_meas=state.measures[_m],_sig=keyAt(_m);
+     const _snap=__snapAccAfter(_meas,_s,_sig);          // 1. instantane
+     sl.acc=(sl.acc===acc)?'':acc;                       // 2. modifier la note visee
+     __restoreAccAfter(_meas,_s,_sig,_snap);             // 3. les suivantes gardent leur son
+     // un tie relie des hauteurs : les notes liees suivent. Alteration ABSOLUE,
+     // la liaison pouvant franchir une barre ou un changement d'armure.
+     propagateTieReplacement(_m,_s,sl.note,sl.octave,effectiveAcc(_meas,_s,_sig)||'=');
+     cleanupAccidentals();                               // 4. retirer les redondances
+    }
+    state.accMem=state.accMem||{};{const _a=accToAlt(sl.acc);state.accMem[sl.note]=(_a!==null)?_a:keyAccVal(sl.note,keyAt(state.sel.m));}pushHistory();const midi=midiOfNote(sl.note,sl.octave,sl.acc,keyAt(state.sel.m));previewNote(midi);render()}}
   function changeOctave(d){if(state.graceMode){const _g=selectedSlot();if(_g&&_g.type==='note'&&_g.grace&&_g.grace.length){const gg=_g.grace[_g.grace.length-1];gg.octave=Math.max(-2,Math.min(3,(gg.octave||0)+d));pushHistory();previewNote(midiOfNote(gg.note,gg.octave,gg.acc||'',keyAt(state.sel.m))+clefSoundShift(clefAt(state.sel.m)));render();return;}}state.octave=Math.max(-2,Math.min(3,state.octave+d));const sl=selectedSlot();if(sl&&sl.type==='note'){
     if(state._chordEditMode&&!state._chordAddPending){
       const list=chordList(sl);const ai=chordActiveIdx(sl);const a=list[ai];
@@ -5380,8 +5391,13 @@
     const baseSemi={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
     let midi=60+baseSemi[o.note]+o.octave*12;
     if(o.acc==='^')midi+=1;else if(o.acc==='_')midi-=1;
+    else if(o.acc==='^^')midi+=2;else if(o.acc==='__')midi-=2;
     const out=midiToNote(midi+semitones,preferFlats);
-    o.note=out.note;o.octave=out.octave;o.acc=out.acc;
+    o.note=out.note;o.octave=out.octave;
+    // Alteration ABSOLUE : '' (naturel) doit devenir '=', sinon respellAccidentals
+    // la relit comme "ce que dit l'armure" et la note change de hauteur.
+    // Les '=' inutiles sont retires juste apres par respellAccidentals.
+    o.acc=out.acc||'=';
   }
   // Transpose une PLAGE de slots (de from..to inclus, indices globaux) de la voix active.
   function transposeRange(fromIdx,toIdx,semitones){
@@ -8180,7 +8196,7 @@ async function loadMsczFile(buffer, fileName){
   async function saveAtm(){ const base=(state.openedFileName||(typeof proposedBaseName==='function'?proposedBaseName():'partition')); const text=buildAtmText(Object.assign({},atmPayload(),{__view:Object.assign({},state.view,{zoom:state.zoom,scoreScale:state.scoreScale,lyricOffset:state.lyricOffset})})); if(window.showSaveFilePicker){ try{ const handle=await window.showSaveFilePicker({suggestedName:base+'.atm',types:[{description:'ATM',accept:{'application/vnd.saisieabc.atm':['.atm','.atmz']}}]}); const nm=handle.name||(base+'.atm'); const isZ=/\.atmz$/i.test(nm); const data=isZ?await gzipText(text):text; const w=await handle.createWritable(); await w.write(new Blob([data])); await w.close(); state.openedFileName=nm.replace(/\.[^.]+$/,''); state.openedFileExt=isZ?'.atmz':'.atm'; if(typeof render==='function')render(); if(typeof flash==='function')flash('Enregistré : '+nm); return; }catch(e){ if(e&&e.name==='AbortError')return; } } const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=base+'.atm'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); if(typeof flash==='function')flash('Téléchargé : '+base+'.atm'); }
   function loadAtm(text,fileName){ let obj=null; const m=text.match(/^%%atm-layout[ \t]+(.+)$/m); if(m){ try{ obj=JSON.parse(m[1]); }catch(e){} } const abc=text.replace(/^%%atm-layout[ \t]+.*$/m,'').replace(/\n{3,}/g,'\n\n'); let tab=null; if(obj&&obj.__tab!==undefined){ tab=obj.__tab; delete obj.__tab; } let _lhArr=null,_lhOn=false; if(obj){ if(obj.__lh!==undefined){_lhArr=obj.__lh;delete obj.__lh;} if(obj.__lhOn!==undefined){_lhOn=!!obj.__lhOn;delete obj.__lhOn;} } let _a4v=null; if(obj&&obj.__view){_a4v=obj.__view;delete obj.__view;} let _loMap=null; if(obj&&obj.__lyrOff){_loMap=obj.__lyrOff;delete obj.__lyrOff;} loadTuneAbc(abc,fileName); if(_lhArr){Object.keys(_lhArr).forEach(function(k){var pp=k.split(':');var tr=state.tracks[+pp[0]];if(tr&&tr.measures&&tr.measures[+pp[1]]&&tr.measures[+pp[1]][+pp[2]])tr.measures[+pp[1]][+pp[2]].lh=_lhArr[k];});} state.diatoLh=_lhOn; if(_loMap){Object.keys(_loMap).forEach(function(k){var tr=state.tracks[+k];if(tr)tr.lyricOffset=_loMap[k];});} if(_a4v&&typeof _a4v==='object'){state.view=Object.assign({a4:{}},_a4v);state.view.a4=Object.assign({marginTop:15,marginBottom:15,marginLeft:15,marginRight:15,maxW:900,justify:2},_a4v.a4||{});if(state.view.a4.marginPct!=null&&_a4v.a4&&_a4v.a4.marginTop==null){var _mm=Math.round(state.view.a4.marginPct*2.1);state.view.a4.marginTop=state.view.a4.marginBottom=state.view.a4.marginLeft=state.view.a4.marginRight=_mm;}delete state.view.a4.marginPct;if(_a4v.zoom!==undefined)state.zoom=_a4v.zoom;if(_a4v.scoreScale!==undefined)state.scoreScale=_a4v.scoreScale;if(_a4v.lyricOffset!==undefined)state.lyricOffset=_a4v.lyricOffset;} if(tab&&tab.voices){ var _om=tab.mode||null; (state.tracks||[]).forEach(function(t,i){ const v=tab.voices&&tab.voices[i]; if(v){ t.tabShow=v.show!==false; t.tabOctave=v.octave||0; if(v.gap!==undefined)t.tabGap=v.gap; if(v.kind!==undefined)t.tabKind=v.kind; else if(_om&&v.show!==false)t.tabKind=_om; t.tabLh=!!v.lh; if(v.lhOff!==undefined)t.tabLhOffset=v.lhOff; if(v.lhSize!==undefined)t.tabLhSize=v.lhSize; t.tabRhythm=!!v.rhythm; if(v.dSys)t.diatoSystem=v.dSys; if(v.dOut!=null)t.diatoOuter=v.dOut; if(v.dRows!=null)t.diatoRows=v.dRows; if(v.dStr)t.diatoStrategy=v.dStr; } }); if(typeof renderTabPanel==='function')renderTabPanel(); render(); } else { render(); } if(typeof flash==='function')flash('Fichier .atm chargé — mise en page incluse'); }
   { const b=document.getElementById('btn-save-atm'); if(b)b.addEventListener('click',saveAtm); }
-  function transposeSelSemitone(d){ const sl=selectedSlot(); if(!sl||sl.type!=='note')return; const pf=(d<0); transposeNoteObj(sl,d,pf); if(sl.stack&&sl.stack.length)sl.stack.forEach(function(o){transposeNoteObj(o,d,pf);}); pushHistory(); render(); playSelectedSlot(); }
+  function transposeSelSemitone(d){ const sl=selectedSlot(); if(!sl||sl.type!=='note')return; const pf=(d<0); freezeAccidentals(); transposeNoteObj(sl,d,pf); if(sl.stack&&sl.stack.length)sl.stack.forEach(function(o){transposeNoteObj(o,d,pf);}); respellAccidentals(); pushHistory(); render(); playSelectedSlot(); }
   { const b=document.getElementById('btn-semi-down'); if(b)b.addEventListener('click',function(){transposeSelSemitone(-1);}); }
   { const b=document.getElementById('btn-semi-up'); if(b)b.addEventListener('click',function(){transposeSelSemitone(1);}); }
   rebuildMeasures();pushHistory();render();
