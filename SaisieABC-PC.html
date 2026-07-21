@@ -241,7 +241,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.83 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.93 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -769,7 +769,7 @@
     // le bon contenu. C'est pour ca que le build est fait APRES le picker.
     const FAM=function(e){ e=(e||'').toLowerCase();
       if(e==='.mxl'||e==='.xml'||e==='.musicxml')return 'mxl';
-      if(e==='.atm'||e==='.atmz')return 'atm';
+      if(e==='.atm'||e==='.atmz')return 'atm'; if(e==='.mscz'||e==='.mscx')return 'mscz';
       return 'abc'; };
     // Une entree PAR extension : le dialogue affiche une ligne par entree et
     // ajoute la PREMIERE extension de la ligne choisie. Regroupees, .atmz, .xml
@@ -1405,7 +1405,7 @@
   }
 
   function buildBarSeparator(prevMi,mi){const prevEnd=(prevMi>=0)&&state.repeats[prevMi]?.end;const thisStart=state.repeats[mi]?.start;if(prevEnd&&thisStart)return':|:';if(prevEnd)return':|';if(thisStart)return'|:';if(mi===0)return'';return'|'}
-  function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.tempoChanges&&state.tempoChanges[mi]!==undefined){parts.push('[Q:'+beatAbcFraction()+'='+Math.round(state.tempoChanges[mi]/beatQuarters())+']')}if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
+  function buildInlineFor(mi){const parts=[];if(mi===0)return'';if(state.timeChanges[mi])parts.push('[M:'+state.timeChanges[mi]+']');const keyChange=state.keyChanges[mi];const clefChange=state.clefChanges[mi];if(keyChange!==undefined||clefChange){const sig=keyChange!==undefined?keyChange:keyAt(mi);const cl=clefChange?clefChange:clefAt(mi);let inner='K:'+keyAbc(sig);if(cl&&cl!=='treble')inner+=clefAbcSuffix(cl);parts.push('['+inner+']')}return parts.join('')}
   /* --- v3.77 : une volta peut porter PLUSIEURS numeros ---------------------
      ABC ecrit '[1,3' (liste) ou '[1-3' (plage) ; MusicXML accepte de meme
      <ending number="1,3">. r.volta n'est donc plus un entier mais une chaine
@@ -1459,9 +1459,9 @@
       body+=buildVoltaFor(mi);
       const groups=computeBeamGroups(m,meterAt(mi));
       const gOf={};groups.forEach((g,gi)=>{g.forEach((idx)=>{gOf[idx]={gi}})});
-      let lastTid=null;
+      let lastTid=null;const _tcOn=(state.activeTrack===0)&&(mi>0)&&state.tempoChanges&&state.tempoChanges[mi]!==undefined;const _tcOff=_tcOn?((state.tempoOff||{})[mi]||0):0;var _tb=(state.tempoBeat||{})[mi]||{};var _bu=(_tb.u!=null?_tb.u:beatUnit());var _bd=(_tb.dot!=null?_tb.dot:false);const _tcStr=_tcOn?('[Q:'+beatAbcFraction(_bu,_bd)+'='+Math.round(state.tempoChanges[mi]/beatQuarters(_bu,_bd))+']'):'';let _tcDone=!_tcOn;let _tcAcc=0;
       m.forEach((t,si)=>{
-        if(t.tuplet&&t.tupletId!==lastTid){
+        if(!_tcDone&&_tcAcc>=_tcOff-1e-9){body+=_tcStr;_tcDone=true;}if(t.tuplet&&t.tupletId!==lastTid){
           // Compter le nombre de notes du groupe (count) pour la forme complète (n:normal:count)
           let cnt=0;for(let k=si;k<m.length&&m[k].tupletId===t.tupletId;k++)cnt++;
           const normal=(t.tupletNormal!==undefined&&t.tupletNormal>0)?t.tupletNormal:2;
@@ -1479,7 +1479,7 @@
           const prevHadSlur=prevNote&&prevNote.slurToNext;
           if(t.slurToNext&&!slurActive&&!prevHadSlur){ body+='('; slurActive=true; }
         }
-        body+=slotStr(t);
+        body+=slotStr(t);_tcAcc+=effDur(t);
         if(t.type==='note'){
           // Fin de chaîne : un slur est ouvert, et cette note ne continue pas (pas de slurToNext)
           if(slurActive&&!t.slurToNext){ body+=')'; slurActive=false; }
@@ -1490,7 +1490,7 @@
         if(!inSame)body+=' ';
       });
       // Sauts de mise en page après cette mesure : $ = fin de ligne, %%newpage = fin de page.
-      const br=state.breaks&&state.breaks[mi];
+      if(!_tcDone){body+=_tcStr;_tcDone=true;}const br=state.breaks&&state.breaks[mi];
       if(br){
         // fermer la barre de mesure courante avant le saut
         if(br.page){body+=' |\n%%newpage\n';}
@@ -1780,7 +1780,7 @@
       // sous-état temporaire pour parser cette voix
       const sub={pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:(meta.keySig!==undefined?meta.keySig:ns.pieceKeySig),pieceClef:meta.clef||ns.pieceClef,measures:[],timeChanges:{},keyChanges:{},clefChanges:{},repeats:{},parts:{},breaks:{},tempoChanges:{}};
       let bt=(bodyByVoice[vid]||'');/* grace notes {..} preservees comme vraies grace notes (plus de conversion en n-uplet) */
-      parseAbcBody(bt,sub);if(sub.breaks)Object.assign(ns.breaks,sub.breaks);if(sub.tempoChanges)Object.assign(ns.tempoChanges,sub.tempoChanges);
+      parseAbcBody(bt,sub);if(sub.breaks)Object.assign(ns.breaks,sub.breaks);if(sub.tempoChanges)Object.assign(ns.tempoChanges,sub.tempoChanges);if(sub.tempoOff)Object.assign((ns.tempoOff=ns.tempoOff||{}),sub.tempoOff);if(sub.tempoBeat)Object.assign((ns.tempoBeat=ns.tempoBeat||{}),sub.tempoBeat);
       ns.tracks.push(makeTrack({name:meta.name||('V'+vid),sname:meta.sname||'',measures:sub.measures,pieceMeter:sub.pieceMeter,pieceUnit:sub.pieceUnit,pieceKeySig:sub.pieceKeySig,pieceClef:sub.pieceClef,timeChanges:sub.timeChanges,keyChanges:sub.keyChanges,clefChanges:sub.clefChanges,repeats:sub.repeats,parts:sub.parts,percMap:((_percByVoice[vid]&&Object.keys(_percByVoice[vid]).length)?_percByVoice[vid]:null),instrument:((_progByVoice[vid]!==undefined)?_progByVoice[vid]:0)}));
     });
     if(!ns.tracks.length)ns.tracks.push(makeTrack({pieceMeter:ns.pieceMeter,pieceUnit:ns.pieceUnit,pieceKeySig:ns.pieceKeySig,pieceClef:ns.pieceClef,percMap:((_percByVoice['1']&&Object.keys(_percByVoice['1']).length)?_percByVoice['1']:null),instrument:((_progByVoice['1']!==undefined)?_progByVoice['1']:0)}));
@@ -1796,7 +1796,7 @@
     }
     return ns;
   }
-  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingGrace=[],pendingGraceSlash=false,pendingTuplet=null,slurDepth=0,lastNoteSlot=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){if(curMeasure.length>0&&curMeasure[curMeasure.length-1].type==='note'){if(!ns._bb)ns._bb={};if(!ns._bb[mIdx])ns._bb[mIdx]={};ns._bb[mIdx][curMeasure.length]=true;}i++;continue}if(c==='$'){const bm=(curMeasure.length>0)?mIdx:(mIdx-1);if(bm>=0){if(!ns.breaks[bm])ns.breaks[bm]={};ns.breaks[bm].line=true}i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='{'){const gend=body.indexOf('}',i);if(gend<0){i++;continue}let ginner=body.substring(i+1,gend);pendingGraceSlash=false;if(ginner[0]==='/'){pendingGraceSlash=true;ginner=ginner.slice(1);}const gnotes=[];const gre=/(\^\^|__|\^|_|=)?([A-Ga-g])('+|,+)?/g;let gmm;while((gmm=gre.exec(ginner))){let gacc=gmm[1]||'';let gnn=gmm[2].toUpperCase();let goct=(gmm[2]===gmm[2].toLowerCase())?1:0;const gadj=gmm[3]||'';for(const gch of gadj){if(gch==="'")goct++;else if(gch===',')goct--}gnotes.push({note:gnn,octave:goct,acc:gacc?(gacc.length>1?gacc[0]:gacc):''})}pendingGrace=gnotes;i=gend+1;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const ti=mIdx+(curMeasure.length>0?1:0);const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);let bpmQ=null;if(qm){const bf=beatFromAbc(parseInt(qm[1],10),parseInt(qm[2],10));bpmQ=parseInt(qm[3],10)*bf.unit*(bf.dotted?1.5:1)}else{const qm2=v.match(/=\s*(\d+)/);if(qm2)bpmQ=parseInt(qm2[1],10);else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3)bpmQ=parseInt(qm3[1],10)}}if(bpmQ!==null){if(ti===0)ns.tempo=bpmQ;else ns.tempoChanges[ti]=bpmQ}}else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const _vt=body.substring(i+1).match(/^[1-9](?:\s*[,-]\s*[1-9])*/);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=voltaFmt(voltaSet(_vt[0]));i+=1+_vt[0].length;continue}if(c==='['&&body[i+1]&&/[\^_=A-Ga-g]/.test(body[i+1])){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);i=end+1;let dsOut='';while(i<body.length&&/[\d/]/.test(body[i])){dsOut+=body[i];i++}let tie=(inner.indexOf('-')>=0);if(body[i]==='-'){tie=true;i++}
+  function parseAbcBody(body,ns){let i=0,curMeasure=[],mIdx=0,lastChord=null,lastText=null,pendingOrn=[],pendingGrace=[],pendingGraceSlash=false,pendingTuplet=null,slurDepth=0,lastNoteSlot=null;const measures=ns.measures;function flush(){if(curMeasure.length>0){measures.push(curMeasure);curMeasure=[];mIdx++}}function uM(){const m=ns.pieceUnit.match(/^\s*1\s*\/\s*(\d+)\s*$/);if(!m)return 1;return parseInt(m[1],10)/4}while(i<body.length){const c=body[i];if(/\s/.test(c)){if(curMeasure.length>0&&curMeasure[curMeasure.length-1].type==='note'){if(!ns._bb)ns._bb={};if(!ns._bb[mIdx])ns._bb[mIdx]={};ns._bb[mIdx][curMeasure.length]=true;}i++;continue}if(c==='$'){const bm=(curMeasure.length>0)?mIdx:(mIdx-1);if(bm>=0){if(!ns.breaks[bm])ns.breaks[bm]={};ns.breaks[bm].line=true}i++;continue}if(c==='%'){while(i<body.length&&body[i]!=='\n')i++;continue}if(c==='{'){const gend=body.indexOf('}',i);if(gend<0){i++;continue}let ginner=body.substring(i+1,gend);pendingGraceSlash=false;if(ginner[0]==='/'){pendingGraceSlash=true;ginner=ginner.slice(1);}const gnotes=[];const gre=/(\^\^|__|\^|_|=)?([A-Ga-g])('+|,+)?/g;let gmm;while((gmm=gre.exec(ginner))){let gacc=gmm[1]||'';let gnn=gmm[2].toUpperCase();let goct=(gmm[2]===gmm[2].toLowerCase())?1:0;const gadj=gmm[3]||'';for(const gch of gadj){if(gch==="'")goct++;else if(gch===',')goct--}gnotes.push({note:gnn,octave:goct,acc:gacc?(gacc.length>1?gacc[0]:gacc):''})}pendingGrace=gnotes;i=gend+1;continue}if(c==='['&&body[i+1]&&body[i+1].match(/[A-Z]/)&&body[i+2]===':'){const end=body.indexOf(']',i);if(end<0){i++;continue}const inner=body.substring(i+1,end);const m=inner.match(/^([A-Z]):\s*(.*)$/);if(m){const k=m[1],v=m[2].trim();if(k==='M')ns.timeChanges[mIdx+(curMeasure.length>0?1:0)]=v;else if(k==='L')ns.pieceUnit=v;else if(k==='Q'){const ti=mIdx;let _qoff=0;for(var _qi=0;_qi<curMeasure.length;_qi++)_qoff+=effDur(curMeasure[_qi]);const qm=v.match(/(\d+)\s*\/\s*(\d+)\s*=\s*(\d+)/);let bpmQ=null;let _qbf=null;if(qm){_qbf=beatFromAbc(parseInt(qm[1],10),parseInt(qm[2],10));bpmQ=parseInt(qm[3],10)*_qbf.unit*(_qbf.dotted?1.5:1)}else{const qm2=v.match(/=\s*(\d+)/);if(qm2)bpmQ=parseInt(qm2[1],10);else{const qm3=v.match(/^\s*(\d+)\s*$/);if(qm3)bpmQ=parseInt(qm3[1],10)}}if(bpmQ!==null){if(ti===0)ns.tempo=bpmQ;else {ns.tempoChanges[ti]=bpmQ;(ns.tempoOff=ns.tempoOff||{})[ti]=_qoff;if(_qbf)(ns.tempoBeat=ns.tempoBeat||{})[ti]={u:_qbf.unit,dot:_qbf.dotted};}}}else if(k==='P'){ns.parts[mIdx+(curMeasure.length>0?1:0)]=v}else if(k==='K'){const kd=parseKeyDef(v);const ti=mIdx+(curMeasure.length>0?1:0);ns.keyChanges[ti]=kd.sig;if(kd.clef!=='treble')ns.clefChanges[ti]=kd.clef}}i=end+1;continue}if(c==='['&&body[i+1]&&/[1-9]/.test(body[i+1])){const _vt=body.substring(i+1).match(/^[1-9](?:\s*[,-]\s*[1-9])*/);const ti=mIdx+(curMeasure.length===0?0:1);if(!ns.repeats[ti])ns.repeats[ti]={};ns.repeats[ti].volta=voltaFmt(voltaSet(_vt[0]));i+=1+_vt[0].length;continue}if(c==='['&&body[i+1]&&/[\^_=A-Ga-g]/.test(body[i+1])){const end=body.indexOf(']',i);if(end>i){const inner=body.substring(i+1,end);i=end+1;let dsOut='';while(i<body.length&&/[\d/]/.test(body[i])){dsOut+=body[i];i++}let tie=(inner.indexOf('-')>=0);if(body[i]==='-'){tie=true;i++}
         // découper les notes internes de l'accord (avec leur durée propre)
         const chordNotes=[];let p=0;let firstDs='';while(p<inner.length){let a='';while(p<inner.length&&(inner[p]==='^'||inner[p]==='_'||inner[p]==='=')){if(inner[p]==='^')a=(a==='^'?'^^':'^');else if(inner[p]==='_')a=(a==='_'?'__':'_');else a='=';p++}if(p>=inner.length)break;const cc=inner[p];if(/[A-Ga-g]/.test(cc)){let nn=cc.toUpperCase();let oo=(cc===cc.toLowerCase())?1:0;p++;while(p<inner.length&&(inner[p]==="'"||inner[p]===',')){if(inner[p]==="'")oo++;else oo--;p++}let ids='';while(p<inner.length&&/[\d/]/.test(inner[p])){ids+=inner[p];p++}if(firstDs==='')firstDs=ids;chordNotes.push({note:nn,octave:oo,acc:a?(a.length>1?a[0]:a):''})}else p++}
         // durée : externe (après ]) prioritaire, sinon celle des notes internes
@@ -2456,7 +2456,7 @@
             const tc=state.tempoChanges||{};
             const isTopVoice=(layout&&layout._topVisible!==undefined&&layout._renderTrack!==undefined)?(layout._renderTrack===layout._topVisible):isActiveVoice;
             if((mIdx===0||tc[mIdx]!==undefined)&&isTopVoice){
-              const bpm=Math.round(tempoAt(mIdx)/beatQuarters());
+              var _tqTb=(state.tempoBeat||{})[mIdx]||{};var _tqU=(mIdx>0&&_tqTb.u!=null)?_tqTb.u:beatUnit();var _tqD=(mIdx>0&&_tqTb.dot!=null)?_tqTb.dot:beatDotted();const bpm=Math.round(tempoAt(mIdx)/beatQuarters(_tqU,_tqD));
               // y normalement au-dessus de la portée ; sur la 1re ligne l'espace est réduit (viewBox
               // commence à 0), donc on borne à une valeur VISIBLE. On décale aussi en x pour ne pas
               // chevaucher le numéro de mesure / la lettre de partie.
@@ -2466,8 +2466,8 @@
               // la zone, on décale le tempo à droite pour éviter tout chevauchement.
               const cramped=(tyTempo>=staffTop-14);
               let txTempo=xL+2;
-              if(cramped||hasPart)txTempo=xL+(hasPart?28:16);
-              svg+='<text x="'+txTempo+'" y="'+tyTempo+'" font-size="'+_szTp+'" font-weight="bold" font-family="serif" fill="'+ink+'">'+beatGlyph()+'='+bpm+'</text>';
+              if(cramped||hasPart)txTempo=xL+(hasPart?28:16);var _tqOff=(mIdx>0)?(((state.tempoOff||{})[mIdx])||0):0;if(_tqOff>0){var _tqAcc=0,_tqSlot=-1;for(var _tqK=0;_tqK<m.length;_tqK++){if(_tqAcc>=_tqOff-1e-9){_tqSlot=_tqK;break;}_tqAcc+=effDur(m[_tqK]);}if(_tqSlot<0)_tqSlot=m.length-1;if(cxBySlot[_tqSlot]!=null)txTempo=cxBySlot[_tqSlot]-6;}
+              svg+='<text x="'+txTempo+'" y="'+tyTempo+'" font-size="'+_szTp+'" font-weight="bold" font-family="serif" fill="'+ink+'">'+beatGlyph(_tqU,_tqD)+'='+bpm+'</text>';
             }
           }
           if(t.type==='note'&&state.viewFlags.lyrics){
@@ -3744,10 +3744,10 @@
         const qDm=60/Math.max(20,tempoAt(mi)+playTempoOffset); // durée d'une noire à la mesure mi (tempo variable + décalage d'écoute)
         // start slot : en multi on démarre toujours en début de mesure (synchro parfaite entre voix) ;
         // en mono on respecte le slot sélectionné (démarrage en cours de mesure).
-        const firstSlot=(!multi&&oi===startIdxInOrder&&mi===startMeasure)?startSlotActive:0;
+        const firstSlot=(!multi&&oi===startIdxInOrder&&mi===startMeasure)?startSlotActive:0;const _t3off=(mi>0&&state.tempoChanges&&state.tempoChanges[mi]!==undefined)?(((state.tempoOff||{})[mi])||0):0;const _t3qOld=(_t3off>0)?(60/Math.max(20,tempoAt(mi-1)+playTempoOffset)):qDm;let _t3acc=0;for(var _t3i=0;_t3i<firstSlot;_t3i++)_t3acc+=effDur(m[_t3i]);
         for(let si=firstSlot;si<m.length;si++){
           const slot=m[si];
-          const dur=effDur(slot)*qDm;
+          const dur=effDur(slot)*((_t3off>0&&_t3acc<_t3off-1e-9)?_t3qOld:qDm);_t3acc+=effDur(slot);
           if(slot.type==='note'){
             const midi=midiOfNote(slot.note,slot.octave,effectiveAcc(m,si,sig),sig)+oct;
             if(slot.grace&&slot.grace.length){const _gn=slot.grace.length;const _ge=Math.min(0.07,Math.max(0.045,dur*0.4/_gn));const _gwin=_ge*_gn;slot.grace.forEach((_g,_gk)=>{const _gmidi=midiOfNote(_g.note,_g.octave,_g.acc||'',sig)+oct;const _gs=Math.max(st,acc-_gwin+_gk*_ge);graceEvs.push({midi:_gmidi,dur:_ge*0.92,startAt:_gs,measureIdx:mi,slotIdx:si,trackIdx:ti,gainScale:gainScale*0.95,perc:_perc,percStep:(_perc?stepIndex(_g.note,_g.octave):undefined),percKind:(_perc?percKindForSlot(state.tracks[ti],_g.note,_g.octave,_g.acc):undefined),tieToNext:false});});}const ev={midi,dur,startAt:acc,measureIdx:mi,slotIdx:si,trackIdx:ti,gainScale,perc:_perc,percStep:(_perc?stepIndex(slot.note,slot.octave):undefined),percKind:(_perc?percKindForSlot(state.tracks[ti],slot.note,slot.octave,slot.acc):undefined),tieToNext:!!slot.tieToNext};
@@ -5265,7 +5265,7 @@
         state.timeChanges[afterIdx]=restoreMeter;
       }
     }
-    state.pieceUnit=newUnit;
+    state.pieceUnit=newUnit; Object.keys(state.timeChanges).forEach(function(_k){var _i=parseInt(_k,10);if(_i>0&&state.timeChanges[_i]===meterAt(_i-1))delete state.timeChanges[_i];});
     state.sel={m:startM,s:0};
     cleanupAccidentals();
   }
@@ -5975,8 +5975,9 @@
   document.getElementById('vol-d5').addEventListener('click',()=>changeVolume(-5));
   // === Changement de tempo en cours de morceau (commun à toutes les voix) ===
   {const tcb=document.getElementById('btn-tempo-change');if(tcb)tcb.addEventListener('click',()=>{
-    function fromM(){return state.sel.m;}                       // mesure de départ = mesure active (suit la nav du haut)
-    let dispBpm=Math.round(tempoAt(fromM())/beatQuarters());
+    function fromM(){return state.sel.m;}
+      function fromOff(){var _m=state.measures[state.sel.m]||[];var _o=0;var _n=Math.min(state.sel.s||0,_m.length);for(var _i=0;_i<_n;_i++)_o+=effDur(_m[_i]);return _o;}                       // mesure de départ = mesure active (suit la nav du haut)
+    function curBeat(){var _b=(state.tempoBeat||{})[fromM()];if(_b&&_b.u!=null)return{u:_b.u,dot:!!_b.dot};return{u:beatUnit(),dot:beatDotted()};}var curU=curBeat().u,curDot=curBeat().dot;let dispBpm=Math.round(tempoAt(fromM())/beatQuarters(curU,curDot));
     function curHasChange(){return fromM()>0 && (state.tempoChanges||{})[fromM()]!==undefined}
     function body(){
       let h='<div class="mes-active" style="color:#8a5a00;">⊕ Tempo commun à <b>toutes les voix</b></div>';
@@ -5985,7 +5986,7 @@
       h+='<div class="control-row" style="display:flex;align-items:center;margin-bottom:6px;justify-content:center;gap:6px;">'
         +'<button class="k" id="tcb-d10">−10</button>'
         +'<button class="k" id="tcb-d">−1</button>'
-        +'<div class="label" style="min-width:64px;text-align:center;"><span id="tcb-glyph">'+beatGlyph()+'</span> = <b id="tcb-v">'+dispBpm+'</b></div>'
+        +'<div class="label" style="min-width:64px;text-align:center;"><span id="tcb-glyph">'+beatGlyph(curU,curDot)+'</span> = <b id="tcb-v">'+dispBpm+'</b></div>'
         +'<button class="k" id="tcb-u">+1</button>'
         +'<button class="k" id="tcb-u10">+10</button></div>';
       h+='<div class="stepper-label" style="text-align:left;margin-top:2px;">Unité de battue</div>';
@@ -6000,34 +6001,34 @@
     }
     function refresh(){
       const mv=document.getElementById('tcm-v');if(mv)mv.textContent=(fromM()+1);
-      dispBpm=Math.round(tempoAt(fromM())/beatQuarters());
+      dispBpm=Math.round(tempoAt(fromM())/beatQuarters(curU,curDot));
       const bv=document.getElementById('tcb-v');if(bv)bv.textContent=dispBpm;
-      const gl=document.getElementById('tcb-glyph');if(gl)gl.textContent=beatGlyph();
-      document.querySelectorAll('.tcb-unit').forEach(b=>b.classList.toggle('active',Math.abs(parseFloat(b.dataset.u)-beatUnit())<1e-9));
-      const bd=document.getElementById('tcb-dot');if(bd)bd.classList.toggle('active',beatDotted());
+      const gl=document.getElementById('tcb-glyph');if(gl)gl.textContent=beatGlyph(curU,curDot);
+      document.querySelectorAll('.tcb-unit').forEach(b=>b.classList.toggle('active',Math.abs(parseFloat(b.dataset.u)-curU)<1e-9));
+      const bd=document.getElementById('tcb-dot');if(bd)bd.classList.toggle('active',curDot);
       const del=document.getElementById('tcb-del');if(del)del.disabled=!curHasChange();
     }
     function setBpm(d){dispBpm=Math.max(1,dispBpm+d);const bv=document.getElementById('tcb-v');if(bv)bv.textContent=dispBpm;}
     openPanel({title:'Tempo',body:body(),hideActions:true,extraButtons:['Fermer'],showMes:true,
-      onMeasureChange:()=>{refresh();},
+      onMeasureChange:()=>{curU=curBeat().u;curDot=curBeat().dot;refresh();},
       onMount:()=>{
         document.getElementById('tcb-u').addEventListener('click',()=>setBpm(1));
         document.getElementById('tcb-d').addEventListener('click',()=>setBpm(-1));
         document.getElementById('tcb-u10').addEventListener('click',()=>setBpm(10));
         document.getElementById('tcb-d10').addEventListener('click',()=>setBpm(-10));
-        const applyUnit=(u,dot)=>{setBeat(u,dot);dispBpm=Math.round(tempoAt(fromM())/beatQuarters());pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();refresh();};
-        document.querySelectorAll('.tcb-unit').forEach(b=>b.addEventListener('click',()=>applyUnit(parseFloat(b.dataset.u),beatDotted())));
-        {const db=document.getElementById('tcb-dot');if(db)db.addEventListener('click',()=>applyUnit(beatUnit(),!beatDotted()));}
+        const applyUnit=(u,dot)=>{curU=u;curDot=dot;if(fromM()===0){setBeat(u,dot);pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();}dispBpm=Math.round(tempoAt(fromM())/beatQuarters(curU,curDot));refresh();};
+        document.querySelectorAll('.tcb-unit').forEach(b=>b.addEventListener('click',()=>applyUnit(parseFloat(b.dataset.u),curDot)));
+        {const db=document.getElementById('tcb-dot');if(db)db.addEventListener('click',()=>applyUnit(curU,!curDot));}
         document.getElementById('tcb-apply').addEventListener('click',()=>{
-          const canon=Math.max(30,Math.min(300,tempoFromDisplay(dispBpm)));
+          const canon=Math.max(30,Math.min(300,dispBpm*beatQuarters(curU,curDot)));
           if(fromM()===0){state.tempo=canon;}
-          else {state.tempoChanges=state.tempoChanges||{};state.tempoChanges[fromM()]=canon;}
+          else {state.tempoChanges=state.tempoChanges||{};state.tempoOff=state.tempoOff||{};state.tempoBeat=state.tempoBeat||{};var _tm=fromM();state.tempoChanges[_tm]=canon;state.tempoOff[_tm]=fromOff();state.tempoBeat[_tm]={u:curU,dot:curDot};}
           pushHistory();
           if(audio.playing){replayFromCurrent();renderState();}else render();
           refresh();
         });
         document.getElementById('tcb-del').addEventListener('click',()=>{
-          if(curHasChange()){delete state.tempoChanges[fromM()];pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();refresh();}
+          if(curHasChange()){delete state.tempoChanges[fromM()];delete (state.tempoOff||{})[fromM()];delete (state.tempoBeat||{})[fromM()];pushHistory();if(audio.playing){replayFromCurrent();renderState();}else render();refresh();}
         });
         refresh();
       },
@@ -6294,7 +6295,7 @@
 
   document.getElementById('btn-save-file').addEventListener('click',()=>{openSavePanel('abc');});
   const fileInput=document.getElementById('file-input');
-  document.getElementById('btn-open-file').addEventListener('click',async()=>{if(window.showOpenFilePicker){try{const [h]=await window.showOpenFilePicker({startIn:(savedFileHandle||'documents'),types:[{description:'Partition',accept:{'application/vnd.saisieabc.abc':['.abc'],'application/vnd.saisieabc.atm':['.atm','.atmz'],'application/vnd.recordare.musicxml':['.mxl'],'application/vnd.recordare.musicxml+xml':['.xml','.musicxml'],'application/vnd.musescore.score':['.mscz','.mscx']}}]});if(h){const _n=(h.name||'').toLowerCase();savedFileHandle=(_n.endsWith('.mscz')||_n.endsWith('.mscx'))?null:h;savedFileHandleExt=(_n.match(/(\.[^.]+)$/)||[,'.abc'])[1];const f=await h.getFile();processOpenedFile(f);}return;}catch(e){if(e&&e.name==='AbortError')return;}}fileInput.click();});
+  document.getElementById('btn-open-file').addEventListener('click',async()=>{if(window.showOpenFilePicker){try{const [h]=await window.showOpenFilePicker({startIn:(savedFileHandle||'documents'),types:[{description:'Partition',accept:{'application/vnd.saisieabc.abc':['.abc'],'application/vnd.saisieabc.atm':['.atm','.atmz'],'application/vnd.recordare.musicxml':['.mxl'],'application/vnd.recordare.musicxml+xml':['.xml','.musicxml'],'application/vnd.musescore.score':['.mscz','.mscx']}}]});if(h){const _n=(h.name||'').toLowerCase();savedFileHandle=h;savedFileHandleExt=(_n.match(/(\.[^.]+)$/)||[,'.abc'])[1];const f=await h.getFile();processOpenedFile(f);}return;}catch(e){if(e&&e.name==='AbortError')return;}}fileInput.click();});
   // Mémoire du dernier fichier multi-morceaux ouvert (pour le bouton Liste)
   let lastMultiTunes=null, lastMultiFileName=null, lastMultiIndex=-1;
   function updateListBtn(){const b=document.getElementById('btn-list');if(b){const on=!!(lastMultiTunes&&lastMultiTunes.length>1);b.classList.toggle('primary',on);b.disabled=!on;b.style.opacity=on?'':'0.5'}}
@@ -8433,7 +8434,7 @@ async function loadMsczFile(buffer, fileName){
   function buildAtmText(payload){ let abc=buildAbcText(); if(abc.charAt(abc.length-1)!=='\n')abc+='\n'; return abc+'%%atm-layout '+JSON.stringify(payload||{})+'\n'; }
   async function gzipText(t){ const cs=new CompressionStream('gzip'); const w=cs.writable.getWriter(); w.write(new TextEncoder().encode(t)); w.close(); return new Uint8Array(await new Response(cs.readable).arrayBuffer()); }
   async function gunzipToText(b){ const ds=new DecompressionStream('gzip'); const w=ds.writable.getWriter(); w.write(b); w.close(); return new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()); }
-  async function saveAtm(){ const base=(state.openedFileName||(typeof proposedBaseName==='function'?proposedBaseName():'partition')); const text=buildAtmText(Object.assign({},atmPayload(),{__view:Object.assign({},state.view,{zoom:state.zoom,scoreScale:state.scoreScale,lyricOffset:state.lyricOffset})})); if(window.showSaveFilePicker){ try{ const _wantZ=(state.openedFileExt==='.atmz');const _tz=[{description:'ATM (.atm)',accept:{'application/vnd.saisieabc.atm':['.atm']}},{description:'ATM compress\u00e9 (.atmz)',accept:{'application/vnd.saisieabc.atmz':['.atmz']}}];const handle=await window.showSaveFilePicker({suggestedName:base+(_wantZ?'.atmz':'.atm'),types:(_wantZ?[_tz[1],_tz[0]]:_tz)}); const nm=handle.name||(base+'.atm'); const isZ=/\.atmz$/i.test(nm); const data=isZ?await gzipText(text):text; const w=await handle.createWritable(); await w.write(new Blob([data])); await w.close(); state.openedFileName=nm.replace(/\.[^.]+$/,''); state.openedFileExt=isZ?'.atmz':'.atm'; if(typeof render==='function')render(); if(typeof flash==='function')flash('Enregistré : '+nm); return; }catch(e){ if(e&&e.name==='AbortError')return; } } const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=base+'.atm'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); if(typeof flash==='function')flash('Téléchargé : '+base+'.atm'); }
+  async function saveAtm(){ const base=(state.openedFileName||(typeof proposedBaseName==='function'?proposedBaseName():'partition')); const text=buildAtmText(Object.assign({},atmPayload(),{__view:Object.assign({},state.view,{zoom:state.zoom,scoreScale:state.scoreScale,lyricOffset:state.lyricOffset})})); if(window.showSaveFilePicker){ try{ const _wantZ=(state.openedFileExt==='.atmz');const _tz=[{description:'ATM (.atm)',accept:{'application/vnd.saisieabc.atm':['.atm']}},{description:'ATM compress\u00e9 (.atmz)',accept:{'application/vnd.saisieabc.atmz':['.atmz']}}];const handle=await window.showSaveFilePicker({suggestedName:base+(_wantZ?'.atmz':'.atm'),startIn:(savedFileHandle||'documents'),types:(_wantZ?[_tz[1],_tz[0]]:_tz)}); const nm=handle.name||(base+'.atm'); const isZ=/\.atmz$/i.test(nm); const data=isZ?await gzipText(text):text; const w=await handle.createWritable(); await w.write(new Blob([data])); await w.close(); savedFileHandle=handle; savedFileHandleExt=isZ?'.atmz':'.atm'; state.openedFileName=nm.replace(/\.[^.]+$/,''); state.openedFileExt=isZ?'.atmz':'.atm'; if(typeof render==='function')render(); if(typeof flash==='function')flash('Enregistré : '+nm); return; }catch(e){ if(e&&e.name==='AbortError')return; } } const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=base+'.atm'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); if(typeof flash==='function')flash('Téléchargé : '+base+'.atm'); }
   function loadAtm(text,fileName){ let obj=null; const m=text.match(/^%%atm-layout[ \t]+(.+)$/m); if(m){ try{ obj=JSON.parse(m[1]); }catch(e){} } const abc=text.replace(/^%%atm-layout[ \t]+.*$/m,'').replace(/\n{3,}/g,'\n\n'); let tab=null; if(obj&&obj.__tab!==undefined){ tab=obj.__tab; delete obj.__tab; } let _lhArr=null,_lhOn=false; if(obj){ if(obj.__lh!==undefined){_lhArr=obj.__lh;delete obj.__lh;} if(obj.__lhOn!==undefined){_lhOn=!!obj.__lhOn;delete obj.__lhOn;} } let _a4v=null; if(obj&&obj.__view){_a4v=obj.__view;delete obj.__view;} let _loMap=null; if(obj&&obj.__lyrOff){_loMap=obj.__lyrOff;delete obj.__lyrOff;} loadTuneAbc(abc,fileName); if(_lhArr){Object.keys(_lhArr).forEach(function(k){var pp=k.split(':');var tr=state.tracks[+pp[0]];if(tr&&tr.measures&&tr.measures[+pp[1]]&&tr.measures[+pp[1]][+pp[2]])tr.measures[+pp[1]][+pp[2]].lh=_lhArr[k];});} state.diatoLh=_lhOn; if(_loMap){Object.keys(_loMap).forEach(function(k){var tr=state.tracks[+k];if(tr)tr.lyricOffset=_loMap[k];});} if(_a4v&&typeof _a4v==='object'){state.view=Object.assign({a4:{}},_a4v);state.view.a4=Object.assign({marginTop:15,marginBottom:15,marginLeft:15,marginRight:15,maxW:900,justify:2},_a4v.a4||{});if(state.view.a4.marginPct!=null&&_a4v.a4&&_a4v.a4.marginTop==null){var _mm=Math.round(state.view.a4.marginPct*2.1);state.view.a4.marginTop=state.view.a4.marginBottom=state.view.a4.marginLeft=state.view.a4.marginRight=_mm;}delete state.view.a4.marginPct;if(_a4v.zoom!==undefined)state.zoom=_a4v.zoom;if(_a4v.scoreScale!==undefined)state.scoreScale=_a4v.scoreScale;if(_a4v.lyricOffset!==undefined)state.lyricOffset=_a4v.lyricOffset;} if(tab&&tab.voices){ var _om=tab.mode||null; (state.tracks||[]).forEach(function(t,i){ const v=tab.voices&&tab.voices[i]; if(v){ t.tabShow=v.show!==false; t.tabOctave=v.octave||0; if(v.gap!==undefined)t.tabGap=v.gap; if(v.kind!==undefined)t.tabKind=v.kind; else if(_om&&v.show!==false)t.tabKind=_om; t.tabLh=!!v.lh; if(v.lhOff!==undefined)t.tabLhOffset=v.lhOff; if(v.lhSize!==undefined)t.tabLhSize=v.lhSize; t.tabRhythm=!!v.rhythm; if(v.dSys)t.diatoSystem=v.dSys; if(v.dOut!=null)t.diatoOuter=v.dOut; if(v.dRows!=null)t.diatoRows=v.dRows; if(v.dStr)t.diatoStrategy=v.dStr; } }); if(typeof renderTabPanel==='function')renderTabPanel(); render(); } else { render(); } if(typeof flash==='function')flash('Fichier .atm chargé — mise en page incluse'); }
   { const b=document.getElementById('btn-save-atm'); if(b)b.addEventListener('click',saveAtm); }
   function transposeSelSemitone(d){ const sl=selectedSlot(); if(!sl||sl.type!=='note')return; const pf=(d<0);
