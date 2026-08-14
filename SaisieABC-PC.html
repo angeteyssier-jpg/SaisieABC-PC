@@ -244,7 +244,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.277 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.284 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -446,7 +446,7 @@
         </div>
         <div class="row-grid row-4">
           <button class="k" id="btn-save-file" style="font-size:14px;">💾 ABC</button>
-          <button class="k" id="btn-export-mxl" style="font-size:14px;">💾 MXL</button>
+          <button class="k" id="btn-export-mxl" style="font-size:14px;">💾 MXL</button><button class="k" id="btn-export-mid" style="font-size:14px;">💾 MID</button>
           <button class="k" id="btn-save-atm" title="Enregistrer morceau + mise en page (.atm)" style="font-size:14px;">💾 ATM</button><button class="k" id="btn-pdf-gf" style="font-size:14px;color:#b3261e;font-weight:700;" title="Exporter la vue A4 en PDF (impression du navigateur)">PDF</button>
           <button class="k" id="btn-saves" style="font-size:14px;">⭐ mémo</button>
         </div>
@@ -768,6 +768,84 @@
     ];
     return makeZip(files);
   }
+
+  function collectMidiEvents(){/*MIDEXPORT_4283*/
+    // Reutilise EXACTEMENT le moteur de lecture (buildVoiceEvents) : le .mid sonne
+    // comme l'ecoute (reprises depliees, ties fusionnes, accords, grace, tempo).
+    // Ecoute neutre a l'export : pas de decalage d'ecoute, grace a vitesse nominale.
+    var _savAT=state.activeTrack, _savOff=playTempoOffset, _savGS=graceSpeed;
+    playTempoOffset=0; graceSpeed=1;
+    try{
+      var order=expandForPlayback();
+      var ctx={st:0,order:order,multi:true,startIdxInOrder:0,startMeasure:0,startSlotActive:0};
+      var bpmRef=Math.max(20,(tempoAt(0)|0)||120);
+      var out=[];
+      var _percGm=function(tr,note,octave,acc){var e=percEntryFor(tr,note,octave,acc);if(e&&e.gm!==undefined)return e.gm;var k=drumKindFromStep(stepIndex(note,octave));return ({kick:36,snare:38,hihat:42,ftom:41,mtom:47,htom:50,cymbal:49}[k])||38;};
+      (playableTracks()||[]).forEach(function(ti){
+        var tr=state.tracks[ti]; var prog=trackProg(tr);
+        var evs=buildVoiceEvents(ti,ctx);
+        if(prog===null||prog===undefined){/*PERCMIDI_4284*/
+          var pevs=[];
+          evs.forEach(function(ev){
+            if(!ev.perc||ev.silent||!(ev.dur>1e-6)||ev.allMidi===undefined)return; // saute grace/flam -> reporte (v2)
+            var meas=(tr.measures||[])[ev.measureIdx]; var slot=meas?meas[ev.slotIdx]:null; if(!slot)return;
+            var gms=[]; if(slot.type==='note')gms.push(_percGm(tr,slot.note,slot.octave,slot.acc));
+            (slot.stack||[]).forEach(function(x){gms.push(_percGm(tr,x.note,x.octave,x.acc));});
+            if(gms.length)pevs.push({startAt:ev.startAt,dur:ev.dur,midi:gms[0],stackMidi:gms.slice(1)});
+          });
+          if(pevs.length)out.push({perc:true,prog:0,vol:(tr.vol!==undefined?tr.vol:100),events:pevs,name:(tr.name||('Perc '+(ti+1)))});
+          return;
+        }
+        var mevs=evs.filter(function(e){return e.midi!==null&&!e.silent&&e.dur>1e-6;});
+        if(mevs.length)out.push({prog:prog,vol:(tr.vol!==undefined?tr.vol:100),events:mevs,name:(tr.name||('Voix '+(ti+1)))});
+      });
+      return {bpmRef:bpmRef,tracks:out};
+    } finally {
+      state.activeTrack=_savAT; playTempoOffset=_savOff; graceSpeed=_savGS;
+    }
+  }
+
+  function buildMidiBytes(){/*MIDEXPORT_4283*/
+    var data=collectMidiEvents(); var TPQ=480;
+    var secToTick=function(sec){return Math.max(0,Math.round(sec*data.bpmRef/60*TPQ));};
+    var u16=function(a,v){a.push((v>>8)&0xff,v&0xff);};
+    var u32=function(a,v){a.push((v>>>24)&0xff,(v>>>16)&0xff,(v>>>8)&0xff,v&0xff);};
+    var vlq=function(a,v){v=v>>>0;var b=[v&0x7f];v=Math.floor(v/128);while(v>0){b.push((v&0x7f)|0x80);v=Math.floor(v/128);}for(var i=b.length-1;i>=0;i--)a.push(b[i]);};
+    var str=function(a,s){for(var i=0;i<s.length;i++)a.push(s.charCodeAt(i)&0xff);};
+    var chunk=function(id,p){var a=[];str(a,id);u32(a,p.length);return a.concat(p);};
+    // piste 0 : tempo (conductor)
+    var t0=[]; var uspq=Math.round(60000000/data.bpmRef);
+    vlq(t0,0); t0.push(0xff,0x51,0x03,(uspq>>16)&0xff,(uspq>>8)&0xff,uspq&0xff);
+    vlq(t0,0); t0.push(0xff,0x2f,0x00);
+    var tracksBytes=[chunk('MTrk',t0)];
+    // une MTrk par piste melodique
+    var ch=0;
+    data.tracks.forEach(function(tk){
+      var cc; if(tk.perc){cc=9;/*PERCMIDI_4284*/}else{if(ch===9)ch++;cc=ch&0x0f;ch++;}
+      var vel=Math.max(1,Math.min(127,Math.round(96*(tk.vol!==undefined?tk.vol/100:1))));
+      var list=[];
+      tk.events.forEach(function(ev){
+        var on=secToTick(ev.startAt), off=Math.max(on+1,secToTick(ev.startAt+ev.dur));
+        var notes=[ev.midi].concat(ev.stackMidi||[]);
+        notes.forEach(function(m){ if(m==null)return; var mm=Math.max(0,Math.min(127,m|0));
+          list.push({t:on,on:1,m:mm}); list.push({t:off,on:0,m:mm}); });
+      });
+      list.sort(function(a,b){return (a.t-b.t)||(a.on-b.on);}); // note-off avant note-on a tick egal
+      var tr=[];
+      var nm=(tk.name||'').slice(0,32);
+      if(nm){var nb=[];str(nb,nm);vlq(tr,0);tr.push(0xff,0x03);vlq(tr,nb.length);for(var i=0;i<nb.length;i++)tr.push(nb[i]);}
+      if(!tk.perc){vlq(tr,0); tr.push(0xc0|cc, tk.prog&0x7f);}   // program change GM (melodique)
+      var prev=0;
+      list.forEach(function(e){ vlq(tr,e.t-prev); prev=e.t;
+        if(e.on) tr.push(0x90|cc,e.m,vel); else tr.push(0x80|cc,e.m,0); });
+      vlq(tr,0); tr.push(0xff,0x2f,0x00);
+      tracksBytes.push(chunk('MTrk',tr));
+    });
+    var head=[]; u16(head,1); u16(head,tracksBytes.length); u16(head,TPQ);  // format 1
+    var all=chunk('MThd',head);
+    tracksBytes.forEach(function(tb){for(var i=0;i<tb.length;i++)all.push(tb[i]);});
+    return new Uint8Array(all);
+  }
   async function doSave(base,ext,mode){
     // ext : '.abc' | '.mxl' | '.xml' | '.musicxml' | '.atm' | '.atmz'
     // mode : 'save' (reecrit le fichier precedent si meme famille) ou 'saveas'
@@ -776,6 +854,7 @@
     // le bon contenu. C'est pour ca que le build est fait APRES le picker.
     const FAM=function(e){ e=(e||'').toLowerCase();
       if(e==='.mxl'||e==='.xml'||e==='.musicxml')return 'mxl';
+      if(e==='.mid'||e==='.midi')return 'mid';
       if(e==='.atm'||e==='.atmz')return 'atm'; if(e==='.mscz'||e==='.mscx')return 'mscz';
       return 'abc'; };
     // Une entree PAR extension : le dialogue affiche une ligne par entree et
@@ -786,6 +865,8 @@
       mxl:[{description:'MusicXML compress\u00e9 (.mxl)',accept:{'application/vnd.recordare.musicxml':['.mxl']}},
            {description:'MusicXML (.musicxml)',accept:{'application/vnd.recordare.musicxml+xml':['.musicxml']}},
            {description:'MusicXML (.xml)',accept:{'application/vnd.recordare.musicxml+xml':['.xml']}}],
+      mid:[{description:'MIDI (.mid)',accept:{'audio/midi':['.mid']}},
+           {description:'MIDI (.midi)',accept:{'audio/midi':['.midi']}}],
       atm:[{description:'ATM (.atm)',accept:{'application/vnd.saisieabc.atm':['.atm']}},
            {description:'ATM compress\u00e9 (.atmz)',accept:{'application/vnd.saisieabc.atmz':['.atmz']}}]
     };
@@ -800,6 +881,7 @@
     };
     const fam=FAM(ext);
     const build=async function(e){
+      if(e==='.mid'||e==='.midi') return {data:buildMidiBytes(), ctype:'audio/midi'};
       if(e==='.mxl')      return {data:buildMxlBytes(), ctype:'application/vnd.recordare.musicxml'};
       if(e==='.xml'||e==='.musicxml') return {data:buildMusicXml(), ctype:'application/xml'};
       if(e==='.atmz')     return {data:await gzipText(buildAtmText(atmPayload())), ctype:'application/gzip'};
@@ -831,11 +913,11 @@
     state.openedFileName=base; state.openedFileExt=ext; state.nameFromTitle=false; render(); flash('Telecharge : '+base+ext);
   }
   function openSavePanel(kind){
-    const ext=(kind==='mxl')?'.mxl':'.abc';
+    const ext=(kind==='mxl')?'.mxl':(kind==='mid')?'.mid':'.abc';
     const base=proposedBaseName();
     const body='<div class="row" style="display:flex;align-items:center;gap:6px;"><span class="field-label">Nom :</span>'
       +'<input id="save-name" type="text" value="'+base.replace(/"/g,'&quot;')+'" style="flex:1;"/>'
-      +'<span style="color:#888;font-weight:600;">'+(kind==='mxl'?'.mxl / .xml / .musicxml':ext)+'</span></div>'
+      +'<span style="color:#888;font-weight:600;">'+(kind==='mxl'?'.mxl / .xml / .musicxml':(kind==='mid'?'.mid / .midi':ext))+'</span></div>'
       +'<small style="color:#888;display:block;margin-top:6px;">\u00ab Enregistrer \u00bb reecrit le fichier precedent sans redemander (Chrome/Edge). \u00ab Enregistrer sous\u2026 \u00bb ouvre toujours la boite de dialogue Windows.</small>';
     openPanel({title:'Enregistrer ('+ext.slice(1).toUpperCase()+')',body:body,hideActions:true,
       extraButtons:['Annuler','Enregistrer sous\u2026','Enregistrer'],
@@ -2007,7 +2089,8 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     if(shape==='diamond')return '<path d="M '+cx+' '+(cy-4.2)+' L '+(cx+3.8)+' '+cy+' L '+cx+' '+(cy+4.2)+' L '+(cx-3.8)+' '+cy+' Z" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9" stroke-linejoin="round"/>';
     return '<ellipse cx="'+cx+'" cy="'+cy+'" rx="3.6" ry="2.7" transform="rotate(-20 '+cx+' '+cy+')" fill="'+(filled?color:'none')+'" stroke="'+color+'" stroke-width="0.9"/>';
   }
-  function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(c==='perc')?'':((accToDraw===undefined)?t.acc:accToDraw);if(aD==='^')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.0625+1e-6)fc=4;else if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+=noteHeadSvg(percHeadShape(c,t.note,t.octave,t.acc),cx,y,color,filled);let sy=y,sx=cx;let _yTop=y,_yBot=y;/*STEM_SPAN_4128*/if(t.stack&&t.stack.length)t.stack.forEach(_sn=>{const _yy=noteY(staffTop,stepIndex(_sn.note,_sn.octave),c);if(_yy<_yTop)_yTop=_yy;if(_yy>_yBot)_yBot=_yy;});if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?_yTop-19:_yBot+19;const _yA=drawFlag?(stemUp?_yBot:_yTop):_yBot,_yB=drawFlag?sy:_yTop;/*STEM_BEAM_4129*/svg+='<line x1="'+sx+'" y1="'+_yA+'" x2="'+sx+'" y2="'+_yB+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy-4)+' '+(sx+4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';if(+t.dot>=2)svg+='<circle cx="'+(cx+10)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';
+  function _chordTopY(t,staffTop,c){var y=noteY(staffTop,stepIndex(t.note,t.octave),c);if(t.stack)t.stack.forEach(function(sn){var yy=noteY(staffTop,stepIndex(sn.note,sn.octave),c);if(yy<y)y=yy;});return y;}/*SLURTOP_4280*/
+function drawNoteHead(t,cx,color,c,drawFlag,stemUp,staffTop,accToDraw){let svg='';const step=stepIndex(t.note,t.octave);const y=noteY(staffTop,step,c);const rs=clefRefStep(c);if(step>=rs+10)for(let s=rs+10;s<=step;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(step<=rs-2)for(let s=rs-2;s>=step;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const aD=(c==='perc')?'':((accToDraw===undefined)?t.acc:accToDraw);if(aD==='^')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(aD==='_')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(aD==='=')svg+='<text x="'+(cx-7)+'" y="'+(y+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';const eD=nominalDur(t);const filled=eD<2;const hs=eD<4;let fc=0;const bD=t.dur;if(bD<=0.0625+1e-6)fc=4;else if(bD<=0.125+1e-6)fc=3;else if(bD<=0.25+1e-6)fc=2;else if(bD<=0.5+1e-6)fc=1;svg+=noteHeadSvg(percHeadShape(c,t.note,t.octave,t.acc),cx,y,color,filled);let sy=y,sx=cx;let _yTop=y,_yBot=y;/*STEM_SPAN_4128*/if(t.stack&&t.stack.length)t.stack.forEach(_sn=>{const _yy=noteY(staffTop,stepIndex(_sn.note,_sn.octave),c);if(_yy<_yTop)_yTop=_yy;if(_yy>_yBot)_yBot=_yy;});if(hs){sx=stemUp?cx+3.3:cx-3.3;sy=stemUp?_yTop-19:_yBot+19;const _yA=drawFlag?(stemUp?_yBot:_yTop):_yBot,_yB=drawFlag?sy:_yTop;/*STEM_BEAM_4129*/svg+='<line x1="'+sx+'" y1="'+_yA+'" x2="'+sx+'" y2="'+_yB+'" stroke="'+color+'" stroke-width="0.8"/>';if(drawFlag)for(let f=0;f<fc;f++){const fy=stemUp?(sy+f*4):(sy-f*4);if(stemUp)svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy+4)+' '+(sx+4)+' '+(fy+9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>';else svg+='<path d="M '+sx+' '+fy+' Q '+(sx+7)+' '+(fy-4)+' '+(sx+4)+' '+(fy-9)+'" stroke="'+color+'" stroke-width="1" fill="none" stroke-linecap="round"/>'}}if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';if(+t.dot>=2)svg+='<circle cx="'+(cx+10)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>';
     // Têtes de notes empilées (accord) : même durée, partagent la hampe
     if(t.stack&&t.stack.length){t.stack.forEach(sn=>{const st2=stepIndex(sn.note,sn.octave);const y2=noteY(staffTop,st2,c);if(st2>=rs+10)for(let s=rs+10;s<=st2;s+=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}if(st2<=rs-2)for(let s=rs-2;s>=st2;s-=2){const ly=noteY(staffTop,s,c);svg+='<line x1="'+(cx-5)+'" y1="'+ly+'" x2="'+(cx+5)+'" y2="'+ly+'" stroke="'+color+'" stroke-width="0.7"/>'}const a2=(c==='perc')?'':sn.acc;if(a2==='^')svg+='<text x="'+(cx-7)+'" y="'+(y2+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♯</text>';else if(a2==='_')svg+='<text x="'+(cx-7)+'" y="'+(y2+3)+'" font-size="10" fill="'+color+'" font-family="serif" text-anchor="middle">♭</text>';else if(a2==='=')svg+='<text x="'+(cx-7)+'" y="'+(y2+3)+'" font-size="9" fill="'+color+'" font-family="serif" text-anchor="middle">♮</text>';svg+=noteHeadSvg(percHeadShape(c,sn.note,sn.octave,sn.acc),cx,y2,color,filled);if(+t.dot>=1){svg+='<circle cx="'+(cx+7)+'" cy="'+y2+'" r="1.2" fill="'+color+'"/>';if(+t.dot>=2)svg+='<circle cx="'+(cx+10)+'" cy="'+y2+'" r="1.2" fill="'+color+'"/>';}})}
     return{svg,headY:y,stemTipY:sy,stemX:sx,flagCount:fc}}
@@ -2492,7 +2575,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
               if(iS&&state._chordEditMode&&!state._chordAddPending){const ac=activeChordNote(t);if(ac){const ay=noteY(staffTop,stepIndex(ac.note,ac.octave),lC);svg+='<circle cx="'+cx+'" cy="'+ay+'" r="5" fill="none" stroke="#d11" stroke-width="1.4"/>';}}
               if(pS&&pS.t.tieToNext){const _su=(pS.su!==undefined?pS.su:su);const _ys=sharedTieYs(pS.t,t,staffTop,lC);if(_ys.length){const _ymin=Math.min(..._ys),_ymax=Math.max(..._ys),_ymid=(_ymin+_ymax)/2;_ys.forEach(_y=>{const _td=(_ys.length<2)?_su:((_y<=_ymid)?false:true);tP.push({fromCx:pS.cx,fromY:_y,toCx:cx,toY:_y,stemUp:_td});});}else{tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:_su});}}
               if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in',stemUp:su});pendingIncomingTie=false}
-              handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext,su);
+              handleSlur(!!(pS&&pS.t.slurToNext),cx,((t.stack&&t.stack.length)?_chordTopY(t,staffTop,lC):dr.headY),!!t.slurToNext,((t.stack&&t.stack.length)?true:su));/*SLURTOP_4280*/
               pS={t,cx,y:dr.headY,su};
             } else {
               const st=stepIndex(t.note,t.octave);
@@ -2504,7 +2587,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
               if(iS&&state._chordEditMode&&!state._chordAddPending){const ac=activeChordNote(t);if(ac){const ay=noteY(staffTop,stepIndex(ac.note,ac.octave),lC);svg+='<circle cx="'+cx+'" cy="'+ay+'" r="5" fill="none" stroke="#d11" stroke-width="1.4"/>';}}
               if(pS&&pS.t.tieToNext){const _su=(pS.su!==undefined?pS.su:su);const _ys=sharedTieYs(pS.t,t,staffTop,lC);if(_ys.length){const _ymin=Math.min(..._ys),_ymax=Math.max(..._ys),_ymid=(_ymin+_ymax)/2;_ys.forEach(_y=>{const _td=(_ys.length<2)?_su:((_y<=_ymid)?false:true);tP.push({fromCx:pS.cx,fromY:_y,toCx:cx,toY:_y,stemUp:_td});});}else{tP.push({fromCx:pS.cx,fromY:pS.y,toCx:cx,toY:dr.headY,stemUp:_su});}}
               if(pendingIncomingTie){tP.push({fromCx:LEFT_PAD-6,fromY:dr.headY,toCx:cx,toY:dr.headY,partial:'in',stemUp:su});pendingIncomingTie=false}
-              handleSlur(!!(pS&&pS.t.slurToNext),cx,dr.headY,!!t.slurToNext,su);
+              handleSlur(!!(pS&&pS.t.slurToNext),cx,((t.stack&&t.stack.length)?_chordTopY(t,staffTop,lC):dr.headY),!!t.slurToNext,((t.stack&&t.stack.length)?true:su));/*SLURTOP_4280*/
               pS={t,cx,y:dr.headY,su};
             }
             // Liaison « en attente » : intention posée mais ni tie ni slur résolu (pas de note à droite)
@@ -3788,7 +3871,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     const tieBtn=document.getElementById('btn-tie');
     if(tieBtn)tieBtn.classList.toggle('active', _activeNoteHasTie(sl0));/*TIEBLUE_4275*/
     const slurBtn=document.getElementById('btn-slur');
-    if(slurBtn)slurBtn.classList.toggle('active', kind0==='slur');
+    if(slurBtn)slurBtn.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.slurToNext));/*SLURINDEP_4279*/
     {const bcl=document.getElementById('btn-beam-cutL');if(bcl)bcl.classList.toggle('active', !!(sl0&&sl0.type==='note'&&sl0.beamBreak));}
     {const _bm=state.measures[state.sel.m];const _bnx=_bm?_bm[state.sel.s+1]:null;const bcr=document.getElementById('btn-beam-cutR');if(bcr)bcr.classList.toggle('active', !!(_bnx&&_bnx.type==='note'&&_bnx.beamBreak));}
     {const gb=document.getElementById('btn-grace');if(gb){const _gs=selectedSlot();gb.classList.toggle('active', !!(_gs&&_gs.type==='note'&&_gs.grace&&_gs.grace.length));gb.classList.toggle('mode-on', !!state.graceMode);}}{var _gsl=selectedSlot();var _gkey=state.sel.m+':'+state.sel.s+'|'+(state.graceMode?1:0);if(state._graceLastSel!==_gkey){state._graceLastSel=_gkey;state.graceActive=(_gsl&&_gsl.grace)?_gsl.grace.length:0;state._graceAddPending=false;}var _gn=(_gsl&&_gsl.grace)?_gsl.grace.length:0;var _gi=state.graceActive|0;if(_gi>_gn)_gi=_gn;if(_gi<0)_gi=0;var _leg=document.getElementById('ce-legend');if(_leg){if(state.graceMode){if(state._graceAddPending){_leg.textContent='Grace \u25b8 + ins\u00e9rer : tapez une note';}else if(_gn===0){_leg.textContent='Grace \u25b8 aucune, + pour ajouter';}else{var _gti=Math.min(_gn-1,Math.max(0,_gi));var _gg=_gsl.grace[_gti];var _gnm=({C:'Do',D:'R\u00e9',E:'Mi',F:'Fa',G:'Sol',A:'La',B:'Si'})[_gg.note]||_gg.note;_gnm+=(_gg.acc==='^'?'\u266f':_gg.acc==='_'?'\u266d':_gg.acc==='='?'\u266e':'');_leg.textContent='Grace '+(_gti+1)+'/'+_gn+' \u25b8 '+_gnm;}/*GRACE_LEGNAME_4147*/}else{_leg.textContent='Saisie accord';}}var _rowT=document.getElementById('chord-row-edit');if(_rowT)_rowT.title=state.graceMode?'\u00c9dition grace notes : \u25c4/\u25ba curseur, + ins\u00e8re, Suppr supprime':'Gestion des accords (notes empil\u00e9es)';}/*GRACE_NAV_4139*/{var _cu=document.getElementById('ce-up'),_cd=document.getElementById('ce-down');if(_cu)_cu.textContent=state.graceMode?'\u25ba':'\u25b2';if(_cd)_cd.textContent=state.graceMode?'\u25c4':'\u25bc';}/*GRACE_ARROWS_4140*/
@@ -3891,7 +3974,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
         for(let si=0;si<meas.length;si++){
           const t=meas[si];
           if(t)delete t._tieNotes;/*TIE_NOTES_494*/if(!t||t.type!=='note'){if(t){delete t.tieToNext;delete t.slurToNext;}continue;}
-          if(!t.linkToNext){delete t.tieToNext;delete t.slurToNext;continue;}
+          if(!t.linkToNext){delete t.tieToNext;continue;}/*SLURINDEP_4279*/
           // Trouver la note suivante (même mesure puis mesure suivante)
           let nx=null;
           if(si<meas.length-1)nx={meas:meas,idx:si+1,sig:sig};
@@ -3907,7 +3990,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
           if(t._linkKind==='slur'){
             t.slurToNext=true;delete t.tieToNext;
           } else {
-            {/*TIESEL_4272*//*TIEACTIVE_4274*/var _tn=common.length?__tieNotesFrom(meas,si,b,sig):[];if(t.tieSel&&t.tieSel.length){_tn=_tn.filter(function(x){return t.tieSel.some(function(s){return s.note===x.note&&s.octave===x.octave;});});}if(_tn.length){t.tieToNext=true;delete t.slurToNext;t._tieNotes=_tn;}else if(t.tieSel&&t.tieSel.length){delete t.tieToNext;delete t.slurToNext;}else{t.slurToNext=true;delete t.tieToNext;}}
+            {/*TIESEL_4272*//*SLURINDEP_4279*/var _tn=common.length?__tieNotesFrom(meas,si,b,sig):[];if(t.tieSel&&t.tieSel.length){_tn=_tn.filter(function(x){return t.tieSel.some(function(s){return s.note===x.note&&s.octave===x.octave;});});}if(_tn.length){t.tieToNext=true;t._tieNotes=_tn;}else{delete t.tieToNext;}}
           }
         }
       }
@@ -4061,22 +4144,8 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     state.activeTrack=saved;
   }
   function renderActiveVoiceSvg(){renderVoiceSvg(state.activeTrack)}
-  function playSchedule(){
-    ensureAudio();stopPlayback(false);audio.playing=true;
-    document.getElementById('btn-play').textContent='⏸';
-    const st=audio.ctx.currentTime+0.05;
-    const qD=60/state.tempo;
-    const playSet=playableTracks();
-    const multi=playSet.length>1;
-    const startMeasure=state.sel.m,startSlotActive=state.sel.s;
-    if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlotActive};
-    // Ordre de lecture (reprises/voltas) calculé sur la voix active (les reprises sont synchronisées entre voix)
-    const savedAT=state.activeTrack;
-    const order=expandForPlayback();
-    if(order.length===0){state.activeTrack=savedAT;stopPlayback(true);return}
-    let startIdxInOrder=order.indexOf(startMeasure);if(startIdxInOrder<0)startIdxInOrder=0;
-    // Construit les events d'une voix en suivant `order`, temps absolus à partir de `st`.
-    function buildVoiceEvents(ti){
+  function buildVoiceEvents(ti, ctx){/*MIDEVENTS_4282*/
+      const {st,order,multi,startIdxInOrder,startMeasure,startSlotActive}=ctx;
       state.activeTrack=ti;
       const gainScale=Math.max(0,Math.min(1,((state.tracks[ti].vol!==undefined?state.tracks[ti].vol:100)/100)));
       const evs=[];const graceEvs=[];
@@ -4151,9 +4220,26 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
       }
       return evs.concat(__extra).concat(graceEvs);
     }
+
+  function playSchedule(){
+    ensureAudio();stopPlayback(false);audio.playing=true;
+    document.getElementById('btn-play').textContent='⏸';
+    const st=audio.ctx.currentTime+0.05;
+    const qD=60/state.tempo;
+    const playSet=playableTracks();
+    const multi=playSet.length>1;
+    const startMeasure=state.sel.m,startSlotActive=state.sel.s;
+    if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlotActive};
+    // Ordre de lecture (reprises/voltas) calculé sur la voix active (les reprises sont synchronisées entre voix)
+    const savedAT=state.activeTrack;
+    const order=expandForPlayback();
+    if(order.length===0){state.activeTrack=savedAT;stopPlayback(true);return}
+    let startIdxInOrder=order.indexOf(startMeasure);if(startIdxInOrder<0)startIdxInOrder=0;
+    const _veCtx={st,order,multi,startIdxInOrder,startMeasure,startSlotActive};/*MIDEVENTS_4282*/
+    // Construit les events d'une voix en suivant `order`, temps absolus à partir de `st`.
     // Voix sonores : on conserve les events de chaque voix séparément (pour les marqueurs)
     const voiceEvents={};
-    playSet.forEach(ti=>{voiceEvents[ti]=buildVoiceEvents(ti)});
+    playSet.forEach(ti=>{voiceEvents[ti]=buildVoiceEvents(ti,_veCtx)});
     let allEvents=[];
     playSet.forEach(ti=>{allEvents=allEvents.concat(voiceEvents[ti])});
     // Ensemble des voix dont on affiche la note rouge : jouées ET visibles (la voix active est toujours visible)
@@ -4164,7 +4250,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     state._playHL={};audio._hlSys={};
     audio.voiceMarkers={};audio.voiceIdx={};
     hlSet.forEach(ti=>{
-      const evs=voiceEvents[ti]||buildVoiceEvents(ti); // construit pour le timing si non jouée
+      const evs=voiceEvents[ti]||buildVoiceEvents(ti,_veCtx); // construit pour le timing si non jouée
       audio.voiceMarkers[ti]=evs.map(ev=>({updateAt:ev.startAt,m:ev.measureIdx,s:ev.slotIdx})).sort((a,b)=>a.updateAt-b.updateAt);
       audio.voiceIdx[ti]=0;
     });
@@ -4322,7 +4408,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     const newSlot={type:'note',note:n,octave:state.octave,dur,dot,acc};
     state.accMem=state.accMem||{};{const _a=accToAlt(acc);state.accMem[n]=(_a!==null)?_a:keyAccVal(n,keyAt(state.sel.m));}
     if(hadLink)newSlot.linkToNext=true;
-    if(hadLink&&(hadKind==='tie'||hadKind==='slur'))newSlot._linkKind=hadKind;
+    if(hadLink&&(hadKind==='tie'||hadKind==='slur'))newSlot._linkKind=hadKind;if(sl.slurToNext)newSlot.slurToNext=true;/*SLURINDEP_4279*/
     // Conserver l'appartenance au triolet
     if(sl.tuplet){newSlot.tuplet=sl.tuplet;newSlot.tupletId=sl.tupletId;if(sl.tupletNormal!==undefined)newSlot.tupletNormal=sl.tupletNormal}
     // Conserver l'accord empilé existant
@@ -4783,6 +4869,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
       if(_chg)pushHistory();
       render();return;
     }
+    if(kind==='slur'){/*SLURINDEP_4279*/if(sl.slurToNext)delete sl.slurToNext;else sl.slurToNext=true;resolveLinks();pushHistory();render();return;}
     if(sl.linkToNext&&sl._linkKind===kind){
       delete sl.linkToNext;delete sl._linkKind;delete sl.tieSel;
     } else {
@@ -6803,8 +6890,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
         if(s.type==='note'){
           // Mémoriser le type EXPLICITE de liaison issu de l'import (tie vs slur)
           // pour que resolveLinks ne le ré-interprète pas à tort (ex. tie → slur parasite).
-          if(s.tieToNext){s.linkToNext=true;s._linkKind='tie';}
-          else if(s.slurToNext){s.linkToNext=true;s._linkKind='slur';}
+          if(s.tieToNext){s.linkToNext=true;s._linkKind='tie';}/*SLURINDEP_4279*/
         }
       }));
     }
@@ -7082,7 +7168,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
       const measures = [];
       // État tie/slur AU NIVEAU DE LA VOIX (pas de la mesure) pour gérer les liaisons
       // qui traversent les barres de mesure.
-      const tieKeys = new Set();
+      const tieKeys = new Set();const openTies = {};/*TIEMXIMP_4278*/
       let lastNoteSlot = null;   // dernière note ajoutée (toutes mesures confondues)
       let slurOpen = false;
 
@@ -7486,12 +7572,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
           // Liaisons de tenue (tie) : on traite la tête de l'accord (notre modèle lie au niveau du slot).
           // On marque tieToNext sur la DERNIÈRE note ajoutée (lastNoteSlot), qui peut appartenir
           // à la mesure précédente — c'est ce qui permet aux liaisons de traverser les barres.
-          const tieKey = head.step + head.octXml + head.alter;
-          if (head.tieStop && tieKeys.has(tieKey)) {
-            if (lastNoteSlot && lastNoteSlot.type === 'note') lastNoteSlot.tieToNext = true;
-            tieKeys.delete(tieKey);
-          }
-          if (head.tieStart) tieKeys.add(tieKey);
+          ev.notes.forEach(function(en){var ni=en.info;if(!ni)return;var _tk=ni.step+ni.octXml+ni.alter;if(ni.tieStop&&openTies[_tk]){var _src=openTies[_tk];if(_src.slot&&_src.slot.type==='note'){_src.slot.tieToNext=true;if(!_src.slot.tieSel)_src.slot.tieSel=[];if(!_src.slot.tieSel.some(function(z){return z.note===_src.note&&z.octave===_src.octave;}))_src.slot.tieSel.push({note:_src.note,octave:_src.octave});}delete openTies[_tk];}if(ni.tieStart)openTies[_tk]={slot:slot,note:ni.step,octave:ni.octInternal};});/*TIEMXIMP_4278*/
 
           // Liaison de phrasé (slur) : en MusicXML, le slur va de la note "start" à la note "stop".
           // Dans notre modèle, chaque note de la chaîne (sauf la dernière) porte slurToNext.
@@ -7499,7 +7580,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
           // aussi une liaison de tenue (tieStart), le tie est prioritaire (lien sonore réel) :
           // on ne pose pas slurToNext dessus, ce qui évite des liaisons de phrasé parasites.
           if (head.slurStart) slurOpen = true;
-          if (slurOpen && !head.slurStop && !head.tieStart) slot.slurToNext = true;
+          if (slurOpen && !head.slurStop) slot.slurToNext = true;/*SLURINDEP_4279*/
           if (head.slurStop) slurOpen = false;
 
           slots.push(slot);
@@ -8181,8 +8262,8 @@ async function loadMsczFile(buffer, fileName){
     // Numéro de slur partagé = 1 (chaînes simples). Détection cross-mesure via prevNote.
     if(slot.type==='note'&&!isChordNote){
       const prevSlur=prevNote&&prevNote.type==='note'&&prevNote.slurToNext;
-      if(prevSlur)nota+='<slur type="stop" number="1"/>';
-      if(slot.slurToNext)nota+='<slur type="start" number="1"/>';
+      if(prevSlur&&!slot.slurToNext)nota+='<slur type="stop" number="1"/>';/*SLURCHAIN_4281*/
+      if(slot.slurToNext&&!prevSlur)nota+='<slur type="start" number="1"/>';/*SLURCHAIN_4281*/
     }
     if(slot.tuplet&&!isChordNote){
       const isFirstT=(si===0||!meas[si-1]||meas[si-1].tupletId!==slot.tupletId);
@@ -8448,6 +8529,7 @@ async function loadMsczFile(buffer, fileName){
     return out;
   }
   document.getElementById('btn-export-mxl').addEventListener('click',()=>{openSavePanel('mxl');});
+  document.getElementById('btn-export-mid').addEventListener('click',()=>{openSavePanel('mid');});/*MIDEXPORT_4283*/
 
   document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Effacer le morceau ?</small>',hideActions:true,extraButtons:['Annuler','Effacer'],onExtra:(w)=>{if(w==='Effacer'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.tempoChanges={};state.breaks={};state.openedFileName=null;state.openedFileExt=null;state.nameFromTitle=false;savedFileHandle=null;savedFileHandleExt=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();history.stack=[];history.pos=-1;state.accMem={};pushHistory();render()}closePanel()}})});
 
