@@ -26,6 +26,7 @@
   .abc-card { background: #ffffff; border: 1px solid #d8d6ce; border-radius: 6px; padding: 6px; height: 100%; }
   /* Partition : utilise toute la hauteur de la fenetre (moins le badge version et les marges) */
   .score-wrap { width: 100%; height: calc(100vh - 85px); min-height: 360px; overflow-y: auto; }
+  .a4-sheet { zoom: var(--a4z, 1); } /* A4ZOOM_4339_CSS : zoom d'affichage de la partition (sans effet PDF) */
   .score-wrap svg { width: 100%; height: 100%; display: block; }
   /* A4SCROLL_4337 : feuille A4 a largeur fixe -> centrage scrollable (ascenseur horizontal) */
   .score-wrap { text-align: center; }
@@ -247,7 +248,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.338 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.345 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -488,7 +489,7 @@
       </div>
 
       <div class="tab-panel" data-panel="vue">
-        <div class="row-grid row-4" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button><button class="k" id="btn-layout-a4" style="font-size:13px;" title="Page A4 à l'écran (défilement vertical)">▭ A4</button><button class="k" id="btn-pdf" style="font-size:13px;color:#b3261e;font-weight:700;" title="Exporter la vue A4 en PDF (impression du navigateur)">PDF</button></div><div style="margin:0 0 6px;"><button class="k" id="btn-recueil" style="font-size:13px;width:100%;box-sizing:border-box;" title="Afficher tous les morceaux du fichier enchaînés (recueil) — imprimable via le bouton PDF">▤ Recueil</button></div>
+        <div class="row-grid row-4" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button><button class="k" id="btn-layout-a4" style="font-size:13px;" title="Page A4 à l'écran (défilement vertical)">▭ A4</button><button class="k" id="btn-pdf" style="font-size:13px;color:#b3261e;font-weight:700;" title="Exporter la vue A4 en PDF (impression du navigateur)">PDF</button></div><div style="margin:0 0 6px;"><button class="k" id="btn-recueil" style="font-size:13px;width:100%;box-sizing:border-box;" title="Afficher tous les morceaux du fichier enchaînés (recueil) — imprimable via le bouton PDF">▤ Recueil</button></div><div class="row-grid" style="grid-template-columns:auto 1fr auto;align-items:center;gap:4px;margin:0 0 6px;"><button class="k" id="a4zoom-d" style="font-size:16px;font-weight:700;min-width:36px;padding:3px 12px;" title="Zoom d'affichage de la partition — réduire (sans effet sur le PDF)">-</button><span style="text-align:center;font-size:12px;color:#5f5e5a;">Zoom aff. <b id="a4zoom-val">100</b> %</span><button class="k" id="a4zoom-u" style="font-size:16px;font-weight:700;min-width:36px;padding:3px 12px;" title="Zoom d'affichage de la partition — agrandir (sans effet sur le PDF)">+</button></div><!--A4ZOOM_4339_HTML--><!--A4ZOOMUI_4345-->
         <div id="oeil-sec-hdr" style="border:1px solid #d8d6ce;border-radius:8px;margin:6px 0;padding:2px 6px 4px;"><button class="k" id="oeil-hdr-head" style="background:#d8e9dc;border-color:#b9c8bd;width:100%;text-align:left;font-size:13px;font-weight:700;">📄 Titre / No Page <span id="oeil-hdr-caret" style="float:right;">▸</span></button><div id="oeil-hdr-body" style="display:none;"><div id="oeil-hdr-host"></div></div></div>
           <div id="oeil-sec-sys" style="border:1px solid #d8d6ce;border-radius:8px;margin:6px 0;padding:2px 6px 4px;">
           <button class="k" id="oeil-sys-head" style="background:#d8e9dc;border-color:#b9c8bd;width:100%;text-align:left;font-size:13px;font-weight:700;">⚙ Système <span id="oeil-sys-caret" style="float:right;">▸</span></button>
@@ -1530,7 +1531,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
      qui acceptent aussi les anciens entiers (fichiers .json d'avant v3.77). */
   function voltaSet(v){
     if(v===undefined||v===null||v==='')return [];
-    if(typeof v==='number')return [v];
+    if(typeof v==='number')return v>=1?[v]:[];/*VOLTAFIX_4344*/
     const out=[];
     String(v).split(',').forEach(function(part){
       const m=part.trim().match(/^(\d)\s*-\s*(\d)$/);
@@ -1960,11 +1961,11 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
   function parseDurationSpec(s){if(s==='')return 1;if(s==='/')return 0.5;if(s==='//')return 0.25;if(s==='///')return 0.125;if(s.startsWith('/')){const n=parseInt(s.substring(1),10);return 1/(n||2)}if(s.includes('/')){const[n,d]=s.split('/');const a=parseInt(n,10)||1;const b=parseInt(d,10)||2;return a/b}return parseInt(s,10)||1}
 
   function voltaSpanEnd(repeats,startMi,N){
-    for(let mi=startMi;mi<N;mi++){const r=repeats[mi]||{};if(mi>startMi&&(r.volta!==undefined||r.start))break;if(r.end)return mi;}
+    for(let mi=startMi;mi<N;mi++){const r=repeats[mi]||{};if(mi>startMi&&(r.volta||r.start))break;if(r.end)return mi;}
     let sectionStart=0;for(let k=startMi;k>=0;k--){if(repeats[k]&&repeats[k].start){sectionStart=k;break;}}
-    let fStart=-1,fEnd=-1;for(let k=sectionStart;k<startMi;k++){const r=repeats[k]||{};if(r.volta!==undefined&&fStart<0)fStart=k;if(fStart>=0&&r.end){fEnd=k;break;}}
+    let fStart=-1,fEnd=-1;for(let k=sectionStart;k<startMi;k++){const r=repeats[k]||{};if(r.volta&&fStart<0)fStart=k;if(fStart>=0&&r.end){fEnd=k;break;}}
     const firstLen=(fStart>=0&&fEnd>=fStart)?(fEnd-fStart+1):1;let endMi=startMi;
-    for(let off=1;off<firstLen;off++){const cand=startMi+off;if(cand>=N)break;const r=repeats[cand]||{};if(r.volta!==undefined||r.start)break;endMi=cand;if(r.end)break;}
+    for(let off=1;off<firstLen;off++){const cand=startMi+off;if(cand>=N)break;const r=repeats[cand]||{};if(r.volta||r.start)break;endMi=cand;if(r.end)break;}
     return endMi;
   }
   function expandForPlayback(){
@@ -3847,6 +3848,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     // Bouton + (ajout d'accord) en bleu si mode ajout
     {const pb=document.getElementById('ce-plus');if(pb){const _ps=selectedSlot();pb.classList.toggle('active',!!(_ps&&_ps.type==='note'&&_ps.stack&&_ps.stack.length));pb.classList.toggle('mode-on',!!((state._chordEditMode&&state._chordAddPending)||(state.graceMode&&state._graceAddPending)));/*GRACE_PLUS_HL_4145*/}}/*MODE_CEPLUS_4112*//*CEPLUS_BLUE_4114*/
     const dB=document.getElementById('dot-btn');if(dB)dB.classList.toggle('active',!!(sl&&sl.dot));
+    const _ndUI=document.getElementById('note-dot');if(_ndUI)_ndUI.classList.toggle('active',!!(sl&&sl.dot));/*NOTEDOTUI_4342*/
     {const dv=document.getElementById('tempo-disp');if(dv){var _pto=playTempoOffset;dv.textContent=Math.round((state.tempo+_pto)/beatQuarters());dv.style.color=_pto?'#b3261e':'';}{var _rb=document.getElementById('tempo-reset');if(_rb){var _o=playTempoOffset;_rb.style.display=_o?'':'none';_rb.textContent='\u00c9coute '+(_o>0?'+':'')+Math.round(_o/beatQuarters())+' \u2014 revenir au tempo \u00e9crit';}}
       {var _gd=document.getElementById('grace-spd-disp');if(_gd)_gd.textContent='\u00d7'+graceSpeed.toFixed(1);var _gb=document.getElementById('grace-beat-btn');if(_gb){_gb.textContent=graceOnBeat?'Sur le temps':'Avant le temps';_gb.classList.toggle('active',!!graceOnBeat);}}/*GRACE_UI_DISP_4161*/const sym=document.getElementById('tempo-unit-sym');if(sym)sym.textContent=beatSym();
       const ul=document.getElementById('tempo-unit-lbl');if(ul)ul.textContent=beatSym()+' '+beatName();
@@ -4990,7 +4992,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   bindToggle('btn-toggle-chords','chords');
   {const _bl=document.getElementById('btn-layout-line');if(_bl)_bl.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='line'){state.scoreLayout='line';render();}});}
   {const _bp=document.getElementById('btn-layout-page');if(_bp)_bp.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='page'){state.scoreLayout='page';if(state._pageCache)state._pageCache=null;render();}});}
-  {const _ba=document.getElementById('btn-layout-a4');if(_ba)_ba.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();}});}/*v359*/{function __pdfGo(){var sheets=document.querySelectorAll('#score .a4-sheet');if(!sheets.length){alert('Aucune page A4 a imprimer');return;}var sw=sheets[0].getBoundingClientRect().width||900;var PW=794,PH=1123;var f=PW/sw;var w=window.open('','_blank');if(!w){alert('Fenetre bloquee : autorisez les popups pour exporter en PDF');return;}var css='@page{size:A4;margin:0}'+'html,body{margin:0;padding:0;background:#fff}'+'.pw{width:'+PW+'px;height:'+PH+'px;overflow:hidden;position:relative;page-break-after:always;break-after:page;}'+'.pw:last-child{page-break-after:auto;break-after:auto;}'+'.pw>.a4-sheet{transform:scale('+f+');transform-origin:top left;box-shadow:none !important;border:0 !important;margin:0 !important;}'+'.pw .track-block{border:0 !important;background:#fff !important;box-shadow:none !important;}'+'.pw [fill="#e24b4a" i]{fill:#000 !important}'+'.pw [stroke="#e24b4a" i]{stroke:#000 !important}'+'.pw circle[stroke="#e24b4a" i]{display:none !important}'+'.pw [fill="#185fa5" i]{display:none !important}';/*PDF_NOBRK_4169*/var _N=sheets.length;var _ttlF=escXml((state.headers.T||'').split(String.fromCharCode(10))[0]||'');var _verF=escXml((state.headers.scoreVersion||'').trim());var body='';for(var k=0;k<_N;k++){var _pg=(k+1)+'/'+_N;var _pfsz=(state.hdrCfg&&state.hdrCfg.pSz!=null)?state.hdrCfg.pSz:11;var _fs='position:absolute;font-family:serif;font-size:'+_pfsz+'px;color:#000;';body+='<div class="pw">'+(function(_s){var _c=_s.cloneNode(true);var _x=_c.querySelectorAll('.a4-pgdeco');for(var _q=0;_q<_x.length;_q++)_x[_q].parentNode.removeChild(_x[_q]);return _c.outerHTML;})(sheets[k])+'<div style="'+_fs+'top:8px;right:12px;">'+_pg+'</div>'+'<div style="'+_fs+'bottom:8px;left:12px;">'+_ttlF+'</div>'+'<div style="'+_fs+'bottom:8px;right:12px;">'+(_verF?('v '+_verF+' - '):'')+_pg+'</div>'+'</div>';}var ttl=escXml(((state.headers.T||'Partition').split('\n')[0])||'Partition');w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+ttl+'</title><style>'+css+'</style></head><body>'+body+'</body></html>');w.document.close();w.focus();setTimeout(function(){try{w.print();}catch(e){}},350);}const _bpdf=document.getElementById('btn-pdf');if(_bpdf)_bpdf.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();setTimeout(__pdfGo,120);}else{__pdfGo();}});const _bpdf2=document.getElementById('btn-pdf-gf');if(_bpdf2)_bpdf2.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();setTimeout(__pdfGo,120);}else{__pdfGo();}});}{const _br=document.getElementById('btn-recueil');if(_br)_br.addEventListener('click',()=>{state.recueil=!state.recueil;_br.classList.toggle('active',!!state.recueil);if(state._pageCache)state._pageCache=null;render();});}/*RECUEIL_4300*/
+  {const _ba=document.getElementById('btn-layout-a4');if(_ba)_ba.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();}});}/*v359*/{function __pdfGo(){var sheets=document.querySelectorAll('#score .a4-sheet');if(!sheets.length){alert('Aucune page A4 a imprimer');return;}var sw=parseFloat(sheets[0].style.width)||sheets[0].getBoundingClientRect().width||900;/*A4ZOOM_4339_PDF*/var PW=794,PH=1123;var f=PW/sw;var w=window.open('','_blank');if(!w){alert('Fenetre bloquee : autorisez les popups pour exporter en PDF');return;}var css='@page{size:A4;margin:0}'+'html,body{margin:0;padding:0;background:#fff}'+'.pw{width:'+PW+'px;height:'+PH+'px;overflow:hidden;position:relative;page-break-after:always;break-after:page;}'+'.pw:last-child{page-break-after:auto;break-after:auto;}'+'.pw>.a4-sheet{transform:scale('+f+');transform-origin:top left;box-shadow:none !important;border:0 !important;margin:0 !important;}'+'.pw .track-block{border:0 !important;background:#fff !important;box-shadow:none !important;}'+'.pw [fill="#e24b4a" i]{fill:#000 !important}'+'.pw [stroke="#e24b4a" i]{stroke:#000 !important}'+'.pw [stroke="#e24b4a" i][fill="none" i]{display:none !important}'+'.pw circle[stroke="#e24b4a" i]{display:none !important}'+'.pw [fill="#185fa5" i]{display:none !important}'+'.pw [stroke="#185fa5" i]{display:none !important}';/*PDFSEL_4343*//*PDF_NOBRK_4169*/var _N=sheets.length;var _ttlF=escXml((state.headers.T||'').split(String.fromCharCode(10))[0]||'');var _verF=escXml((state.headers.scoreVersion||'').trim());var body='';for(var k=0;k<_N;k++){var _pg=(k+1)+'/'+_N;var _pfsz=(state.hdrCfg&&state.hdrCfg.pSz!=null)?state.hdrCfg.pSz:11;var _fs='position:absolute;font-family:serif;font-size:'+_pfsz+'px;color:#000;';body+='<div class="pw">'+(function(_s){var _c=_s.cloneNode(true);var _x=_c.querySelectorAll('.a4-pgdeco');for(var _q=0;_q<_x.length;_q++)_x[_q].parentNode.removeChild(_x[_q]);return _c.outerHTML;})(sheets[k])+'<div style="'+_fs+'top:8px;right:12px;">'+_pg+'</div>'+'<div style="'+_fs+'bottom:8px;left:12px;">'+_ttlF+'</div>'+'<div style="'+_fs+'bottom:8px;right:12px;">'+(_verF?('v '+_verF+' - '):'')+_pg+'</div>'+'</div>';}var ttl=escXml(((state.headers.T||'Partition').split('\n')[0])||'Partition');w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+ttl+'</title><style>'+css+'</style></head><body>'+body+'</body></html>');w.document.close();w.focus();setTimeout(function(){try{w.print();}catch(e){}},350);}const _bpdf=document.getElementById('btn-pdf');if(_bpdf)_bpdf.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();setTimeout(__pdfGo,120);}else{__pdfGo();}});const _bpdf2=document.getElementById('btn-pdf-gf');if(_bpdf2)_bpdf2.addEventListener('click',()=>{if((state.scoreLayout||'line')!=='a4'){state.scoreLayout='a4';if(state._pageCache)state._pageCache=null;render();setTimeout(__pdfGo,120);}else{__pdfGo();}});}{const _br=document.getElementById('btn-recueil');if(_br)_br.addEventListener('click',()=>{state.recueil=!state.recueil;_br.classList.toggle('active',!!state.recueil);if(state._pageCache)state._pageCache=null;render();});}/*RECUEIL_4300*/{function _a4z(dz){var z=Math.max(50,Math.min(200,(state.a4Zoom||100)+dz));state.a4Zoom=z;var sc=document.getElementById('score');if(sc)sc.style.setProperty('--a4z',(z/100));var v=document.getElementById('a4zoom-val');if(v)v.textContent=z;}var _zd=document.getElementById('a4zoom-d');if(_zd)_zd.addEventListener('click',function(){_a4z(-10);});var _zu=document.getElementById('a4zoom-u');if(_zu)_zu.addEventListener('click',function(){_a4z(10);});}/*A4ZOOM_4339_JS*/
   {const _tof=document.getElementById('btn-tab-otherfinger');if(_tof)_tof.addEventListener('click',()=>{const _t=activeTrackObj();if(!_t||!_t.tabKind)return;const sl=selectedSlot();if(!sl||sl.type!=='note')return;if(_t.tabKind==='diato')diatoCyclePos(state.sel.m,state.sel.s,0);else tabCyclePos(state.sel.m,state.sel.s,0);});}
     {const _tg=document.getElementById('btn-tab-guitar');if(_tg)_tg.addEventListener('click',()=>{const _t=activeTrackObj();if(!_t)return;if((TAB_PRESETS[_t.tabKind]||{}).fam==='guitare')return;_t.tabKind='guitar';_t.tabOctave=-1;/*TABOCT_DEFAULT_4125*/_t.tabLh=false;renderTabPanel();renderDiatoPanel();render();});}
   {const _tb=document.getElementById('btn-tab-banjo');if(_tb)_tb.addEventListener('click',()=>{const _t=activeTrackObj();if(!_t)return;if((TAB_PRESETS[_t.tabKind]||{}).fam==='banjo')return;_t.tabKind='banjo';_t.tabOctave=-1;/*TABOCT_DEFAULT_4125*/_t.tabLh=false;renderTabPanel();renderDiatoPanel();render();});}
@@ -7324,24 +7326,73 @@ function __importFromFile(){
 
     const tracks = [];
 
+    // Regroupement des voix par chevauchement temporel. /*MXLTAB_4340*/
+    function __mxVoiceGroups(partEl, tabStaves, voiceSeq, noteStaff, noteVoice){
+      const iv = {}; voiceSeq.forEach(v => { iv[v] = []; });
+      let base = 0;
+      partEl.querySelectorAll('measure').forEach(mEl => {
+        let cur = 0, maxEnd = 0;
+        Array.from(mEl.children).forEach(ch => {
+          const tag = ch.tagName;
+          if (tag === 'backup') { const d = parseFloat((ch.querySelector('duration')||{textContent:'0'}).textContent)||0; cur -= d; }
+          else if (tag === 'forward') { const d = parseFloat((ch.querySelector('duration')||{textContent:'0'}).textContent)||0; cur += d; }
+          else if (tag === 'note') {
+            if (ch.querySelector('chord') || ch.querySelector('grace')) return;
+            const d = parseFloat((ch.querySelector('duration')||{textContent:'0'}).textContent)||0;
+            if (!tabStaves.has(noteStaff(ch)) && !ch.querySelector('rest')) {
+              const v = noteVoice(ch); (iv[v]||(iv[v]=[])).push([base+cur, base+cur+d]);
+            }
+            cur += d; if (cur > maxEnd) maxEnd = cur;
+          }
+        });
+        base += (maxEnd > cur ? maxEnd : cur);
+      });
+      function overlap(a, b){
+        const A = iv[a]||[], B = iv[b]||[];
+        for (let i=0;i<A.length;i++) for (let j=0;j<B.length;j++) if (A[i][0] < B[j][1] && B[j][0] < A[i][1]) return true;
+        return false;
+      }
+      const groups = [];
+      voiceSeq.forEach(v => {
+        let placed = false;
+        for (let g=0; g<groups.length; g++){ if (!groups[g].some(w => overlap(v, w))) { groups[g].push(v); placed = true; break; } }
+        if (!placed) groups.push([v]);
+      });
+      return groups.length ? groups : [['1']];
+    }
+
     partEls.forEach((partEl, pi) => {
       const partId = partEl.getAttribute('id') || ('P' + (pi + 1));
       const partName = partNames[partId] || ('V' + (pi + 1));
 
       const measureEls = partEl.querySelectorAll('measure');
 
-      // Détecter toutes les voix distinctes présentes dans cette part (ordre d'apparition)
+      // Portees TAB (tablature) : elles DUPLIQUENT la notation -> on les ignore. /*MXLTAB_4340*/
+      const tabStaves = new Set();
+      partEl.querySelectorAll('clef').forEach(cl => {
+        const _sg = (cl.querySelector('sign') ? cl.querySelector('sign').textContent : '').trim().toUpperCase();
+        if (_sg === 'TAB') tabStaves.add(cl.getAttribute('number') || '1');
+      });
+      const noteStaff = n => { const s = n.querySelector('staff'); return s ? s.textContent.trim() : '1'; };
+      const noteVoice = n => { const v = n.querySelector('voice'); return v ? v.textContent.trim() : '1'; };
+
+      // Voix distinctes (portees non-TAB, ordre d'apparition)
       const voiceOrder = [];
       partEl.querySelectorAll('note').forEach(n => {
-        const v = n.querySelector('voice');
-        const vid = v ? v.textContent.trim() : '1';
+        if (tabStaves.has(noteStaff(n))) return;
+        const vid = noteVoice(n);
         if (!voiceOrder.includes(vid)) voiceOrder.push(vid);
       });
       if (!voiceOrder.length) voiceOrder.push('1');
 
-      // Une piste par voix de la part. Nom : "Part" si une seule voix, sinon "Part vN".
-      voiceOrder.forEach((targetVoice, vidx) => {
-        const trackName = (voiceOrder.length === 1) ? partName : (partName + ' v' + targetVoice);
+      // Fusionner les voix qui ne se CHEVAUCHENT jamais -> une seule voix ABC (ligne
+      // unique eclatee). La vraie polyphonie se chevauche et reste separee.
+      const voiceGroups = __mxVoiceGroups(partEl, tabStaves, voiceOrder, noteStaff, noteVoice);
+
+      // Une piste par GROUPE de voix. Nom : "Part" si un seul groupe, sinon "Part vN".
+      voiceGroups.forEach((groupArr, vidx) => {
+        const groupVoices = new Set(groupArr);
+        const trackName = (voiceGroups.length === 1) ? partName : (partName + ' v' + (vidx + 1));
 
       // État de lecture de la part (recalculé pour chaque voix : attributs = communs à la part)
       let divisions = 4;            // durée d'une noire en <duration>
@@ -7614,9 +7665,8 @@ function __importFromFile(){
                 }
               }
             } else if (child.tagName === 'note') {
-              const v = child.querySelector('voice');
-              const vid = v ? v.textContent.trim() : '1';
-              if (vid === targetVoice && !child.querySelector('chord')) {
+              const vid = noteVoice(child);
+              if (groupVoices.has(vid) && !tabStaves.has(noteStaff(child)) && !child.querySelector('chord')) {
                 if (pendingHarmony) { harmonyForNote.set(child, pendingHarmony); pendingHarmony = ''; }
                 if (pendingWords) { wordsForNote.set(child, pendingWords); pendingWords = ''; }
               }
@@ -7628,18 +7678,53 @@ function __importFromFile(){
         // ou un accord (note de tête + notes <chord/> suivantes).
         const events = [];   // { durQ (curseur), notes:[{nEl, info}], isRest, tuplet... }
         const noteEls = Array.from(mEl.querySelectorAll('note'));
+        // Honorer les <backup>/<forward> INTERNES : clipper une note dont la duree brute
+        // deborde l'onset de la suivante (ex. lead de triolet TablEdit croche+backup), et
+        // rattacher ce lead au triolet qui suit. /*MXLTRIP_4341*/
+        const effByNote = new Map();
+        {
+          let _cur = 0; const _seq = [];
+          Array.from(mEl.children).forEach(ch => {
+            const tg = ch.tagName;
+            if (tg === 'backup') { _cur -= num(ch, 'duration', 0) / divisions; }
+            else if (tg === 'forward') { _cur += num(ch, 'duration', 0) / divisions; }
+            else if (tg === 'note') {
+              const _c = !!ch.querySelector('chord'), _g = !!ch.querySelector('grace');
+              const _d = num(ch, 'duration', 0) / divisions;
+              if (!_g) {
+                if (!_c && groupVoices.has(noteVoice(ch)) && !tabStaves.has(noteStaff(ch)) && !ch.querySelector('rest'))
+                  _seq.push({ nEl: ch, onset: _cur, raw: _d });
+                if (!_c) _cur += _d;
+              }
+            }
+          });
+          for (let _i = 0; _i < _seq.length; _i++) {
+            const _next = (_i + 1 < _seq.length) ? _seq[_i + 1].onset : (_seq[_i].onset + _seq[_i].raw);
+            const _eff = Math.min(_seq[_i].raw, _next - _seq[_i].onset);
+            if (_eff < _seq[_i].raw - 1e-6) {
+              let _trip = null;
+              const _nx = (_i + 1 < _seq.length) ? _seq[_i + 1].nEl : null;
+              const _tm = _nx && _nx.querySelector('time-modification');
+              if (_tm) {
+                const _a = parseInt(txt(_tm, 'actual-notes') || '0', 10), _n = parseInt(txt(_tm, 'normal-notes') || '0', 10);
+                if (_a > _n && Math.abs(_eff - _seq[_i].raw * _n / _a) < 1e-6) _trip = { actual: _a, normal: _n };
+              }
+              effByNote.set(_seq[_i].nEl, { eff: _eff, trip: _trip });
+            }
+          }
+        }
         let pendingGrace=[],pendingGraceSlash=false;
         noteEls.forEach(nEl => {
-          const voiceEl = nEl.querySelector('voice');
-          const voice = voiceEl ? voiceEl.textContent.trim() : '1';
-          if (voice !== targetVoice) return;
+          const voice = noteVoice(nEl);
+          if (!groupVoices.has(voice) || tabStaves.has(noteStaff(nEl))) return;
           const _grEl = nEl.querySelector('grace');
           if (_grEl) { const gi = extractNoteInfo(nEl); if (gi) { pendingGrace.push({ note: gi.step, octave: gi.octInternal, acc: gi.acc || '' }); if ((_grEl.getAttribute('slash') || '') === 'yes') pendingGraceSlash = true; } return; }
 
           const isChordNote = !!nEl.querySelector('chord');
           const isRest = !!nEl.querySelector('rest');
           const xmlDur = num(nEl, 'duration', divisions);
-          const durQ = xmlDur / divisions;
+          let durQ = xmlDur / divisions;
+          const _ovr = effByNote.get(nEl); if (_ovr) durQ = _ovr.eff; /*MXLTRIP_4341*/
 
           if (isChordNote && events.length > 0 && !events[events.length - 1].isRest) {
             // Note simultanée : rattacher à l'événement (accord) précédent.
@@ -7670,6 +7755,7 @@ function __importFromFile(){
               if (tp === 'start') tupStart = true;
               if (tp === 'stop') tupStop = true;
             });
+            if (_ovr && _ovr.trip) { tupletActual = _ovr.trip.actual; tupletNormal = _ovr.trip.normal; if (!nominalDurQ && typeStr && TYPE_DUR[typeStr] !== undefined) nominalDurQ = TYPE_DUR[typeStr] * (nEl.querySelector('dot') ? 1.5 : 1); tupStart = true; } /*MXLTRIP_4341*/
             events.push({
               cursorDurQ: durQ, durChordMax: durQ,
               notes: [{ nEl, info: isRest ? null : extractNoteInfo(nEl), durQ }],
@@ -7834,7 +7920,7 @@ function __importFromFile(){
 
       tracks.push(makeTrack({
         name: trackName,
-        sname: (voiceOrder.length === 1) ? (partAbbrevs[partId] || '') : '',
+        sname: (voiceGroups.length === 1) ? (partAbbrevs[partId] || '') : '',
         measures,
         pieceMeter: pieceMeter || '4/4',
         pieceUnit,
