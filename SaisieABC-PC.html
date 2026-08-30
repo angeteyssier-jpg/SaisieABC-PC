@@ -30,7 +30,7 @@
   .score-wrap svg { width: 100%; height: 100%; display: block; }
   /* A4SCROLL_4337 : feuille A4 a largeur fixe -> centrage scrollable (ascenseur horizontal) */
   .score-wrap { text-align: center; }
-  .score-wrap .a4-sheet { display: inline-block !important; margin: 0 0 16px 0 !important; text-align: left; vertical-align: top; }
+  .score-wrap .a4-sheet { display: inline-block !important; margin: 0 0 16px 0 !important; text-align: left; vertical-align: top; }/*A4TELSCROLLX_4347*/
 
   .ctx-card { background: #ebe9e0; border: 1px solid #d8d6ce; border-radius: 8px;
     padding: 5px 8px;
@@ -248,7 +248,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.345 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.350 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -489,7 +489,7 @@
       </div>
 
       <div class="tab-panel" data-panel="vue">
-        <div class="row-grid row-4" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button><button class="k" id="btn-layout-a4" style="font-size:13px;" title="Page A4 à l'écran (défilement vertical)">▭ A4</button><button class="k" id="btn-pdf" style="font-size:13px;color:#b3261e;font-weight:700;" title="Exporter la vue A4 en PDF (impression du navigateur)">PDF</button></div><div style="margin:0 0 6px;"><button class="k" id="btn-recueil" style="font-size:13px;width:100%;box-sizing:border-box;" title="Afficher tous les morceaux du fichier enchaînés (recueil) — imprimable via le bouton PDF">▤ Recueil</button></div><div class="row-grid" style="grid-template-columns:auto 1fr auto;align-items:center;gap:4px;margin:0 0 6px;"><button class="k" id="a4zoom-d" style="font-size:16px;font-weight:700;min-width:36px;padding:3px 12px;" title="Zoom d'affichage de la partition — réduire (sans effet sur le PDF)">-</button><span style="text-align:center;font-size:12px;color:#5f5e5a;">Zoom aff. <b id="a4zoom-val">100</b> %</span><button class="k" id="a4zoom-u" style="font-size:16px;font-weight:700;min-width:36px;padding:3px 12px;" title="Zoom d'affichage de la partition — agrandir (sans effet sur le PDF)">+</button></div><!--A4ZOOM_4339_HTML--><!--A4ZOOMUI_4345-->
+        <div class="row-grid row-4" style="margin:0 0 6px;"><button class="k" id="btn-layout-line" style="font-size:13px;" title="Une ligne continue (défilement horizontal)">↔ Ligne</button><button class="k" id="btn-layout-page" style="font-size:13px;" title="Systèmes empilés (défilement vertical)">⬓ Page</button><button class="k" id="btn-layout-a4" style="font-size:13px;" title="Page A4 à l'écran (défilement vertical)">▭ A4</button><button class="k" id="btn-pdf" style="font-size:13px;color:#b3261e;font-weight:700;" title="Exporter la vue A4 en PDF (impression du navigateur)">PDF</button></div><div style="margin:0 0 6px;"><button class="k" id="btn-recueil" style="font-size:13px;width:100%;box-sizing:border-box;" title="Afficher tous les morceaux du fichier enchaînés (recueil) — imprimable via le bouton PDF">▤ Recueil</button></div><div class="row-grid" style="grid-template-columns:auto 1fr auto;align-items:center;gap:4px;margin:0 0 6px;"><button class="k" id="a4zoom-d" style="font-size:16px;font-weight:700;min-width:36px;padding:3px 12px;" title="Zoom d'affichage de la partition — réduire (sans effet sur le PDF)">-</button><span style="text-align:center;font-size:12px;color:#5f5e5a;">Zoom aff. <b id="a4zoom-val">100</b> %</span><button class="k" id="a4zoom-u" style="font-size:16px;font-weight:700;min-width:36px;padding:3px 12px;" title="Zoom d'affichage de la partition — agrandir (sans effet sur le PDF)">+</button></div><!--A4ZOOM_4339_HTML--><!--A4ZOOMUI_4345--><!--A4ZOOMSZ_4346-->
         <div id="oeil-sec-hdr" style="border:1px solid #d8d6ce;border-radius:8px;margin:6px 0;padding:2px 6px 4px;"><button class="k" id="oeil-hdr-head" style="background:#d8e9dc;border-color:#b9c8bd;width:100%;text-align:left;font-size:13px;font-weight:700;">📄 Titre / No Page <span id="oeil-hdr-caret" style="float:right;">▸</span></button><div id="oeil-hdr-body" style="display:none;"><div id="oeil-hdr-host"></div></div></div>
           <div id="oeil-sec-sys" style="border:1px solid #d8d6ce;border-radius:8px;margin:6px 0;padding:2px 6px 4px;">
           <button class="k" id="oeil-sys-head" style="background:#d8e9dc;border-color:#b9c8bd;width:100%;text-align:left;font-size:13px;font-weight:700;">⚙ Système <span id="oeil-sys-caret" style="float:right;">▸</span></button>
@@ -2873,7 +2873,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
       const _lastM=sys[sys.length-1];const _pbk=!!(state.breaks&&state.breaks[_lastM]&&state.breaks[_lastM].page);if(_barN>1){var _bi=sysHtml.lastIndexOf('</div>');sysHtml=sysHtml.slice(0,_bi)+'<div style="position:absolute;left:'+_barX+'px;top:'+_barTop+'px;height:'+(_barBot-_barTop)+'px;border-left:1.6px solid #1a1a1a;pointer-events:none;"></div>'+sysHtml.slice(_bi);}sysBlocks.push({html:sysHtml,h:_sysPxH,pb:_pbk});
     });
     state.activeTrack=saved;
-    cont.style.overflowX=(state.scoreLayout==='a4')?'auto':'hidden';/*A4OX2_4338*/
+    cont.style.overflowX=(state.scoreLayout==='a4')?'auto':'hidden';/*A4OX2_4338*//*A4TELOX_4348*/
     cont.style.overflowY='auto';
     let wordsHtml='';
     if(state.viewFlags.lyrics){const w=(state.headers.W||'').trim();if(w){const lines=w.split('\n').map(l=>escXml(l)).join('<br>');wordsHtml='<div class="score-words" style="max-width:'+Math.max(sysPxW,320)+'px;margin:8px 2px 4px;padding:8px 12px;border-top:1px solid #e2e0d8;font-size:'+((state.view&&state.view.wordsSize!=null)?state.view.wordsSize:12)+'px;line-height:1.5;color:#33312c;">'+lines+'</div>';}}
@@ -3858,7 +3858,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     {const zv=document.getElementById('zoom-v');if(zv)zv.textContent=(state.zoom||100);}
     
     document.getElementById('btn-play').textContent=audio.playing?'⏸':'▶';
-    document.getElementById('btn-loop').classList.toggle('active',!!state.loop);
+    {var _lb=document.getElementById('btn-loop');if(_lb){var _lm=state.loopMode||0;_lb.classList.toggle('active',_lm===2);if(_lm===1){_lb.style.setProperty('background','#bfdbfe','important');_lb.style.setProperty('color','#1e3a8a','important');_lb.style.setProperty('box-shadow','inset 0 0 0 2px #3b82f6','important');}else if(_lm===2){_lb.style.setProperty('background','#2563eb','important');_lb.style.setProperty('color','#ffffff','important');_lb.style.setProperty('box-shadow','none','important');}else{_lb.style.removeProperty('background');_lb.style.removeProperty('color');_lb.style.removeProperty('box-shadow');}}}/*LOOPAB_4349*//*LOOPAB2_4350*/
     document.getElementById('btn-undo').disabled=(history.pos<=0);
     document.getElementById('btn-redo').disabled=(history.pos>=history.stack.length-1);
     const um=document.getElementById('btn-undo-mes');if(um)um.disabled=(history.pos<=0);
@@ -4320,7 +4320,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     const qD=60/state.tempo;
     const playSet=playableTracks();
     const multi=playSet.length>1;
-    const startMeasure=state.sel.m,startSlotActive=state.sel.s;
+    let startMeasure=state.sel.m,startSlotActive=state.sel.s;if(state.loopA){startMeasure=state.loopA.m;startSlotActive=state.loopA.s;audio.loopFrom={m:startMeasure,s:startSlotActive};}/*LOOPAB_4349*/
     if(!audio.loopFrom)audio.loopFrom={m:startMeasure,s:startSlotActive};
     // Ordre de lecture (reprises/voltas) calculé sur la voix active (les reprises sont synchronisées entre voix)
     const savedAT=state.activeTrack;
@@ -4354,7 +4354,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     let endAt=st;
     allEvents.forEach(ev=>{endAt=Math.max(endAt,ev.startAt+ev.dur)});
     Object.keys(audio.voiceMarkers).forEach(ti=>{const ms=audio.voiceMarkers[ti];if(ms.length)endAt=Math.max(endAt,ms[ms.length-1].updateAt+0.001)});
-    audio.stopAt=endAt;
+    audio.stopAt=endAt;if(state.loopB){var _bS=Infinity,_bE=null,_bT=state.activeTrack;audio.events.forEach(function(ev){if(ev.measureIdx===state.loopB.m&&ev.slotIdx===state.loopB.s&&ev.trackIdx===_bT&&ev.startAt<_bS){_bS=ev.startAt;_bE=ev.startAt+ev.dur;}});if(_bE===null){audio.events.forEach(function(ev){if(ev.measureIdx===state.loopB.m&&ev.slotIdx===state.loopB.s&&ev.startAt<_bS){_bS=ev.startAt;_bE=ev.startAt+ev.dur;}});}if(_bE!==null){audio.events=audio.events.filter(function(ev){return ev.startAt<=_bS+1e-6;});audio.stopAt=_bE;Object.keys(audio.voiceMarkers).forEach(function(k){audio.voiceMarkers[k]=audio.voiceMarkers[k].filter(function(ms){return ms.updateAt<=_bS+1e-6;});});}}/*LOOPAB_4349*/
     const SCHEDULE_AHEAD=3.0;
     function scheduleAhead(){
       const now=audio.ctx.currentTime;
@@ -6824,7 +6824,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   
   document.getElementById('btn-play').addEventListener('click',()=>{if(audio.playing)stopPlayback(true);else playSchedule()});
   document.getElementById('btn-stop').addEventListener('click',()=>stopPlayback(true));
-  document.getElementById('btn-loop').addEventListener('click',()=>{state.loop=!state.loop;document.getElementById('btn-loop').classList.toggle('active',state.loop)});{const _lb=document.getElementById('btn-lyr-below');if(_lb)_lb.addEventListener('click',()=>{const _t=activeTrackObj();if(!_t)return;_t.lyricsBelow=!_t.lyricsBelow;render();});}/*LYRBELOWBTN_4193*/
+  document.getElementById('btn-loop').addEventListener('click',()=>{var _m=state.loopMode||0;if(_m===0){state.loopMode=1;state.loop=true;state.loopA={m:state.sel.m,s:state.sel.s};state.loopB=null;}else if(_m===1){state.loopMode=2;state.loopB={m:state.sel.m,s:state.sel.s};}else{state.loopMode=0;state.loop=false;state.loopA=null;state.loopB=null;if(audio)audio.loopFrom=null;}if(typeof renderState==='function')renderState();if(audio&&audio.playing&&typeof replayFromCurrent==='function')replayFromCurrent();/*LOOPAB_4349*/});{const _lb=document.getElementById('btn-lyr-below');if(_lb)_lb.addEventListener('click',()=>{const _t=activeTrackObj();if(!_t)return;_t.lyricsBelow=!_t.lyricsBelow;render();});}/*LYRBELOWBTN_4193*/
   (function(){const vm=document.getElementById('btn-viewmode');if(vm)vm.addEventListener('click',()=>{state.viewmode=!state.viewmode;document.getElementById('app').classList.toggle('viewmode',state.viewmode);render()});})();
 
   // ⭐ Accord : boutons ajoutent leur texte, ⌫ efface dernier char, pas de fondamentale
