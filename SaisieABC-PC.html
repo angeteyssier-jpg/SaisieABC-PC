@@ -248,7 +248,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.382 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.388 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -1302,8 +1302,42 @@
   function beamGroupUnit(meter){const{num,den}=parseMeter(meter);if(den===8&&num%3===0&&num>=6)return 1.5;return 4/den}
   // Motif de ligatures (croches) par métrique : tableau de tailles de groupes (en unités du dénominateur).
   function beamPatternFor(meter){const p=state.beamPatterns&&state.beamPatterns[meter];return (p&&p.length)?p:null;}
-  function beamBoundsFor(meter){const p=beamPatternFor(meter);if(!p)return null;const unit=0.5;const b=[];let acc=0;for(const k of p){acc+=k*unit;b.push(+acc.toFixed(6));}return b;}
+  function beamBoundsFor(meter){const p=beamPatternFor(meter)||__beamDefault8(meter);/*BEAMPAN_4385_BND*/if(!p)return null;const unit=0.5;const b=[];let acc=0;for(const k of p){acc+=k*unit;b.push(+acc.toFixed(6));}return b;}
   // Toutes les décompositions de n en parts de 2 et 3 (ex. 5 -> [[3,2],[2,3]]).
+  function __beamDefault8(meter){/*BEAMPAN_4385_HLP*/
+    // Defauts de groupement pour les metriques en x/8 que beamGroupUnit ne
+    // traitait pas (il ne connaissait que num%3===0 && num>=6 : 6/8, 9/8, 12/8 ;
+    // tout le reste retombait sur 4/den = une croche, donc AUCUN groupement).
+    var p=parseMeter(meter);
+    if(p.den!==8)return null;
+    if(p.num===3)return[3];
+    if(p.num===5)return[3,2];
+    if(p.num===7)return[3,2,2];/*BEAM78_4386*/
+    return null;
+  }
+  function __beamAutoPattern(meter){
+    // Le groupement REELLEMENT applique quand aucun patron n'est pose, exprime
+    // en croches — sert a marquer « (defaut) » et a l'allumer en bleu.
+    var d=__beamDefault8(meter);
+    if(d)return d;
+    var p=parseMeter(meter),total=Math.round(p.num*8/p.den);
+    var k=Math.round(beamGroupUnit(meter)/0.5);
+    if(!(k>=1)||!(total>=1))return null;
+    var out=[],rem=total;
+    while(rem>=k){out.push(k);rem-=k;}
+    if(rem>0)out.push(rem);
+    return out;
+  }
+  function __beamMetersUsed(){
+    // Metriques rencontrees dans le morceau : celle du morceau, puis les
+    // changements dans l'ordre des mesures.
+    var out=[],seen={};
+    function add(m){if(m&&!seen[m]){seen[m]=true;out.push(m);}}
+    add(state.pieceMeter);
+    var tc=state.timeChanges||{};
+    Object.keys(tc).map(Number).sort(function(a,b){return a-b;}).forEach(function(i){add(tc[i]);});
+    return out;
+  }
   function comps23(n){const out=[];(function rec(rem,cur){if(rem===0){out.push(cur.slice());return;}if(rem>=3)rec(rem-3,cur.concat(3));if(rem>=2)rec(rem-2,cur.concat(2));})(n,[]);return out;}
   function groupDigits(p){return p.map(k=>{let s='';for(let i=1;i<=k;i++)s+=i;return s;}).join(' ');}
   function openVoltaPanel(){
@@ -1355,19 +1389,44 @@
         closePanel();
       }});
   }
-  function openBeamGroupPanel(){
-    const meter=meterAt(state.sel.m);const _pm=parseMeter(meter);const eighths=Math.round(_pm.num*8/_pm.den);const opts=comps23(eighths);
+  function openBeamGroupPanel(){/*BEAMPAN_4385_FN*/
     state.beamPatterns=state.beamPatterns||{};
-    function curKey(){const p=state.beamPatterns[meter];return p?p.join('+'):'';}
-    function body(){let h='<div class="mes-active" style="color:#0c6b2f;">Métrique '+meter+' — ligatures des croches</div>';
-      h+='<p class="lyr-hint">Groupement des croches sous les ligatures (au morceau). « 123 » = 3 croches liées, « 12 » = 2 croches. Ex. en 4/4 : 12 12 12 12 (défaut), 123 123 12, 123 12 123, 12 123 123.</p>';
-      h+='<div class="row-grid"><button class="k beam-opt" data-bp="" style="font-size:14px;">Automatique (défaut)</button></div>';
-      opts.forEach(p=>{h+='<div class="row-grid"><button class="k beam-opt" data-bp="'+p.join('+')+'" style="font-size:16px;letter-spacing:2px;">'+groupDigits(p)+'</button></div>';});
-      return h;}
-    function refresh(){const root=document.getElementById('panel-body');if(!root)return;root.querySelectorAll('.beam-opt').forEach(b=>b.classList.toggle('active',b.dataset.bp===curKey()));}
+    var meters=__beamMetersUsed();
+    function defKey(mt){var d=__beamAutoPattern(mt);return d?d.join('+'):'';}
+    function curKey(mt){var p=state.beamPatterns[mt];return p?p.join('+'):defKey(mt);}
+    function body(){
+      var h='<p class="lyr-hint">Groupement des croches sous les ligatures (au morceau). \u00ab 123 \u00bb = 3 croches li\u00e9es, \u00ab 12 \u00bb = 2 croches. Le bouton marqu\u00e9 \u00ab d\u00e9faut \u00bb est celui appliqu\u00e9 sans r\u00e9glage ; le bouton bleu est celui en vigueur.</p>';
+      meters.forEach(function(mt){
+        var pm=parseMeter(mt),eighths=Math.round(pm.num*8/pm.den);
+        var opts=comps23(eighths),dk=defKey(mt);
+        h+='<div class="mes-active" style="color:#0c6b2f;">M\u00e9trique '+mt+' \u2014 ligatures des croches</div>';
+        if(!opts.length){h+='<p class="lyr-hint">Aucun groupement en 2 et 3 pour cette m\u00e9trique.</p>';return;}
+        opts.forEach(function(p){
+          var k=p.join('+');
+          h+='<div class="row-grid"><button class="k beam-opt" data-bp="'+k+'" data-mt="'+mt+'" style="font-size:16px;letter-spacing:2px;">'+groupDigits(p)+(k===dk?' (d\u00e9faut)':'')+'</button></div>';
+        });
+      });
+      return h;
+    }
+    function refresh(){
+      var root=document.getElementById('panel-body');
+      if(!root)return;
+      root.querySelectorAll('.beam-opt').forEach(function(b){b.classList.toggle('active',b.dataset.bp===curKey(b.dataset.mt));});
+    }
     openPanel({title:'Ligatures (croches)',body:body(),hideActions:true,extraButtons:['Fermer'],
-      onMount:()=>{const root=document.getElementById('panel-body');root.querySelectorAll('.beam-opt').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.bp;state.beamPatterns=state.beamPatterns||{};if(!v)delete state.beamPatterns[meter];else state.beamPatterns[meter]=v.split('+').map(Number);render();refresh();}));refresh();},
-      onExtra:(w)=>{if(w==='Fermer')closePanel();}});
+      onMount:function(){
+        var root=document.getElementById('panel-body');
+        root.querySelectorAll('.beam-opt').forEach(function(b){b.addEventListener('click',function(){
+          var v=b.dataset.bp,mt=b.dataset.mt;
+          state.beamPatterns=state.beamPatterns||{};
+          // Choisir le defaut n'ECRIT rien : on retire le patron, l'ABC reste net.
+          if(v===defKey(mt))delete state.beamPatterns[mt];
+          else state.beamPatterns[mt]=v.split('+').map(Number);
+          render();refresh();
+        });});
+        refresh();
+      },
+      onExtra:function(w){if(w==='Fermer')closePanel();}});
   }
 
   // Aligne la longueur de toutes les voix sur la plus longue, en completant avec
@@ -2337,6 +2396,44 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     if(sig>0){for(let i=0;i<sig;i++)out.push({sym:'♯',step:SH[SHARP_NOTES[i]]})}
     else if(sig<0){for(let i=0;i<-sig;i++)out.push({sym:'♭',step:FL[FLAT_NOTES[i]]})}
     return out}
+  function __graceSvg(t,cx,staffTop,lC,ink,sel,iS){/*GRACEBEAM_4384_FN*/
+    // Petites notes d'une meme note principale (4.384). Convention de gravure :
+    // 2 ou plus => une BARRE commune entre les hampes (et, pour une acciaccatura,
+    // UN seul trait oblique sur la premiere) ; une seule => son crochet habituel.
+    // Le trace des tetes, lignes supplementaires, alterations et du cercle de
+    // selection est repris tel quel de l'ancien bloc en ligne.
+    var gg=t.grace||[],n=gg.length;
+    if(!n)return '';
+    var svg='',_ggx=cx-9,st=[],i;
+    for(var _gk=n-1;_gk>=0;_gk--){
+      var _gg=gg[_gk];
+      var _ggy=noteY(staffTop,stepIndex(_gg.note,_gg.octave),lC);
+      var _gst=stepIndex(_gg.note,_gg.octave),_grs=clefRefStep(lC);
+      if(_gst>=_grs+10)for(var _s=_grs+10;_s<=_gst;_s+=2){var _lly=noteY(staffTop,_s,lC);svg+='<line x1="'+(_ggx-3.5)+'" y1="'+_lly+'" x2="'+(_ggx+3.5)+'" y2="'+_lly+'" stroke="'+ink+'" stroke-width="0.6"/>';}
+      if(_gst<=_grs-2)for(var _s2=_grs-2;_s2>=_gst;_s2-=2){var _lly2=noteY(staffTop,_s2,lC);svg+='<line x1="'+(_ggx-3.5)+'" y1="'+_lly2+'" x2="'+(_ggx+3.5)+'" y2="'+_lly2+'" stroke="'+ink+'" stroke-width="0.6"/>';}/*GRACE_LEDGER_4148*/
+      if(_gg.acc){var _gac=(_gg.acc==='^'?'\u266f':_gg.acc==='_'?'\u266d':'\u266e');svg+='<text x="'+(_ggx-3.5)+'" y="'+(_ggy+2)+'" font-size="6" fill="'+ink+'" font-family="serif" text-anchor="middle">'+_gac+'</text>';}
+      svg+='<ellipse cx="'+_ggx+'" cy="'+_ggy+'" rx="2.2" ry="1.7" transform="rotate(-20 '+_ggx+' '+_ggy+')" fill="'+ink+'" stroke="'+ink+'" stroke-width="0.6"/>';
+      st.push({x:_ggx+2,headY:_ggy,top:_ggy-11});
+      if(state.graceMode&&iS&&(state.graceActive|0)===_gk){svg+='<circle cx="'+_ggx+'" cy="'+_ggy+'" r="3.3" fill="none" stroke="'+sel+'" stroke-width="1"/>';}/*GRACE_HL_4141*/
+      _ggx-=5;
+    }
+    // st suit l'ordre de trace (droite -> gauche) : st[0] = derniere petite note,
+    // st[n-1] = premiere (la plus a gauche), celle qui porte le trait d'acciaccatura.
+    var bY=st[0].top;
+    for(i=1;i<st.length;i++)if(st[i].top<bY)bY=st[i].top;
+    if(n>1){
+      var xR=st[0].x,xL=st[st.length-1].x,bT=1.8;
+      for(i=0;i<st.length;i++)svg+='<line x1="'+st[i].x+'" y1="'+st[i].headY+'" x2="'+st[i].x+'" y2="'+bY+'" stroke="'+ink+'" stroke-width="0.6"/>';
+      svg+='<rect x="'+xL+'" y="'+(bY-bT/2)+'" width="'+(xR-xL)+'" height="'+bT+'" fill="'+ink+'"/>';
+      if(t.graceSlash)svg+='<line x1="'+(xL-3)+'" y1="'+(bY+9)+'" x2="'+(xL+4)+'" y2="'+(bY+1)+'" stroke="'+ink+'" stroke-width="0.8"/>';
+    } else {
+      var s0=st[0];
+      svg+='<line x1="'+s0.x+'" y1="'+s0.headY+'" x2="'+s0.x+'" y2="'+s0.top+'" stroke="'+ink+'" stroke-width="0.6"/>';
+      svg+='<path d="M '+s0.x+' '+s0.top+' Q '+(s0.x+5)+' '+(s0.top+3)+' '+(s0.x+3)+' '+(s0.top+7)+'" stroke="'+ink+'" stroke-width="0.7" fill="none" stroke-linecap="round"/>';
+      if(t.graceSlash)svg+='<line x1="'+(s0.x-3)+'" y1="'+(s0.top+9)+'" x2="'+(s0.x+4)+'" y2="'+(s0.top+1)+'" stroke="'+ink+'" stroke-width="0.8"/>';
+    }
+    return svg;
+  }
   function computeBeamGroups(meas,meter){const gu=beamGroupUnit(meter),bounds=beamBoundsFor(meter),eps=1e-6;function gIndex(off){if(bounds){for(let i=0;i<bounds.length;i++){if(off<bounds[i]-eps)return i;}return bounds.length;}return Math.floor((off+eps)/gu);}function gEnd(gi){if(bounds)return (gi<bounds.length)?bounds[gi]:Infinity;return gi*gu+gu;}const groups=[];let cg=null,offset=0;function flush(){if(cg&&cg.length>=2)groups.push(cg);cg=null}for(let i=0;i<meas.length;i++){const t=meas[i];const eD=effDur(t);const gi=gIndex(offset);const bm=(t.type==='note')&&(t.dur<=0.5+eps);const cr=(offset+eD)>(gEnd(gi)+eps);if(bm&&!cr){if(cg&&cg.startGroup===gi&&!t.beamBreak)cg.push(i);else{flush();cg=[i];cg.startGroup=gi}}else flush();offset=+(offset+eD).toFixed(6)}flush();return groups}
   function staccatoDot(t,cx,headY,stemUp,color){
     if(!t.orn||!t.orn.includes('.'))return'';
@@ -2827,7 +2924,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
             const ot=t.orn.filter(o=>o!=='.').map(o=>{if(o==='rit')return'rit.';if(o==='accel')return'accel.';if(o==='~')return'tr';if(o==='T')return'tr';if(o==='M')return'∼';if(o==='P')return'∿';if(o==='H')return'𝄐';if(o==='L')return'>';if(o==='u')return'⋁';if(o==='v')return'⊓';if(o==='O')return'⊕';return o}).join(' ');
             if(ot)svg+='<text x="'+cx+'" y="'+(staffTop-12-_offO)+'" font-size="'+_szO+'" font-style="italic" fill="'+ink+'" text-anchor="middle">'+ot+'</text>';
           }
-          if(!__hideStaff){if(t.type==='note'){if(t.grace&&t.grace.length){let _ggx=cx-9;/*TABONLY_4173*/for(let _gk=t.grace.length-1;_gk>=0;_gk--){const _gg=t.grace[_gk];const _ggy=noteY(staffTop,stepIndex(_gg.note,_gg.octave),lC);const _gst=stepIndex(_gg.note,_gg.octave),_grs=clefRefStep(lC);if(_gst>=_grs+10)for(let _s=_grs+10;_s<=_gst;_s+=2){const _lly=noteY(staffTop,_s,lC);svg+='<line x1="'+(_ggx-3.5)+'" y1="'+_lly+'" x2="'+(_ggx+3.5)+'" y2="'+_lly+'" stroke="'+ink+'" stroke-width="0.6"/>';}if(_gst<=_grs-2)for(let _s=_grs-2;_s>=_gst;_s-=2){const _lly=noteY(staffTop,_s,lC);svg+='<line x1="'+(_ggx-3.5)+'" y1="'+_lly+'" x2="'+(_ggx+3.5)+'" y2="'+_lly+'" stroke="'+ink+'" stroke-width="0.6"/>';}/*GRACE_LEDGER_4148*/if(_gg.acc){const _gac=(_gg.acc==='^'?'\u266f':_gg.acc==='_'?'\u266d':'\u266e');svg+='<text x="'+(_ggx-3.5)+'" y="'+(_ggy+2)+'" font-size="6" fill="'+ink+'" font-family="serif" text-anchor="middle">'+_gac+'</text>';}svg+='<ellipse cx="'+_ggx+'" cy="'+_ggy+'" rx="2.2" ry="1.7" transform="rotate(-20 '+_ggx+' '+_ggy+')" fill="'+ink+'" stroke="'+ink+'" stroke-width="0.6"/>';const _gsx=_ggx+2,_gsy=_ggy-11;svg+='<line x1="'+_gsx+'" y1="'+_ggy+'" x2="'+_gsx+'" y2="'+_gsy+'" stroke="'+ink+'" stroke-width="0.6"/>';svg+='<path d="M '+_gsx+' '+_gsy+' Q '+(_gsx+5)+' '+(_gsy+3)+' '+(_gsx+3)+' '+(_gsy+7)+'" stroke="'+ink+'" stroke-width="0.7" fill="none" stroke-linecap="round"/>';if(t.graceSlash)svg+='<line x1="'+(_gsx-3)+'" y1="'+(_gsy+9)+'" x2="'+(_gsx+4)+'" y2="'+(_gsy+1)+'" stroke="'+ink+'" stroke-width="0.8"/>';if(state.graceMode&&iS&&(state.graceActive|0)===_gk){svg+='<circle cx="'+_ggx+'" cy="'+_ggy+'" r="3.3" fill="none" stroke="'+sel+'" stroke-width="1"/>';}/*GRACE_HL_4141*/_ggx-=5;}}
+          if(!__hideStaff){if(t.type==='note'){if(t.grace&&t.grace.length){svg+=__graceSvg(t,cx,staffTop,lC,ink,sel,iS);}/*GRACEBEAM_4384_CALL*/
             const gp=sTG[si];
             if(gp){
               const gi=gp.gIdx;
@@ -4226,10 +4323,10 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   function jumpMeasures(n){leaveChordSlot();const len=state.measures.length;let t=Math.max(0,Math.min(len-1,state.sel.m+n));state.sel={m:t,s:0};render()}
 
   const audio={ctx:null,master:null,playing:false,scheduled:[],stopAt:0,raf:null,loopFrom:null,events:[],eventIdx:0,markers:[],markerIdx:0,voiceMarkers:{},voiceIdx:{}};
-  function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.comp=audio.ctx.createDynamicsCompressor();audio.comp.threshold.value=-10;audio.comp.knee.value=20;audio.comp.ratio.value=8;audio.comp.attack.value=0.003;audio.comp.release.value=0.25;audio.limiter=audio.ctx.createDynamicsCompressor();audio.limiter.threshold.value=-2;audio.limiter.knee.value=0;audio.limiter.ratio.value=20;audio.limiter.attack.value=0.001;audio.limiter.release.value=0.1;audio.master.connect(audio.comp);audio.comp.connect(audio.limiter);audio.limiter.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/100;if(audio.ctx.state==='suspended')audio.ctx.resume()}
+  function ensureAudio(){if(!audio.ctx){audio.ctx=new(window.AudioContext||window.webkitAudioContext)();audio.master=audio.ctx.createGain();audio.comp=audio.ctx.createDynamicsCompressor();audio.comp.threshold.value=-6;audio.comp.knee.value=6;audio.comp.ratio.value=3;audio.comp.attack.value=0.02;audio.comp.release.value=0.18;/*COMPSOFT_4388*/audio.limiter=audio.ctx.createDynamicsCompressor();audio.limiter.threshold.value=-2;audio.limiter.knee.value=0;audio.limiter.ratio.value=20;audio.limiter.attack.value=0.001;audio.limiter.release.value=0.1;audio.master.connect(audio.comp);audio.comp.connect(audio.limiter);audio.limiter.connect(audio.ctx.destination)}audio.master.gain.value=state.volume/100;if(audio.ctx.state==='suspended')audio.ctx.resume()}
 /*SFPERC_4292*/
 (function(){
-  var SFGAIN_D=2.2;                                   // gain tambours (passe par master->comp->limiter)
+  var SFGAIN_D=1.4;                                   // gain tambours (passe par master->comp->limiter)
   var KEY={kick:36,snare:38,hihat:42,ftom:41,mtom:47,htom:50}; // kind -> touche batterie GM
   var DEF=49;                                         // defaut -> crash
   window.__sfDrumVar={}; window.__sfDrumPending={};
@@ -4450,7 +4547,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     if(kind===undefined)kind=(midi<48)?'kick':(midi<=64)?'snare':'hihat';
     function nz(type,freq,Q,g,dur){const n=ctx.createBufferSource(),f=ctx.createBiquadFilter(),ng=ctx.createGain();n.buffer=getNoiseBuffer();f.type=type;f.frequency.value=freq;if(Q)f.Q.value=Q;ng.gain.setValueAtTime(P*g,startAt);ng.gain.exponentialRampToValueAtTime(0.0001,startAt+dur);n.connect(f);f.connect(ng);ng.connect(audio.master);n.start(startAt);n.stop(startAt+dur+0.02);audio.scheduled.push(n);}
     function tn(type,f0,f1,g,dur){const o=ctx.createOscillator(),og=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,startAt);if(f1)o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),startAt+dur*0.7);og.gain.setValueAtTime(P*g,startAt);og.gain.exponentialRampToValueAtTime(0.0001,startAt+dur);o.connect(og);og.connect(audio.master);o.start(startAt);o.stop(startAt+dur+0.02);audio.scheduled.push(o);}
-    if(kind==='kick'){tn('sine',140,48,1.3,0.18);nz('lowpass',400,0,0.5,0.04);}
+    if(kind==='kick'){tn('sine',200,60,1.15,0.22);tn('sine',150,120,0.55,0.09);nz('lowpass',3000,0,0.30,0.010);}/*KICK_4387*/
     else if(kind==='ftom'){tn('sine',110,70,1.1,0.24);nz('lowpass',300,0,0.25,0.05);}
     else if(kind==='snare'){nz('bandpass',1900,0.8,1.1,0.13);tn('triangle',180,0,0.4,0.07);}
     else if(kind==='mtom'){tn('sine',165,120,1.0,0.2);nz('lowpass',500,0,0.2,0.04);}
@@ -9119,8 +9216,8 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
   }
   // Génère un <note>...</note>. isChordNote=true → ajoute <chord/> (note empilée d'un accord).
   // prevNote = note de tête précédente (cross-mesure) pour détecter tie/slur stop.
-  function oneNoteXml(slot,si,meas,lK,lC,dur,isChordNote,prevNote){
-        let gracePre='';if(slot.type==='note'&&!isChordNote&&slot.grace&&slot.grace.length){const _os=(lC==='treble8'?-1:0);slot.grace.forEach(g=>{let _al=(g.acc==='^'?1:g.acc==='_'?-1:g.acc==='^^'?2:g.acc==='__'?-2:0);gracePre+='<note><grace'+(slot.graceSlash?' slash="yes"':'')+'/><pitch><step>'+g.note+'</step>'+(_al!==0?'<alter>'+_al+'</alter>':'')+'<octave>'+(4+(g.octave||0)+_os)+'</octave></pitch>'+'<voice>1</voice><type>eighth</type><stem>up</stem></note>';});}
+  function oneNoteXml(slot,si,meas,lK,lC,dur,isChordNote,prevNote,beamXml){/*MXLBEAM_4383_SIG*/
+        let gracePre='';if(slot.type==='note'&&!isChordNote&&slot.grace&&slot.grace.length){const _os=(lC==='treble8'?-1:0);slot.grace.forEach((g,_gi)=>{let _al=(g.acc==='^'?1:g.acc==='_'?-1:g.acc==='^^'?2:g.acc==='__'?-2:0);gracePre+='<note><grace'+(slot.graceSlash?' slash="yes"':'')+'/><pitch><step>'+g.note+'</step>'+(_al!==0?'<alter>'+_al+'</alter>':'')+'<octave>'+(4+(g.octave||0)+_os)+'</octave></pitch>'+'<voice>1</voice><type>eighth</type><stem>up</stem>'+((slot.grace.length>1)?('<beam number="1">'+(_gi===0?'begin':(_gi===slot.grace.length-1?'end':'continue'))+'</beam>'):'')+'</note>';});/*GRACEBEAM_4384_XML*/}
     let xml=gracePre+'<note>';
     if(isChordNote)xml+='<chord/>';
     if(slot.type==='rest'){
@@ -9203,6 +9300,7 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
       if(orns)nota+='<ornaments>'+orns+'</ornaments>';
     }
     if(lC==='perc'&&slot.type==='note'){const _tk2=noteToken(slot.note,slot.octave,slot.acc||'');const _tr2=state.tracks[state.activeTrack];const _pe2=(_tr2&&_tr2.percMap)?_tr2.percMap[_tk2]:null;if(_pe2&&_pe2.head&&_pe2.head!=='normal')xml+='<notehead>'+_pe2.head+'</notehead>';}
+    if(beamXml&&!isChordNote&&slot.type==='note')xml+=beamXml;/*MXLBEAM_4383_EMIT*/
     if(nota)xml+='<notations>'+nota+'</notations>';
     // Paroles (uniquement sur la note de tête, pas les notes empilées) : un <lyric number> par couplet
     if(slot.type==='note'&&!isChordNote){
@@ -9285,13 +9383,51 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
   }
   // Génère <part id=...>...</part> pour la piste active courante. includeTempo=true
   // sur la 1ère piste seulement (tempo global).
+  function __beamMapFor(meas,meter){/*MXLBEAM_4383_MAP*/
+    // Rend une table { indice de slot -> chaine de <beam> } pour une mesure.
+    // Rejoue computeBeamGroups (source de verite du rendu) puis reproduit le
+    // trace : niveau 1 sur tout le groupe, niveaux 2-4 par segments, demi-barres
+    // (hooks) pour les notes isolees a leur niveau.
+    var out={};
+    if(typeof computeBeamGroups!=='function')return out;
+    var bg=computeBeamGroups(meas,meter)||[];
+    for(var gi=0;gi<bg.length;gi++){
+      var g=bg[gi],n=g.length;
+      if(n<2)continue;
+      var lvls=[],i;
+      for(i=0;i<n;i++){
+        var bD=meas[g[i]].dur;
+        lvls.push(bD<=0.0625+1e-6?4:(bD<=0.125+1e-6?3:(bD<=0.25+1e-6?2:1)));
+      }
+      var s=[];
+      for(i=0;i<n;i++)s.push('<beam number="1">'+(i===0?'begin':(i===n-1?'end':'continue'))+'</beam>');
+      for(var lvl=2;lvl<=4;lvl++){
+        var conn=[];
+        for(i=0;i<n;i++)conn.push(false);
+        for(i=0;i<n-1;i++)if(lvls[i]>=lvl&&lvls[i+1]>=lvl){conn[i]=true;conn[i+1]=true;}
+        for(i=0;i<n;i++){
+          if(lvls[i]<lvl)continue;
+          var v;
+          if(conn[i]){
+            var L=(i>0&&lvls[i-1]>=lvl),R=(i<n-1&&lvls[i+1]>=lvl);
+            v=(L&&R)?'continue':(R?'begin':'end');
+          } else {
+            v=(i===0)?'forward hook':'backward hook';
+          }
+          s[i]+='<beam number="'+lvl+'">'+v+'</beam>';
+        }
+      }
+      for(i=0;i<n;i++)out[g[i]]=s[i];
+    }
+    return out;
+  }
   function buildOnePartXml(partId,DIV,includeTempo){
     let xml='<part id="'+partId+'">\n';
     let prevClef=null,prevKey=null,prevMeter=null;
     let prevNoteXm=null;   // dernière note émise (toutes mesures confondues) pour tie/slur inter-mesure
     state.measures.forEach((meas,mi)=>{
       xml+='<measure number="'+(mi+1)+'">\n';if(includeTempo){var _brk=state.breaks&&state.breaks[mi];if(_brk){if(_brk.page)xml+='<print new-page="yes"/>\n';else if(_brk.line)xml+='<print new-system="yes"/>\n';}}/*MXLBRK_4323_EXPORT*/
-      const lC=clefAt(mi),lK=keyAt(mi),lM=meterAt(mi);
+      const lC=clefAt(mi),lK=keyAt(mi),lM=meterAt(mi);const _bmap=__beamMapFor(meas,lM);/*MXLBEAM_4383_GRP*/
       const isFirst=(mi===0);
       const hasClefChange=isFirst||lC!==prevClef;
       const hasKeyChange=isFirst||lK!==prevKey;
@@ -9329,7 +9465,7 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
           xml+='<direction placement="above"><direction-type><words>'+escapeXml(slot.text)+'</words></direction-type></direction>\n';
         }
         // Note de tête (on passe prevNoteXm pour détecter tie/slur stop inter-mesure)
-        xml+=oneNoteXml(slot,si,meas,lK,lC,dur,false,prevNoteXm);
+        xml+=oneNoteXml(slot,si,meas,lK,lC,dur,false,prevNoteXm,_bmap[si]);/*MXLBEAM_4383_CALL*/
         // Notes empilées (accord) : chaque note du stack avec <chord/>
         if(slot.type==='note'&&slot.stack&&slot.stack.length){
           slot.stack.forEach(sn=>{
