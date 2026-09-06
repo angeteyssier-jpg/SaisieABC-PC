@@ -248,7 +248,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.391 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.393 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -9090,7 +9090,37 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
     // Cree en JS : une seule ancre, aucune divergence PC/Tel (lecon 4.373b).
     // La variante se deduit de l'URL ; en local (file://) on vise le fichier voisin,
     // en ligne les pages GitHub Pages.
-    function __poserBascule(){
+    /*HANDOFF_4393_HLP*/
+    var __HO_KEY='SABC_HANDOFF';
+    var __HO_TTL=120000;
+    function __hoVariante(){ return /saisieabc-tel/i.test(location.href)?'tel':'PC'; }
+    function __handoffPut(){
+      try{
+        if(location.protocol==='file:')return false;
+        if(typeof __commitCur==='function')__commitCur();
+        var _p=Object.assign({},atmPayload(),{__view:{zoom:state.zoom,scoreScale:state.scoreScale,lyricOffset:state.lyricOffset}});
+        var _o={v:1,from:__hoVariante(),t:Date.now(),name:(state.openedFileName||'partition')+(state.openedFileExt||'.atm'),atm:buildAtmText(_p)};
+        localStorage.setItem(__HO_KEY,JSON.stringify(_o));
+        return true;
+      }catch(e){ try{localStorage.removeItem(__HO_KEY);}catch(_e){} return false; }
+    }
+    function __handoffGet(){
+      var _raw=null;
+      try{
+        if(location.protocol==='file:')return false;
+        _raw=localStorage.getItem(__HO_KEY);
+        if(!_raw)return false;
+        localStorage.removeItem(__HO_KEY);
+      }catch(e){ return false; }
+      var _o=null;
+      try{ _o=JSON.parse(_raw); }catch(e){ return false; }
+      if(!_o||_o.v!==1||!_o.atm)return false;
+      if(_o.from===__hoVariante())return false;
+      if(!(Date.now()-(_o.t||0)<__HO_TTL))return false;
+      try{ loadAtm(_o.atm,_o.name||'partition.atm'); }catch(e){ return false; }
+      return true;
+    }
+    function __poserBascule(){/*HANDOFF_4393_GET*/try{__handoffGet();}catch(_e){}
       try{
         var aide=document.getElementById('btn-help');
         if(!aide||document.getElementById('btn-variante'))return;
@@ -9106,7 +9136,7 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
         b.style.fontSize='16px';
         b.textContent=estTel?'\uD83D\uDDA5 Version PC':'\uD83D\uDCF1 Version Tel';
         b.title='Ouvrir l\'autre version de SaisieABC ('+(estTel?'ordinateur':'t\u00e9l\u00e9phone')+')';
-        b.addEventListener('click',function(){location.href=cible;});
+        b.addEventListener('click',function(){try{__handoffPut();}catch(_e){}/*HANDOFF_4393_PUT*/location.href=cible;});
         d.appendChild(b);
         rang.parentNode.insertBefore(d,rang.nextSibling);
       }catch(e){}
