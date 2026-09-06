@@ -248,7 +248,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.388 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.390 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -7062,7 +7062,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   function shiftSelOneSlot(fromIdx,toIdx,dir){
     const flat=flatSlots();const a=Math.min(fromIdx,toIdx),b=Math.max(fromIdx,toIdx);
     if(dir<0&&a<=0)return false;if(dir>0&&b>=flat.length-1)return false;
-    const S=flat.map(f=>cloneSlot(f.slot));const restLike=(sl)=>({type:'rest',dur:sl.dur,dot:!!sl.dot});
+    const S=flat.map(f=>cloneSlot(f.slot));const restLike=(sl)=>({type:'rest',dur:sl.dur,dot:(+sl.dot||0)});/*RESTLIKE_4389*/
     let seq;
     if(dir<0){seq=S.slice(0,a-1).concat(S.slice(a,b+1),[restLike(S[a-1])],S.slice(b+1));}
     else{seq=S.slice(0,a).concat([restLike(S[b+1])],S.slice(a,b+1),S.slice(b+2));}
@@ -9056,6 +9056,35 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
   }catch(e){alert('Import MIDI impossible : '+(e&&e.message?e.message:e));}
 }
 
+  (function(){/*PWA_4390*/
+    // Installation en application (PWA) et OUVERTURE PAR DOUBLE-CLIC des .atm/.atmz.
+    // Tout est cree en JS : aucun HTML ancre, donc une seule ancre a entretenir et
+    // aucune divergence PC/Tel (lecon 4.373b).
+    // En file:// on ne fait RIEN : ni manifeste ni service worker. Les copies de
+    // travail locales de TEYSSIER se comportent donc exactement comme avant.
+    try{
+      var enLigne=(location.protocol==='https:');
+      if(enLigne&&!document.querySelector('link[rel="manifest"]')){
+        var lk=document.createElement('link');lk.rel='manifest';lk.href='manifest.json';
+        (document.head||document.documentElement).appendChild(lk);
+      }
+      if(enLigne&&navigator.serviceWorker){
+        window.addEventListener('load',function(){
+          try{navigator.serviceWorker.register('sw.js');}catch(e){}
+        });
+      }
+      // Fichier remis par le systeme au lancement : on le confie au chemin
+      // d'ouverture EXISTANT, qui sait deja router .atm, .atmz, .mxl, .mid, etc.
+      if(window.launchQueue&&typeof LaunchParams!=='undefined'&&window.launchQueue.setConsumer){
+        window.launchQueue.setConsumer(function(p){
+          if(!p||!p.files||!p.files.length)return;
+          p.files[0].getFile().then(function(f){
+            if(typeof processOpenedFile==='function')processOpenedFile(f);
+          }).catch(function(){});
+        });
+      }
+    }catch(e){}
+  })();
   function processOpenedFile(f){
     if(!f)return;
     const name=f.name.toLowerCase();
