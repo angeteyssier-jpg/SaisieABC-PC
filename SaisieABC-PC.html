@@ -248,7 +248,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.390 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.391 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -9084,6 +9084,35 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
         });
       }
     }catch(e){}
+  })();
+  (function(){/*SWITCH_4391*/
+    // Bouton de bascule PC <-> Tel, pose sous la rangee « ABC (code) / ? Aide ».
+    // Cree en JS : une seule ancre, aucune divergence PC/Tel (lecon 4.373b).
+    // La variante se deduit de l'URL ; en local (file://) on vise le fichier voisin,
+    // en ligne les pages GitHub Pages.
+    function __poserBascule(){
+      try{
+        var aide=document.getElementById('btn-help');
+        if(!aide||document.getElementById('btn-variante'))return;
+        var rang=aide.parentNode;
+        if(!rang||!rang.parentNode)return;
+        var estTel=/saisieabc-tel/i.test(location.href);
+        var cible;
+        if(location.protocol==='file:')cible=estTel?'SaisieABC-PC.html':'SaisieABC-Tel.html';
+        else cible=estTel?'https://angeteyssier-jpg.github.io/SaisieABC-PC/SaisieABC-PC.html'
+                         :'https://angeteyssier-jpg.github.io/SaisieABC-Tel/SaisieABC-Tel.html';
+        var d=document.createElement('div');d.className='row-grid';
+        var b=document.createElement('button');b.className='k';b.id='btn-variante';
+        b.style.fontSize='16px';
+        b.textContent=estTel?'\uD83D\uDDA5 Version PC':'\uD83D\uDCF1 Version Tel';
+        b.title='Ouvrir l\'autre version de SaisieABC ('+(estTel?'ordinateur':'t\u00e9l\u00e9phone')+')';
+        b.addEventListener('click',function(){location.href=cible;});
+        d.appendChild(b);
+        rang.parentNode.insertBefore(d,rang.nextSibling);
+      }catch(e){}
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',__poserBascule);
+    else __poserBascule();
   })();
   function processOpenedFile(f){
     if(!f)return;
