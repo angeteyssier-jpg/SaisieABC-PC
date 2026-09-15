@@ -262,7 +262,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.472 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.473 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -5790,13 +5790,36 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     h.style.top=(((b&&b.style.display!=='none')?b.offsetHeight:0)+2)+'px';
   }
 
+  /*SCENE_4473_BLOC verrou d'ecran : l'ecran ne s'eteint pas pendant le morceau*/
+  var SCWL=null,SCWLW=false;
+  function _wlOn(){
+    SCWLW=true;
+    try{
+      if(!navigator.wakeLock||SCWL)return;
+      navigator.wakeLock.request('screen').then(function(v){
+        /* sorti de scene pendant l'attente : on rend tout de suite */
+        if(!SCWLW){try{v.release();}catch(e){}return;}
+        SCWL=v;
+        v.addEventListener('release',function(){SCWL=null;});
+      }).catch(function(){});
+    }catch(e){}
+  }
+  function _wlOff(){
+    SCWLW=false;
+    var v=SCWL;SCWL=null;
+    if(v){try{v.release();}catch(e){}}
+  }
+  /* Android rend le verrou des que la page est masquee : on le reprend */
+  document.addEventListener('visibilitychange',function(){
+    if(SCWLW&&!SCWL&&document.visibilityState==='visible')_wlOn();
+  });
   function _solo(on){
     if(on){
       if(SCCACHE)return;
-      SCCACHE=true;_scSolo(true);/*SCENE_4467_ON*/
+      SCCACHE=true;_scSolo(true);_wlOn();/*SCENE_4467_ON*//*SCENE_4473_PREND*/
     }else{
       if(!SCCACHE)return;
-      SCCACHE=null;_scSolo(false);/*SCENE_4467_OFF*/
+      SCCACHE=null;_scSolo(false);_wlOff();/*SCENE_4467_OFF*//*SCENE_4473_REND*/
       var app=document.getElementById('app');
       if(app&&SCPAD!==null){app.style.paddingTop=SCPAD;SCPAD=null;}
     }
