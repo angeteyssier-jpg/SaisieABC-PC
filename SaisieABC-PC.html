@@ -262,7 +262,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.473 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.477 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -731,7 +731,17 @@
     tabKind:(opts.tabKind!==undefined)?opts.tabKind:null,
     tabCustom:(opts.tabCustom!==undefined)?opts.tabCustom:null,
     tabLh:!!opts.tabLh,
-    tabRhythm:(opts.tabRhythm!==undefined)?opts.tabRhythm:true,lyricOffset:opts.lyricOffset/*MKTRKLYR_4327_MK*/
+    tabRhythm:(opts.tabRhythm!==undefined)?opts.tabRhythm:true,lyricOffset:opts.lyricOffset/*MKTRKLYR_4327_MK*/,
+    /*TRKKEEP_4476 champs de piste sauves dans le .atm : ils doivent
+      survivre a loadFrom (annulation, rendu du recueil) */
+    staffView:opts.staffView||'both',
+    tabGap:(opts.tabGap!==undefined)?opts.tabGap:0,
+    tabLhOffset:(opts.tabLhOffset!==undefined)?opts.tabLhOffset:0,
+    tabLhSize:(opts.tabLhSize!=null)?opts.tabLhSize:9,
+    diatoSystem:(opts.diatoSystem!==undefined)?opts.diatoSystem:null,
+    diatoOuter:(opts.diatoOuter!==undefined)?opts.diatoOuter:null,
+    diatoRows:(opts.diatoRows!==undefined)?opts.diatoRows:null,
+    diatoStrategy:(opts.diatoStrategy!==undefined)?opts.diatoStrategy:null
   }}
 
   function __genAccompB(){/*ACCGENB_4357_FN*/
@@ -3301,7 +3311,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
         const bH=Math.max(voicePxH,Math.round((layout._lastScoreH||voiceUnitH)*pxPerUnit));_sysPxH+=(single?2:LABEL_PX)+bH+GAP;
         const tr=tracks[i];
         const isActive=(i===saved);
-        const _snm=(tr.sname||'').trim();const label=(((si>0&&_snm)?_snm:(tr.name||''))+(tr.mute?' [muet]':'')).trim();/*TRKLBL_4268*/
+        const _snm=(tr.sname||'').trim();const label=((si>0&&_snm)?_snm:(tr.name||'')).trim();/*TRKLBL_4268*//*NOMUET_4477_PAGE*/
         const border=isActive&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
         const bg=isActive&&!single?'background:#f4f8fd;':'background:#ffffff;';
         const labelHtml=(state.viewFlags&&state.viewFlags.trkLbl===false)?'':/*F4444_LBL*//*MONOLBL_4213*/'<div style="position:absolute;top:'+(((STAFF_TOP_Y+(layout._forceTopExtra||0))*pxPerUnit)-20-(((state.view&&state.view.trackLabelOff!=null)?state.view.trackLabelOff:0)))+'px/*LBLFIX_4271*/;left:8px;font-size:11px;font-weight:700;color:'+(isActive?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';/*PGLBL_4269*/
@@ -4136,7 +4146,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       const tr=tracks[i];
       const isActive=(i===saved);
       const single=(numV===1);
-      const label=((tr.name||'')+(tr.mute?' [muet]':'')).trim();/*TRKLBL_4268*/
+      const label=(tr.name||'').trim();/*TRKLBL_4268*//*NOMUET_4477_LIGNE*/
       const border=isActive&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
       const bg=isActive&&!single?'background:#f4f8fd;':'background:#ffffff;';
       const labelHtml=(state.viewFlags&&state.viewFlags.trkLbl===false)?'':/*F4444_LBL*//*MONOLBL_4213*/'<div style="position:absolute;top:'+(((STAFF_TOP_Y+(layout._lastTopExtra||0))*pxPerUnit)-20-(((state.view&&state.view.trackLabelOff!=null)?state.view.trackLabelOff:0)))+'px/*LBLFIX_4271*/;left:8px;font-size:11px;font-weight:700;color:'+(isActive?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';/*LGLBL_4270*/
@@ -5824,6 +5834,28 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       if(app&&SCPAD!==null){app.style.paddingTop=SCPAD;SCPAD=null;}
     }
   }
+  /*SCENE_4474_NAV morceau suivant / precedent dans le recueil ouvert*/
+  var SCCUR=null;
+  function _freres(o){
+    var out=[],i;
+    if(!o||!SCLIB||!SCLIB.m)return out;
+    for(i=0;i<SCLIB.m.length;i++)if(SCLIB.m[i].f===o.f)out.push(SCLIB.m[i]);
+    out.sort(function(a,b){return (a.i||0)-(b.i||0);});
+    return out;
+  }
+  function _rang(o){
+    var fr=_freres(o),i;
+    for(i=0;i<fr.length;i++)if(fr[i].i===o.i)return [fr,i];
+    return [fr,-1];
+  }
+  function _voisin(d){
+    if(!SCCUR)return;
+    var r=_rang(SCCUR),fr=r[0],k=r[1];
+    if(k<0)return;
+    var n=k+d;
+    if(n<0||n>=fr.length)return;   /* pas de bouclage : on s'arrete aux bords */
+    _montrer(fr[n]);
+  }
   function _barre(o){
     var b=document.getElementById('sc-bar2');
     if(!b){
@@ -5845,7 +5877,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       x.addEventListener('click',function(){_rendre();_fermer();});
     }
     b.style.display='';
-    document.getElementById('sc-ttl').textContent=o.t||o.f;_scOutils(b);/*SCENE_4464_BAR*/
+    SCCUR=o;document.getElementById('sc-ttl').textContent=o.t||o.f;_scVueApp();_scOutils(b);/*SCENE_4464_BAR*//*SCENE_4474_CUR*//*SCENE_4475_APP*/
     var app=document.getElementById('app');
     if(app){if(SCPAD===null)SCPAD=app.style.paddingTop;
       app.style.paddingTop=(b.offsetHeight+6)+'px';}
@@ -5882,7 +5914,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     try{if(typeof stopPlayback==='function'&&typeof audio==='object'&&audio&&audio.playing)
       stopPlayback(true);}catch(e){}
     var b=document.getElementById('sc-bar2');if(b)b.style.display='none';var _p=document.getElementById('sc-ton-pop');if(_p&&_p.parentNode)_p.parentNode.removeChild(_p);/*SCENE_4464_POP*/
-    _solo(false);
+    _solo(false);SCCUR=null;/*SCENE_4474_FIN*/
     if(SCSAUVE){
       var k=SCSAUVE;SCSAUVE=null;
       loadFrom(k.e);history.stack=k.p;history.pos=k.i;
@@ -5931,11 +5963,22 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     render();_scLabels();
   }
   /* le cycle exact du bouton d'origine : les deux -> solfege -> tablature */
+  /*SCENE_4475_VUE le reglage d'affichage suit d'un morceau a l'autre*/
+  var SCVUE=null;
+  function _scVueApp(){
+    if(!SCVUE)return;
+    var t=null;try{t=activeTrackObj();}catch(e){}
+    if(!t||!t.tabKind)return;      /* pas de tablature : on prend ce qu'il y a */
+    if(t.staffView===SCVUE)return;
+    t.staffView=SCVUE;
+    try{if(typeof renderTabPanel==='function')renderTabPanel();}catch(e){}
+    render();
+  }
   function _scAff(){
     var t=null;try{t=activeTrackObj();}catch(e){}
     if(!t||!t.tabKind)return;
     var c=t.staffView||'both';
-    t.staffView=(c==='both')?'staff':(c==='staff')?'tab':'both';
+    t.staffView=(c==='both')?'staff':(c==='staff')?'tab':'both';SCVUE=t.staffView;/*SCENE_4475_MEM*/
     try{if(typeof renderTabPanel==='function')renderTabPanel();}catch(e){}
     render();_scLabels();
   }
@@ -5984,7 +6027,15 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     if(l){var j=false;try{j=!!(audio&&audio.playing);}catch(x){}
       l.textContent=j?'\u23f8':'\u25b6';}
     var n=document.getElementById('sc-tn');
-    if(n)n.textContent=SCTON||'Ton';
+    if(n)n.textContent=SCTON||'Ton';/*SCENE_4474_LAB*/
+    var pv=document.getElementById('sc-pre'),sv2=document.getElementById('sc-suiv');
+    if(pv&&sv2){
+      var rg=SCCUR?_rang(SCCUR):[[],-1],fre=rg[0],kk=rg[1];
+      pv.disabled=(kk<=0);
+      sv2.disabled=(kk<0||kk>=fre.length-1);
+      pv.style.opacity=pv.disabled?'0.45':'';
+      sv2.style.opacity=sv2.disabled?'0.45':'';
+    }
   }
   function _scOutils(b){
     if(!document.getElementById('sc-ec')){
@@ -6005,7 +6056,10 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       var splus=_bt('+','Systemes plus espaces',function(){_scSys(1);});
       g.appendChild(moins);g.appendChild(val);g.appendChild(plus);
       g.appendChild(smoins);g.appendChild(sval);g.appendChild(splus);/*SCENE_4471_BAR*/
-      g.appendChild(ton);g.appendChild(aff);g.appendChild(lir);
+      var pre=_bt('\u2039','Morceau precedent du recueil',function(){_voisin(-1);});pre.id='sc-pre';
+        var suiv=_bt('\u203a','Morceau suivant du recueil',function(){_voisin(1);});suiv.id='sc-suiv';
+        g.appendChild(pre);g.appendChild(suiv);/*SCENE_4474_BTN*/
+        g.appendChild(ton);g.appendChild(aff);g.appendChild(lir);
       var t=document.getElementById('sc-ttl');
       if(t&&t.parentNode===b){t.style.flexBasis='100%';t.style.order='9';
         b.insertBefore(g,t);}
