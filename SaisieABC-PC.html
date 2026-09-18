@@ -262,7 +262,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.488 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.511 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -2417,7 +2417,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     for(var k=0;k<mIdxs.length;k++){
       var mi=mIdxs[k],m=measures?measures[mi]:null;
       if(vf.parts&&state.parts&&state.parts[mi])bump(14+oP+szP);
-      if(mi===0||(state.tempoChanges&&state.tempoChanges[mi]!==undefined))bump(23+oTp+szTp);
+      if((state.viewFlags&&state.viewFlags.tempo===false)?false:(mi===0||(state.tempoChanges&&state.tempoChanges[mi]!==undefined)))bump(23+oTp+szTp);/*TEMPOFF_4493_RISE*/
       if(state.repeats&&state.repeats[mi]&&state.repeats[mi].volta)bump(11+vO+2);
       if(m){var hasC=false,hasT=false;for(var s=0;s<m.length;s++){var t=m[s];if(!t)continue;if(t.chord)hasC=true;if(t.text)hasT=true;}
         if(chordsAbove&&hasC)bump(3+aC+szC);
@@ -2659,7 +2659,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
     const __diatoOn=(__tabKind==='diato')&&!!__tabTr&&__tabTr.tabShow!==false&&(__tabTr.staffView||'both')!=='staff'&&!__isPercVoice, __diatoH=__diatoOn?diatoStripH():0, __DIATO_PAD=-12+__gGap+(__tabTr?(__tabTr.tabGap||0):0);const __hideStaff=!!__tabTr&&__tabTr.staffView==='tab'&&(__tabOn||__diatoOn);/*TABONLY_4173*//*TABALL_4201*/
     const __lhOn=!!(__tabTr&&__tabTr.tabLh), __lhH=__lhOn?13:0, __lhPad=4;
     const __rhyOn=(__tabOn||__diatoOn)&&!!(__tabTr&&__tabTr.tabRhythm), __rhyH=__rhyOn?11:0, __rhyGap=(state.rhyGap!=null?state.rhyGap:8);
-    const __STAFF_CUT=30,__STAFF_KEEP=0,__STAFF_BOTKEEP=6;/*TABCOMPACT_4174*//*REFLUX_4200*//*BOTGAP_4202*/const STAFF_SP=STAFF_SPACING+((_lyrBelow||__hideStaff)?_lyrReserve:(Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0)))+(__tabOn?(__tabH+__tabGap):0)+(__rhyOn?(__rhyH+__rhyGap):0)+(__diatoOn?(__diatoH+__DIATO_PAD):0)+(__lhOn?(__lhH+__lhPad):0)-(__hideStaff?(STAFF_SPACING-__STAFF_KEEP):0)-((!__hideStaff&&(__tabOn||__diatoOn)&&!(state.viewFlags.lyrics&&!_lyrBelow))?Math.max(0,(STAFF_SPACING-4*LINE_GAP)-__STAFF_BOTKEEP-staffBotExtent((state.tracks[state.activeTrack]||{}).measures)):0);function __rowY(id,staffTop){var _bb=staffTop+STAFF_SP-((_lyrBelow||__hideStaff)?_lyrReserve:0);var _yt=_bb-__tabH+6,_yd=_bb-__diatoH-(__lhOn?(__lhH+__lhPad):0)+8;switch(id){case'tab':return _yt;case'diato':return _yd;case'band':return __tabOn?_yt:_yd;case'lh':return _bb-__lhH-8;case'rhy':return (__tabOn?_yt:_yd)-__rhyGap;case'lyrbelow':return staffTop+STAFF_SP-_lyrReserve+10;case'lyrclassic':return __hideStaff?(staffTop+STAFF_SP-_lyrReserve+10):(staffTop+4*LINE_GAP+13);default:return staffTop;}}/*ROWY_4198*//*ROWYBIND_4199*/
+    const __STAFF_CUT=30,__STAFF_KEEP=0,__STAFF_BOTKEEP=6;var __botX=staffBotExtent((state.tracks[state.activeTrack]||{}).measures);/*RHYROOM_4500_BOT*/var __RHYAIR=2;/*RHYAIR_4501 air laisse sous la derniere ligne de portee, en px : le seul nombre a retoucher*/var __cMax=__rhyOn?((STAFF_SPACING-4*LINE_GAP)+6-__RHYAIR+__tabGap-__botX):Infinity;/*RHYROOM_4500_CAP plafond de compaction : la bande de rythme garde sa place sous la portee (haut de bande = staffTop+66+__tabGap-C, bas de portee = staffTop+28+__botX)*//*TABCOMPACT_4174*//*REFLUX_4200*//*BOTGAP_4202*/const STAFF_SP=STAFF_SPACING+((_lyrBelow||__hideStaff)?_lyrReserve:(Math.max(0,nVerses-1)*LYRIC_ROW+(state.viewFlags.lyrics?Math.max(0,lyricOff):0)))+(__tabOn?(__tabH+__tabGap):0)+(__rhyOn?(__rhyH+__rhyGap):0)+(__diatoOn?(__diatoH+__DIATO_PAD):0)+(__lhOn?(__lhH+__lhPad):0)-(__hideStaff?(STAFF_SPACING-__STAFF_KEEP):0)-((!__hideStaff&&(__tabOn||__diatoOn)&&!(state.viewFlags.lyrics&&!_lyrBelow))?Math.min(Math.max(0,(STAFF_SPACING-4*LINE_GAP)-__STAFF_BOTKEEP-__botX),__cMax)/*RHYROOM_4500_MIN*/:0);function __rowY(id,staffTop){var _bb=staffTop+STAFF_SP-((_lyrBelow||__hideStaff)?_lyrReserve:0);var _yt=_bb-__tabH+6,_yd=_bb-__diatoH-(__lhOn?(__lhH+__lhPad):0)+8;switch(id){case'tab':return _yt;case'diato':return _yd;case'band':return __tabOn?_yt:_yd;case'lh':return _bb-__lhH-8;case'rhy':return (__tabOn?_yt:_yd)-__rhyGap;case'lyrbelow':return staffTop+STAFF_SP-_lyrReserve+10;case'lyrclassic':return __hideStaff?(staffTop+STAFF_SP-_lyrReserve+10):(staffTop+4*LINE_GAP+13);default:return staffTop;}}/*ROWY_4198*//*ROWYBIND_4199*/
     // Nb max de lignes (selon hauteur disponible) — utilisé par l'ancien mode multi-lignes seulement
     const linesMax=Math.max(1,Math.floor((viewH-STAFF_TOP_Y-10)/STAFF_SP));
     const SCORE_W=single?layout.totalUnits:((layout&&layout._pageViewW)||viewW);
@@ -3078,7 +3078,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
             // Affichée sur la voix VISIBLE LA PLUS HAUTE (pas forcément la voix active).
             const tc=state.tempoChanges||{};
             const isTopVoice=(layout&&layout._topVisible!==undefined&&layout._renderTrack!==undefined)?(layout._renderTrack===layout._topVisible):isActiveVoice;
-            if((mIdx===0||tc[mIdx]!==undefined)&&isTopVoice){
+            if((mIdx===0||tc[mIdx]!==undefined)&&isTopVoice&&!(state.viewFlags&&state.viewFlags.tempo===false)){/*TEMPOFF_4493_DRAW*/
               var _tqTb=(state.tempoBeat||{})[mIdx]||{};var _tqU=(mIdx>0&&_tqTb.u!=null)?_tqTb.u:beatUnit();var _tqD=(mIdx>0&&_tqTb.dot!=null)?_tqTb.dot:beatDotted();const bpm=Math.round(tempoAt(mIdx)/beatQuarters(_tqU,_tqD));
               // y normalement au-dessus de la portée ; sur la 1re ligne l'espace est réduit (viewBox
               // commence à 0), donc on borne à une valeur VISIBLE. On décale aussi en x pour ne pas
@@ -3293,7 +3293,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
     systems.forEach((sys,si)=>{
       const isLast=(si===systems.length-1);
       const sum=sys.reduce((a,mi)=>a+wu[mi],0)||1;
-      const _jm=_a4Mode?((state.pageLayout&&state.pageLayout.justify!=null)?state.pageLayout.justify:((state.view&&state.view.a4&&state.view.a4.justify)||0)):0;/*PAGELAYOUT_4313_REND*/const _doJust=(_jm===2)||(_jm===1&&!isLast);var _uSys=Math.max(40,sysUnitsW-((si===0)?headerStart:(headerStart-12))-RIGHT_PAD);/*A4START_4220 : largeur utile mesuree depuis le depart reel du systeme -> fin justifiee pile a la marge*/const scale=_doJust?(_uSys/sum):Math.min(_uSys/sum,refScale);
+      const _jm=_a4Mode?((state.pageLayout&&state.pageLayout.justify!=null)?state.pageLayout.justify:((state.view&&state.view.a4&&state.view.a4.justify)||0)):(window.__scJust?2:0);/*SCJUST_4491_R*//*PAGELAYOUT_4313_REND*/const _doJust=(_jm===2)||(_jm===1&&!isLast);var _uSys=Math.max(40,sysUnitsW-((si===0)?headerStart:(headerStart-12))-RIGHT_PAD);/*A4START_4220 : largeur utile mesuree depuis le depart reel du systeme -> fin justifiee pile a la marge*/const scale=_doJust?(_uSys/sum):Math.min(_uSys/sum,refScale);
       const _sysStart=(si===0)?headerStart:(headerStart-12); // B : lignes sans 4/4 serrees
       const bounds={}; let curX=_sysStart;
       sys.forEach(mi=>{const w=wu[mi]*scale;bounds[mi]={xL:curX,xR:curX+w,measureW:w};curX+=w;});
@@ -5509,7 +5509,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     return new Promise(function(res){
       var inp=document.createElement('input');
       inp.type='file';inp.multiple=true;
-      try{inp.webkitdirectory=true;}catch(e){}
+      var _sd=!!window.__scSansDossier;window.__scSansDossier=false;if(!_sd){try{inp.webkitdirectory=true;}catch(e){}}/*SCFILES_4489_W*/
       inp.style.display='none';
       inp.addEventListener('change',function(){
         res(Array.prototype.slice.call(inp.files||[]));
@@ -5521,12 +5521,20 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   window.__scScan=async function(dire){
     var fs=await _fichiers();
     if(!fs.length){dire('Aucun fichier choisi.');return null;}
-    var gardes=fs.filter(function(f){return /\.(abc|atm|atmz)$/i.test(f.name||'');});
-    if(!gardes.length){dire('Rien a lire ici : aucun .abc, .atm ou .atmz.');return null;}
-    var t0=Date.now(),morceaux=[],ratees=0,atms={};
+    var gardes=fs.filter(function(f){return /\.(abc|atm|atmz|mxl|musicxml|xml|mid|midi|mscz|mscx)$/i.test(f.name||'');});/*SCBIN_4498_FILTRE*/
+    if(!gardes.length){dire('Rien a lire ici : aucun fichier dans un format connu.');return null;}
+    var t0=Date.now(),morceaux=[],ratees=0,atms={},bins={};
     for(var i=0;i<gardes.length;i++){
       dire('Lecture '+(i+1)+'/'+gardes.length+'  '+gardes[i].name);
       try{
+        var _nb=gardes[i].webkitRelativePath||gardes[i].name;
+        if(!/\.(abc|atm|atmz)$/i.test(gardes[i].name||'')){
+          /*SCBIN_4498_SCAN format non-ABC : on ne lit rien, on range le fichier
+            tel quel et on le compte pour un morceau, sous son nom de fichier.*/
+          bins[_nb]=gardes[i];
+          morceaux.push({f:_nb,x:'',t:_scNomFic(_nb),r:'',i:0,bin:1});
+          continue;
+        }
         var txt=await _lire(gardes[i]);
         var _nm=gardes[i].webkitRelativePath||gardes[i].name;
         /* un .atm porte sa mise en page : on garde le texte entier pour
@@ -5535,8 +5543,18 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
         morceaux=morceaux.concat(_decoupe(txt,_nm));
       }catch(e){ratees++;}
     }
-    var lib={quand:new Date().toISOString(),nf:gardes.length,m:morceaux,atm:atms};
-    await window.__scPut(lib);
+    var lib={quand:new Date().toISOString(),nf:gardes.length,m:morceaux,atm:atms,bin:bins};/*SCBIN_4498_LIB*/
+    try{await window.__scPut(lib);}
+    catch(_e){
+      /* vieux navigateur : son IndexedDB ne sait pas garder un fichier. On
+         range l'ancienne bibliotheque, sans les formats non-ABC, plutot que
+         de tout perdre. */
+      delete lib.bin;
+      for(var _j=morceaux.length-1;_j>=0;_j--)if(morceaux[_j].bin)morceaux.splice(_j,1);
+      lib.m=morceaux;
+      await window.__scPut(lib);
+      dire('Cet appareil ne sait pas garder les fichiers non-ABC : ils sont ecartes.');
+    }/*SCBIN_4498_PUT*/
     dire('Range : '+gardes.length+' fichiers, '+morceaux.length+' morceaux, '
          +(Math.round((Date.now()-t0)/100)/10)+' s'
          +(ratees?('  ('+ratees+' illisible(s))'):''));
@@ -5568,9 +5586,43 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     o.innerHTML='<div class="sc-bar">'
       +'<button id="sc-close" title="Revenir a l\'editeur">\u2715</button>'
       +'<button id="sc-dir">\uD83D\uDCC2 Dossier\u2026</button>'
+      +'<button id="sc-files">\uD83D\uDCC4 Fichiers\u2026</button>'
+      +'<button id="sc-doc">\uD83D\uDCD6 Document ouvert</button>'/*SCFILES_4489_UI*/
       +'</div><div class="sc-st" id="sc-st"></div><div class="sc-log" id="sc-log"></div>';
     document.body.appendChild(o);
-    document.getElementById('sc-close').addEventListener('click',_fermer);
+    document.getElementById('sc-close').addEventListener('click',function(){_scFS(false);_fermer();});/*SCFS_4496_CLOSE*/
+    {var _bf=document.getElementById('sc-files');
+     if(_bf)_bf.addEventListener('click',function(){
+       var _lg=document.getElementById('sc-log');_lg.textContent='';
+       window.__scSansDossier=true;   /* un seul coup : _fichiers le remet a faux */
+       window.__scScan(function(s){_lg.textContent+=s+'\n';})
+         .then(function(lib){if(lib){_etat(lib);_scVue(lib);}})
+         .catch(function(e){window.__scSansDossier=false;_lg.textContent+='Echec : '+e+'\n';});
+     });}
+    {var _bd=document.getElementById('sc-doc');
+     if(_bd)_bd.addEventListener('click',function(){
+       var _lg=document.getElementById('sc-log');_lg.textContent='';
+       var _mt=(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null;
+       var _nom=((typeof lastMultiFileName!=='undefined')&&lastMultiFileName)?lastMultiFileName:'Document ouvert';
+       var _m=[],_k,_e,_u;
+       if(_mt&&_mt.length){
+         for(_k=0;_k<_mt.length;_k++){
+           _u=_decoupe((_mt[_k]&&_mt[_k].abc)||'',_nom);
+           _e=_u[0]||{f:_nom,x:'',t:'',r:'',i:0,abc:(_mt[_k]&&_mt[_k].abc)||''};
+           _e.f=_nom;_e.i=_k;_e.doc=true;
+           if(!_e.t&&_mt[_k]&&_mt[_k].title)_e.t=_mt[_k].title;
+           _m.push(_e);
+         }
+       }else{
+         _u=_decoupe((typeof buildAbcText==='function')?buildAbcText():'',_nom);
+         if(_u.length){_u[0].i=0;_u[0].doc=true;_m.push(_u[0]);}
+       }
+       if(!_m.length){_lg.textContent='Rien a lire : aucun morceau ouvert.\n';return;}
+       var _lib={quand:new Date().toISOString(),nf:1,m:_m,atm:{}};
+       _etat(_lib);_scVue(_lib);   /* volatile : jamais range dans IndexedDB */
+       try{var _h=_hote();if(_h&&typeof _rangee==='function'){_h.rs.innerHTML='';_rangee(_h.rs,_m,200);}}catch(_x){}
+       _lg.textContent+=_m.length+' morceau'+(_m.length>1?'x':'')+' dans '+_nom+'\n';
+     });}/*SCFILES_4489_BTN*/
     document.getElementById('sc-dir').addEventListener('click',function(){
       var lg=document.getElementById('sc-log');lg.textContent='';
       window.__scScan(function(s){lg.textContent+=s+'\n';})
@@ -5682,9 +5734,45 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     return {dz:document.getElementById('sc-dz'),rs:document.getElementById('sc-rs'),q:q};
   }
 
+  /*SCFMT_4499_BLOC filtre par format dans l'ecran de la bibliotheque.
+    SCFMT vit a cote de SCSEL (la danse) et du texte cherche : il filtre
+    par-dessus eux, il ne les remplace pas.*/
+  var SCFMT=null,SCFMTB=[];
+  var SCFAM=[['ABC',/\.abc$/i],['ATM',/\.atmz?$/i],['MIDI',/\.midi?$/i],
+             ['MusicXML',/\.(mxl|musicxml|xml)$/i],['MuseScore',/\.(mscz|mscx)$/i]];
+  function _scFam(chemin){
+    var n=String(chemin||''),i;
+    for(i=0;i<SCFAM.length;i++)if(SCFAM[i][1].test(n))return SCFAM[i][0];
+    return '';
+  }
+  function _scFmtPeint(){
+    for(var i=0;i<SCFMTB.length;i++)
+      SCFMTB[i][1].style.background=(SCFMT===SCFMTB[i][0])?'#e8e4d8':'#fff';
+  }
+  function _scFmtRangee(h,lib){
+    SCFMTB=[];
+    var cpt={},i,f,noms=[];
+    for(i=0;i<lib.m.length;i++){f=_scFam(lib.m[i].f);if(f)cpt[f]=(cpt[f]||0)+1;}
+    for(i=0;i<SCFAM.length;i++)if(cpt[SCFAM[i][0]])noms.push(SCFAM[i][0]);
+    if(noms.length<2)return;   /* un seul format : la rangee n'apprend rien */
+    var l=document.createElement('div');
+    l.style.cssText='width:100%;margin:8px 0 2px;color:#5f5e5a;';
+    l.textContent='Par format :';
+    h.dz.appendChild(l);
+    for(i=0;i<noms.length;i++)(function(nm){
+      var b=_bouton(nm+'  '+cpt[nm]);
+      b.addEventListener('click',function(){
+        SCFMT=(SCFMT===nm)?null:nm;SCSEL=null;SCTOUT=false;
+        if(h.q)h.q.value='';
+        _scFmtPeint();_liste();
+      });
+      SCFMTB.push([nm,b]);h.dz.appendChild(b);
+    })(noms[i]);
+    _scFmtPeint();
+  }
   function _scVue(lib){
     var h=_hote();if(!h)return;
-    SCLIB=lib;SCSEL=null;SCTOUT=false;
+    SCLIB=lib;SCSEL=null;SCTOUT=false;SCFMT=null;/*SCFMT_4499_RAZ*/
     if(h.q)h.q.value='';
     h.dz.innerHTML='';h.rs.innerHTML='';
     if(!lib||!lib.m||!lib.m.length)return;
@@ -5697,19 +5785,21 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       (function(nm){
         var b=_bouton(nm+'  '+n);
         b.addEventListener('click',function(){
-          SCSEL=nm;SCTOUT=false;if(h.q)h.q.value='';_liste();});
+          SCSEL=nm;SCTOUT=false;SCFMT=null;_scFmtPeint();if(h.q)h.q.value='';_liste();});
         h.dz.appendChild(b);
       })(nom);
     }
+    _scFmtRangee(h,lib);/*SCFMT_4499_BAR*/
   }
 
   function _liste(){
     var h=_hote();if(!h||!SCLIB)return;
     var q=_pli(h.q?h.q.value:'');
     var mien=[],rec=[],i,o;
-    if(!SCSEL&&!q){h.rs.innerHTML='';return;}
+    if(!SCSEL&&!q&&!SCFMT){h.rs.innerHTML='';return;}/*SCFMT_4499_VIDE*/
     for(i=0;i<SCLIB.m.length;i++){
       o=SCLIB.m[i];
+      if(SCFMT&&_scFam(o.f)!==SCFMT)continue;/*SCFMT_4499_FILTRE*/
       if(SCSEL){if(o._d!==SCSEL)continue;}
       else if(_cle(o).indexOf(q)<0)continue;
       ((SCPAR[o.f]||1)<=4?mien:rec).push(o);
@@ -5720,7 +5810,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     var tot=mien.length+rec.length;
     var t=document.createElement('div');
     t.style.cssText='margin:6px 0;font-weight:700;';
-    t.textContent=(SCSEL||('\u00ab '+(h.q.value||'')+' \u00bb'))+' \u2014 '+tot+' morceau'+(tot>1?'x':'');
+    t.textContent=(SCSEL||(h.q.value?('\u00ab '+h.q.value+' \u00bb'):''))+((SCFMT&&(SCSEL||h.q.value))?(' \u00b7 '+SCFMT):(SCFMT||''))+' \u2014 '+tot+' morceau'+(tot>1?'x':'');/*SCFMT_4499_TTL*/
     h.rs.appendChild(t);
     _rangee(h.rs,mien,200);
     if(rec.length){
@@ -5874,7 +5964,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       document.body.appendChild(b);
       r.addEventListener('click',function(){
         _rendre();var o2=document.getElementById('sc-ovl');if(o2)o2.style.display='';});
-      x.addEventListener('click',function(){_rendre();_fermer();});
+      x.addEventListener('click',function(){_rendre();_scFS(false);_fermer();});/*SCFS_4496_QUIT*/
     }
     b.style.display='';
     SCCUR=o;document.getElementById('sc-ttl').textContent=o.t||o.f;_scVueApp();_scOutils(b);_scRangs(b);/*SCENE_4487_BAR*//*SCENE_4464_BAR*//*SCENE_4474_CUR*//*SCENE_4475_APP*/
@@ -5882,8 +5972,44 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     if(app){if(SCPAD===null)SCPAD=app.style.paddingTop;
       app.style.paddingTop=(b.offsetHeight+6)+'px';}
   }
+  /*SCBIN_4498_BLOC ouvrir en Scene les formats non-ABC. Rien n'est converti au
+    scan : le fichier est range tel quel et converti au moment de l'ouvrir.*/
+  function _scNomFic(chemin){
+    var n=String(chemin||'').split(/[\\/]/).pop();
+    return n.replace(/\.[^.]+$/,'');
+  }
+  function _scOctets(f){
+    if(f.arrayBuffer)return f.arrayBuffer();
+    return new Promise(function(res,rej){
+      var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=rej;
+      r.readAsArrayBuffer(f);});
+  }
+  function _scTexte(f){
+    if(f.text)return f.text();
+    return new Promise(function(res,rej){
+      var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=rej;
+      r.readAsText(f);});
+  }
+  function _scBinOuvre(o){
+    var f=(SCLIB&&SCLIB.bin)?SCLIB.bin[o.f]:null;
+    if(!f)return Promise.resolve(false);
+    var n=String(o.f||'').toLowerCase(),P;
+    if(/\.(mid|midi)$/.test(n))P=_scOctets(f).then(function(b){return importMidiFile(b,o.f);});
+    else if(/\.mxl$/.test(n))  P=_scOctets(f).then(function(b){return loadMxlFile(b,o.f);});
+    else if(/\.mscz$/.test(n)) P=_scOctets(f).then(function(b){return loadMsczFile(b,o.f);});
+    else if(/\.mscx$/.test(n)) P=_scTexte(f).then(function(t){return parseMscx(t,o.f);});
+    else                       P=_scTexte(f).then(function(t){return parseMusicXml(t,o.f);});
+    /* loadMxlFile et loadMsczFile rendent une promesse, les trois autres non :
+       le .then les met au meme rang. Un convertisseur absent leve, et la
+       branche d'echec repond faux comme pour un fichier illisible. */
+    return P.then(function(r){return r!==false;},function(){return false;});
+  }
+  function _scFin(o){
+    var ov=document.getElementById('sc-ovl');if(ov)ov.style.display='none';
+    SCMAN=(SCMAN&&SCMAN.n)?{n:SCMAN.n}:null;/*SCMAN_4490_N chiffres gardes, zoom recalcule*/_scPage();_scProfil();_solo(true);_barre(o);_scAjuste();/*SCENE_4487_FIT*//*SCENE_4465_FIT*//*SCENE_4470_ATM_SHOW*/
+  }
   function _montrer(o){
-    if(!o||!o.abc)return;
+    if(!o||(!o.abc&&!o.bin))return;/*SCBIN_4498_GARDE*/
     /* l'etat d'avant, pile d'annulation comprise : c'est lui qu'on rendra.
        lastMultiTunes / lastMultiIndex / lastMultiFileName vivent HORS de
        state : snapshot ne les voit pas, il faut les sauver a la main. */
@@ -5891,8 +6017,16 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       mt:(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null,
       mi:(typeof lastMultiIndex!=='undefined')?lastMultiIndex:-1,
       mf:(typeof lastMultiFileName!=='undefined')?lastMultiFileName:null};
+    if(o.bin){/*SCBIN_4498_SHOW on convertit au moment de l'ouvrir, pas avant*/
+      _scBinOuvre(o).then(function(_k){
+        if(_k)_scFin(o);
+        else{var _lg=document.getElementById('sc-log');
+          if(_lg)_lg.textContent='Morceau illisible : '+(o.t||o.f);}
+      });
+      return;
+    }
     var ok=false;
-    var brut=(SCLIB&&SCLIB.atm)?SCLIB.atm[o.f]:null;
+    if(o.doc){var _dmt=(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null;if(_dmt&&_dmt.length&&typeof __gotoTune==='function'){try{__gotoTune(o.i);ok=true;}catch(e){ok=false;}}else ok=true;}/*SCDOC_4489_GO*/var brut=(SCLIB&&SCLIB.atm)?SCLIB.atm[o.f]:null;
     if(brut&&typeof loadAtm==='function'){
       /* .atm : on rouvre le fichier entier, donc mise en page et tablature */
       try{
@@ -5907,14 +6041,14 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       if(lg)lg.textContent='Morceau illisible : '+(o.t||o.f);
       return;
     }
-    var ov=document.getElementById('sc-ovl');if(ov)ov.style.display='none';
-    SCMAN=null;_scPage();_scProfil();_solo(true);_barre(o);_scAjuste();/*SCENE_4487_FIT*//*SCENE_4465_FIT*//*SCENE_4470_ATM_SHOW*/
+    _scFin(o);/*SCBIN_4498_FIN la fin de _montrer a demenage dans _scFin, pour
+      que la branche des binaires puisse l'appeler apres sa conversion*/
   }
   function _rendre(){
     try{if(typeof stopPlayback==='function'&&typeof audio==='object'&&audio&&audio.playing)
       stopPlayback(true);}catch(e){}
     var b=document.getElementById('sc-bar2');if(b)b.style.display='none';var _p=document.getElementById('sc-ton-pop');if(_p&&_p.parentNode)_p.parentNode.removeChild(_p);/*SCENE_4464_POP*/
-    _solo(false);SCCUR=null;/*SCENE_4474_FIN*/
+    window.__scJust=false;/*SCJUST_4491_OFF*/_solo(false);SCCUR=null;/*SCENE_4474_FIN*/
     if(SCSAUVE){
       var k=SCSAUVE;SCSAUVE=null;
       loadFrom(k.e);history.stack=k.p;history.pos=k.i;
@@ -5937,7 +6071,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
      sur la largeur de l'ecran. Provisoire : loadFrom rend l'etat d'avant. */
     /*SCENE_4487_BLOC scene ajustee au morceau et a l'ecran : profil resserre, zoom calcule, barre sur deux rangees*/
   /* SCPROF : les nombres a retoucher apres essai (aucun n'est enregistre nulle part) */
-  var SCPROF={zMin:50,zMax:300,pas:5,num:22,gapNum:0.62,sys:-40,vox:0,ss:90,plancher:12};/*SCENE_4488_PROF*/
+  var SCPROF={zMin:50,zMax:300,pas:5,num:22,gapOff:3,sys:-40,vox:0,ss:90,plancher:12,parts:true,partSz:10};/*SCPROF_4494*//*SCPROF_4491*//*SCENE_4488_PROF*/
   var SCMAN=null,SCPL=null,SCRZ=null;
   function _scEstTab(t){
     if(!t||!t.tabKind)return false;
@@ -5946,16 +6080,16 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   }
   function _scNumApp(n){
     var v=state.view=state.view||{};
-    v.tabNumSize=n;v.tabLineGap=Math.max(11,Math.round(n*SCPROF.gapNum));
+    v.tabNumSize=n;v.tabLineGap=Math.max(9,n-SCPROF.gapOff);/*SCGAP_4491 pente 1 : un appui = un cran*/
   }
   function _scProfil(){
     try{
       var vf=state.viewFlags=state.viewFlags||{};
-      vf.chords=false;vf.text=false;vf.lyrics=false;vf.parts=false;vf.measureNums=false;
+      vf.chords=false;vf.text=false;vf.lyrics=false;vf.parts=(SCPROF.parts!==false);/*SCPART_4494_VF*/vf.measureNums=false;vf.tempo=false;/*TEMPOFF_4493_SC*/
       var v=state.view=state.view||{};
-      v.wordsShow=false;v.systemGap=SCPROF.sys;v.voiceGap=SCPROF.vox;
+      v.wordsShow=false;v.systemGap=SCPROF.sys;v.voiceGap=SCPROF.vox;v.partSize=SCPROF.partSz;v.partOffset=0;/*SCPART_4494_SZ*/
       _scNumApp((SCMAN&&SCMAN.n)?SCMAN.n:SCPROF.num);
-      state.scoreScale=SCPROF.ss;
+      state.scoreScale=SCPROF.ss;window.__scJust=true;/*SCJUST_4491_ON*/
       state.hdrCfg=Object.assign({},state.hdrCfg||{},{tS:0,cS:0});
       (state.tracks||[]).forEach(function(t){
         if(!_scEstTab(t))return;
@@ -5970,7 +6104,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   }
   function _scChiffre(){
     var sc=document.getElementById('score');if(!sc)return 0;
-    var el=sc.querySelector('text.tabfret');if(!el)return 0;
+    var el=sc.querySelector('text.tabfret')||sc.querySelector('.voice-svg text');if(!el){var _n=(state.view&&state.view.tabNumSize)||SCPROF.num;return _n*0.8*Math.max(70,Math.round(150*(state.zoom||100)/100))/92;}/*SCPX_4491*/
     try{return el.getBoundingClientRect().height||0;}catch(e){return 0;}
   }
   function _scPlancher(){return (SCPL!=null)?SCPL:SCPROF.plancher;}
@@ -5982,17 +6116,22 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     var P=SCPROF.pas,lo=SCPROF.zMin,hi=SCPROF.zMax,best=lo,vis=h.style.visibility;
     h.style.visibility='hidden';
     try{
-      _scZ(hi);
-      if(_scTient())best=hi;
-      else{
-        _scZ(lo);
-        if(_scTient()){
-          var a=lo,b=hi;
-          while(b-a>P){var m=a+Math.max(1,Math.floor((b-a)/(2*P)))*P;_scZ(m);if(_scTient())a=m;else b=m;}
-          best=a;
-        }
+      /*SCFIT_4492 estimation puis verification : 3 a 4 rendus au lieu de 9*/
+      var z0=Math.max(lo,Math.min(hi,state.zoom||100));
+      _scZ(z0);
+      var _c=h.scrollHeight,_a=h.clientHeight;
+      best=Math.round(z0*Math.sqrt(_a/Math.max(1,_c))/P)*P;
+      best=Math.max(lo,Math.min(hi,best));
+      if(best!==z0)_scZ(best);
+      var _k=0;
+      if(_scTient()){
+        /* ca tient : on tente de monter, deux crans au plus */
+        while(_k<2&&best+P<=hi){_scZ(best+P);if(_scTient()){best+=P;_k++;}else{_scZ(best);break;}}
+      }else{
+        /* ca deborde : on descend jusqu'a ce que ca tienne */
+        while(_k<6&&best-P>=lo){best-=P;_scZ(best);_k++;if(_scTient())break;}
+        if(!_scTient()){best=lo;_scZ(lo);}
       }
-      _scZ(best);
       /* plancher : la hauteur d'un chiffre suit voicePxH=max(70,round(150*zoom/100)) */
       var px=_scChiffre(),pl=_scPlancher(),k=0;
       while(px>0&&px<pl&&best<hi&&k<4){
@@ -6028,7 +6167,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     var nv=document.getElementById('sc-nv');
     if(nv)nv.textContent=''+((state.view&&state.view.tabNumSize)||SCPROF.num);
     var pv=document.getElementById('sc-pv');
-    if(pv){var px=_scChiffre();pv.textContent='\u2265'+_scPlancher()+(px?(' \u00b7 '+Math.round(px)):'');}
+    if(pv){var px=_scChiffre();pv.textContent='\u2265'+_scPlancher()+' \u00b7 '+Math.round(px||0);}/*SCLAB_4491*/
   }
   function _scTaille(el){
     el.style.fontSize=Math.min(BFS,22)+'px';
@@ -6057,7 +6196,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       _scPadApp();if(SCMAN)SCMAN.z=null;_scAjuste();
     });tog.id='sc-tog';
     t.style.flexBasis='auto';t.style.order='';t.style.flex='1 1 0';t.style.minWidth='0';
-    [back,quit,pre,suiv,lir,tog,t].forEach(function(e){if(e){_scTaille(e);r1.appendChild(e);}});
+    var pfs=_scFSbtn();/*SCFS_4497_BTN plein ecran : tout a gauche de la 1re rangee*/
+    [pfs,back,quit,pre,suiv,lir,tog,t].forEach(function(e){if(e){_scTaille(e);r1.appendChild(e);}});
     var zd=_bt('\u2212','Zoom : reduire',function(){_scZoom(-1);}),zv=_scVal('sc-zv','Zoom'),
         zu=_bt('+','Zoom : agrandir',function(){_scZoom(1);});
     var nd=_bt('1\u2212','Chiffres plus petits',function(){_scNum(-1);}),nv=_scVal('sc-nv','Taille des chiffres'),
@@ -6065,7 +6205,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     var pd=_bt('\u2212','Plancher de lisibilite : baisser',function(){_scPl(-1);}),
         pv=_scVal('sc-pv','Plancher (px) \u00b7 hauteur mesuree d\'un chiffre'),
         pu=_bt('+','Plancher de lisibilite : monter',function(){_scPl(1);});
-    var fit=_bt('\u2922','Reajuster a l\'ecran',function(){if(SCMAN)SCMAN.z=null;_scAjuste();});
+    var fit=_bt('\u2922','Tout remettre au depart',function(){SCMAN=null;SCPL=null;_scProfil();_scAjuste();});/*SCFIT_4491*/
+    /*SCFS_4497_MOVE le bouton plein ecran a quitte cette rangee (la 4.496 le posait ici)*/
     [ton,aff,moins,val,plus,smoins,sval,splus,zd,zv,zu,nd,nv,nu,pd,pv,pu,fit].forEach(function(e){
       if(e){_scTaille(e);r2.appendChild(e);}});
     [aff,moins,plus,smoins,splus].forEach(function(e){
@@ -6080,6 +6221,54 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       if(!SCCACHE)return;if(SCRZ)clearTimeout(SCRZ);
       SCRZ=setTimeout(function(){SCRZ=null;if(SCMAN)SCMAN.z=null;_scPadApp();_scAjuste();},300);
     });}
+  /*SCFS_4496_BLOC plein ecran du navigateur en mode Scene : on gagne la hauteur
+    des barres (adresse + systeme), que _scAjuste rend aussitot en zoom.*/
+  var SCFSB=null;
+  function _scFSok(){
+    var e=document.documentElement;
+    return !!(e.requestFullscreen||e.webkitRequestFullscreen||e.msRequestFullscreen);
+  }
+  function _scFSon(){
+    return !!(document.fullscreenElement||document.webkitFullscreenElement
+      ||document.msFullscreenElement);
+  }
+  function _scFSlab(){
+    if(!SCFSB)return;
+    var on=_scFSon();
+    SCFSB.title=on?'Quitter le plein ecran':'Plein ecran';
+    SCFSB.style.background=on?'#e8e4d8':'#fff';
+  }
+  function _scFS(v){
+    /* v===false : sortir ; v===true : entrer ; v absent : basculer */
+    var e=document.documentElement,on=_scFSon(),veut=(v===undefined)?!on:!!v,p;
+    try{
+      if(veut&&!on){
+        var f=e.requestFullscreen||e.webkitRequestFullscreen||e.msRequestFullscreen;
+        if(f){p=f.call(e);if(p&&p['catch'])p['catch'](function(){});}
+      }else if(!veut&&on){
+        var g=document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen;
+        if(g){p=g.call(document);if(p&&p['catch'])p['catch'](function(){});}
+      }
+    }catch(x){}
+  }
+  function _scFSbtn(){
+    if(!_scFSok())return null;      /* navigateur sans l'API : aucun bouton */
+    SCFSB=_bt('\u26f6','Plein ecran',function(){_scFS();});
+    SCFSB.id='sc-fs';_scFSlab();return SCFSB;
+  }
+  if(!window.__scFsBound){window.__scFsBound=true;
+    var _scFsGo=function(){
+      _scFSlab();
+      if(!SCCACHE)return;
+      if(SCRZ)clearTimeout(SCRZ);
+      SCRZ=setTimeout(function(){SCRZ=null;if(SCMAN)SCMAN.z=null;_scPadApp();_scAjuste();},300);
+    };
+    document.addEventListener('fullscreenchange',_scFsGo);
+    document.addEventListener('webkitfullscreenchange',_scFsGo);
+    try{var _scFsSt=document.createElement('style');
+      _scFsSt.textContent=':fullscreen{background:#faf8f2;}';
+      document.head.appendChild(_scFsSt);}catch(x){}
+  }
   function _scPage(){/*SCENE_4466_PAGE*/
     try{if(state.scoreLayout!=='page'){state.scoreLayout='page';render();}}catch(e){}
   }
@@ -8064,6 +8253,45 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   function flatIndexOf(m,s){let idx=0;for(let mi=0;mi<m;mi++)idx+=state.measures[mi].length;return idx+s;}
   // Liste à plat [{m,s,slot}] de la voix active.
   function flatSlots(){const out=[];state.measures.forEach((meas,mi)=>meas.forEach((slot,si)=>out.push({m:mi,s:si,slot})));return out;}
+  /*PASTEKEY_4495_FN armure emportee par le presse-papier de notes*/
+  var noteClipSig=null;
+  function __armureNom(s){return s>0?(s+' diese'):(s<0?((-s)+' bemol'):'do majeur');}
+  function __sigALaDate(t0){
+    var f=flatSlots(),v=voiceAbsTimes(state.measures),i=0;
+    while(i<f.length&&v[i]&&v[i].t0<t0-1e-6)i++;
+    return f[i]?keyAt(f[i].m):null;
+  }
+  function __poserArmureCollee(t0,len,toutesVoix){
+    if(noteClipSig===null||noteClipSig===undefined)return;
+    var f=flatSlots(),v=voiceAbsTimes(state.measures),i0=0;
+    while(i0<f.length&&v[i0]&&v[i0].t0<t0-1e-6)i0++;
+    if(i0>=f.length)return;
+    var i1=i0;while(i1<f.length&&v[i1]&&v[i1].t0<t0+len-1e-6)i1++;
+    var startM=f[i0].m,dernier=f[Math.max(i0,i1-1)];
+    var endM=dernier?dernier.m:startM;
+    if(keyAt(startM)===noteClipSig)return;
+    if(f[i0].s!==0){
+      flash('Colle — armure de la source ('+__armureNom(noteClipSig)+') NON posee : '
+            +'le collage ne commence pas sur une mesure.');
+      return;
+    }
+    var actif=state.activeTrack;
+    applyToAllTracks(function(i){
+      var fin=Math.min(endM,state.measures.length-1);
+      var sigAfter=keyAt(Math.min(fin+1,state.measures.length-1));
+      var had=state.keyChanges[fin+1]!==undefined;
+      /* les notes collees portent deja l'ecriture de la source : on ne les reecrit pas.
+         Les pistes qui n'ont rien recu, si : leurs hauteurs doivent survivre. */
+      if(!toutesVoix&&i!==actif)respellRangeForKey(startM,fin,noteClipSig);
+      if(startM===0){state.pieceKeySig=noteClipSig;delete state.keyChanges[0];}
+      else state.keyChanges[startM]=noteClipSig;
+      for(var mi=startM+1;mi<=fin;mi++)delete state.keyChanges[mi];
+      if(fin+1<state.measures.length&&!had&&sigAfter!==noteClipSig)state.keyChanges[fin+1]=sigAfter;
+      cleanupAccidentals();
+    });
+    flash('Colle — armure de la source ('+__armureNom(noteClipSig)+') posee sur la portion, '
+          +'armure du document rendue ensuite.');
+  }
   // Clone profond d'un slot (note/silence/accord).
   function cloneSlot(s){const c=Object.assign({},s);if(Array.isArray(s.stack))c.stack=s.stack.map(x=>Object.assign({},x));if(Array.isArray(s.verses))c.verses=s.verses.slice();if(Array.isArray(s.orn))c.orn=s.orn.slice();return c;}
   // Transpose une note (tête ou note d'accord) de n demi-tons, en figistant l'altération absolue.
@@ -8116,6 +8344,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     const flat=flatSlots();
     if(fromIdx>toIdx){const t=fromIdx;fromIdx=toIdx;toIdx=t;}
     noteClip=[];
+    noteClipSig=flat[fromIdx]?keyAt(flat[fromIdx].m):null;/*PASTEKEY_4495_CP1*/
     for(let i=fromIdx;i<=toIdx&&i<flat.length;i++)noteClip.push(cloneSlot(flat[i].slot));
   }
   // Colle (ÉCRASE) la portion à partir de l'index global startIdx, sans changer la grille de mesures :
@@ -8138,6 +8367,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}
     state.measures=rebuildMeasuresFromSlots(newSlots.map(s=>({slot:s})),caps);consolidateRhythm(true);/*CONSO-COLLE-4104*/
     __padAllVoicesToMax();   // le collage a pu allonger cette voix : aligner les autres
+    __poserArmureCollee(_t0,_clipLen,false);/*PASTEKEY_4495_PS1*/
     cleanupAccidentals();
     cleanupTies();
     return true;
@@ -8375,9 +8605,9 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   // Les notes des AUTRES voix qui depassent une borne sont coupees a la duree exacte de la fenetre (aucun decalage).
   let clipFlatAll=null,clipFlatLen=0;
   function clipTrackToWindow(measures,t0,t1){const eps=1e-6;const vt=voiceAbsTimes(measures);const out=[];for(const e of vt){if(e.t1<=t0+eps||e.t0>=t1-eps)continue;const sl=measures[e.m][e.s];const lo=Math.max(e.t0,t0),hi=Math.min(e.t1,t1),d=+(hi-lo).toFixed(6);if(d<=eps)continue;if(Math.abs(d-(e.t1-e.t0))<eps)out.push(cloneSlot(sl));else durToSlots(sl,d).forEach(p=>out.push(p));}if(out.length){delete out[out.length-1].tieToNext;delete out[out.length-1].linkToNext;}return out;}
-  function copyAllVoicesTime(t0,t1){clipFlatAll=[];clipFlatLen=+(t1-t0).toFixed(6);applyToAllTracks(()=>{clipFlatAll.push(clipTrackToWindow(state.measures,t0,t1));});return clipFlatLen>1e-6;}
+  function copyAllVoicesTime(t0,t1){clipFlatAll=[];clipFlatLen=+(t1-t0).toFixed(6);noteClipSig=__sigALaDate(t0);/*PASTEKEY_4495_CP2*/applyToAllTracks(()=>{clipFlatAll.push(clipTrackToWindow(state.measures,t0,t1));});return clipFlatLen>1e-6;}
   function overwriteTimeRegionTrack(measures,atTime,L,insertSlots){const eps=1e-6;const tEnd=atTime+L;const vt=voiceAbsTimes(measures);const head=[],tail=[];for(const e of vt){const sl=measures[e.m][e.s];if(e.t1<=atTime+eps){head.push(cloneSlot(sl));}else if(e.t0>=tEnd-eps){tail.push(cloneSlot(sl));}else{if(e.t0<atTime-eps){const d=+(atTime-e.t0).toFixed(6);durToSlots(sl,d).forEach(p=>head.push(p));}if(e.t1>tEnd+eps){const d=+(e.t1-tEnd).toFixed(6);durToSlots(sl,d).forEach(p=>tail.push(p));}}}return head.concat(insertSlots.map(cloneSlot),tail);}
-  function pasteAllVoicesTime(atTime){if(!clipFlatAll||!clipFlatAll.length)return false;applyToAllTracks((i)=>{const ins=clipFlatAll[i]||[];const seq=overwriteTimeRegionTrack(state.measures,atTime,clipFlatLen,ins);const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;const totalDur=seq.reduce((a,s)=>a+effDur(s),0);let capSum=caps.reduce((a,b)=>a+b,0);while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);consolidateRhythm(true);cleanupAccidentals();});cleanupTies();return true;}
+  function pasteAllVoicesTime(atTime){if(!clipFlatAll||!clipFlatAll.length)return false;applyToAllTracks((i)=>{const ins=clipFlatAll[i]||[];const seq=overwriteTimeRegionTrack(state.measures,atTime,clipFlatLen,ins);const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;const totalDur=seq.reduce((a,s)=>a+effDur(s),0);let capSum=caps.reduce((a,b)=>a+b,0);while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);consolidateRhythm(true);cleanupAccidentals();});__poserArmureCollee(atTime,clipFlatLen,true);/*PASTEKEY_4495_PS2*/cleanupTies();return true;}
   function openDecalerPanel(){
     const sc=makeScopeNoteSel();
     const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
@@ -8903,6 +9133,372 @@ function __importFromFile(){
   if(window.showOpenFilePicker){window.showOpenFilePicker({types:[{description:'Partition ABC / ATM',accept:{'application/vnd.saisieabc.abc':['.abc'],'application/vnd.saisieabc.atm':['.atm','.atmz']}}]}).then(function(hs){var h=hs&&hs[0];if(!h)return null;return h.getFile();}).then(function(f){if(f)__importReadFile(f);}).catch(function(e){if(e&&e.name==='AbortError')return;});return;}
   var inp=document.createElement('input');inp.type='file';inp.accept='.abc,.atm,.atmz';inp.style.display='none';document.body.appendChild(inp);
   inp.addEventListener('change',function(){var f=inp.files&&inp.files[0];if(f)__importReadFile(f);try{document.body.removeChild(inp);}catch(_e){}});
+  inp.click();
+}
+/*APPEND_4502_BLOC ajouter un morceau a la suite du morceau courant.
+  Le va-et-vient snapshot / chargement / loadFrom est celui du mode Scene : il
+  evite d'ecrire un convertisseur par format. Tout ce qui est indexe par numero
+  de mesure est decale de la longueur du morceau d'accueil. */
+var __appMulti=0,__appListe=null;/*APPEND_4504_VAR*/
+function __appOctets(f){
+  if(f.arrayBuffer)return f.arrayBuffer();
+  return new Promise(function(r,j){var x=new FileReader();
+    x.onload=function(){r(x.result);};x.onerror=j;x.readAsArrayBuffer(f);});
+}
+function __appTexte(f){
+  if(f.text)return f.text();
+  return new Promise(function(r,j){var x=new FileReader();
+    x.onload=function(){r(x.result);};x.onerror=j;x.readAsText(f);});
+}
+function __appOuvrirP(f){
+  /* rend une promesse vraie si le morceau a bien ete charge dans l'etat */
+  var n=(f.name||'').toLowerCase(),P;__appMulti=0;__appListe=null;/*APPEND_4504_RAZ*/
+  if(/\.mxl$/.test(n))                 P=__appOctets(f).then(function(b){return loadMxlFile(b,f.name);});
+  else if(/\.mscz$/.test(n))           P=__appOctets(f).then(function(b){return loadMsczFile(b,f.name);});
+  else if(/\.(mid|midi)$/.test(n))     P=__appOctets(f).then(function(b){return importMidiFile(b,f.name);});
+  else if(/\.mscx$/.test(n))           P=__appTexte(f).then(function(t){return parseMscx(t,f.name);});
+  else if(/\.(xml|musicxml)$/.test(n)) P=__appTexte(f).then(function(t){return parseMusicXml(t,f.name);});
+  else if(/\.atmz$/.test(n))           P=__appOctets(f).then(function(b){
+                                          return gunzipToText(new Uint8Array(b)).then(function(t){return loadAtm(t,f.name);});});
+  else if(/\.atm$/.test(n))            P=__appTexte(f).then(function(t){return loadAtm(t,f.name);});
+  else                                 P=__appTexte(f).then(function(t){
+                                          var ts=(typeof splitTunes==='function')?splitTunes(t):null;
+                                          if(ts&&ts.length>1){__appMulti=ts.length;__appListe=ts;/*APPEND_4504_ABC*/return loadTuneAbc(ts[0].abc,f.name);}
+                                          return loadTuneAbc(t,f.name);});
+  return P.then(function(r){
+    /*APPEND_4504_CAP les autres formats (.atm, .mscz) posent eux-memes
+      lastMultiTunes en se chargeant : on releve la liste avant de rendre
+      l'etat de depart, qui l'effacerait. */
+    if(!__appListe){var _m=(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null;
+      if(_m&&_m.length>1)__appListe=_m.slice();}
+    return r!==false;},function(){return false;});
+}
+function __appDecale(dst,src,base){
+  /* recopie une table {numero de mesure : valeur} en decalant les index */
+  if(!src||!dst)return;
+  Object.keys(src).forEach(function(k){
+    var i=parseInt(k,10);if(isNaN(i))return;dst[i+base]=src[k];});
+}
+function __appColler(snap,titre,vi){/*APPEND_4506_VOIX vi = la voix choisie*/
+  var o;try{o=JSON.parse(snap);}catch(e){return false;}
+  var _vi=(vi!=null&&o.tracks&&o.tracks[vi])?vi:(o.activeTrack||0);
+  var st=(o.tracks&&o.tracks[_vi])||o;
+  var ms=st.measures||[];
+  if(!ms.length)return false;
+  var base=state.measures.length;
+  var kAv=keyAt(base-1),mAv=meterAt(base-1),cAv=clefAt(base-1);
+  for(var i=0;i<ms.length;i++)state.measures.push(ms[i]);
+  if(!state.timeChanges)state.timeChanges={};
+  if(!state.keyChanges)state.keyChanges={};
+  if(!state.clefChanges)state.clefChanges={};
+  if(!state.repeats)state.repeats={};
+  if(!state.parts)state.parts={};
+  if(!state.tempoChanges)state.tempoChanges={};
+  if(!state.breaks)state.breaks={};
+  /* la jointure : ce qui change, et seulement ce qui change */
+  if(st.pieceKeySig!==undefined&&st.pieceKeySig!==kAv)state.keyChanges[base]=st.pieceKeySig;
+  if(st.pieceMeter&&st.pieceMeter!==mAv)state.timeChanges[base]=st.pieceMeter;
+  if(st.pieceClef&&st.pieceClef!==cAv)state.clefChanges[base]=st.pieceClef;
+  /* puis ses propres changements, decales */
+  __appDecale(state.timeChanges,st.timeChanges,base);
+  __appDecale(state.keyChanges,st.keyChanges,base);
+  __appDecale(state.clefChanges,st.clefChanges,base);
+  __appDecale(state.repeats,st.repeats,base);
+  __appDecale(state.parts,st.parts,base);
+  __appDecale(state.tempoChanges,o.tempoChanges,base);
+  __appDecale(state.breaks,o.breaks,base);
+  /* le saut de ligne a la jointure, et le titre en lettre de plan */
+  if(base>0&&!(state.breaks[base-1]&&(state.breaks[base-1].line||state.breaks[base-1].page)))
+    state.breaks[base-1]={line:true};   /* un saut deja pose est respecte */
+  if(titre)state.parts[base]=String(titre).slice(0,60);
+  /* les epinglages de tablature : cle piste:mesure:position:note */
+  var ti=state.activeTrack|0,si=(_vi|0);/*APPEND_4506_SI les epinglages suivent la voix choisie*/
+  ['tabOv','diatoOv'].forEach(function(nom){
+    var src=o[nom];if(!src)return;if(!state[nom])state[nom]={};
+    Object.keys(src).forEach(function(k){
+      var p=String(k).split(':');if(p.length!==4)return;
+      if((p[0]|0)!==si)return;
+      state[nom][ti+':'+((p[1]|0)+base)+':'+p[2]+':'+p[3]]=src[k];});
+  });
+  if(typeof __padAllVoicesToMax==='function')__padAllVoicesToMax();
+  if(typeof cleanupAccidentals==='function')cleanupAccidentals();
+  if(typeof cleanupTies==='function')cleanupTies();
+  return true;
+}
+/*APPEND_4503_BLOC ajouter plusieurs morceaux du recueil ouvert. */
+function __appSrcRecueil(i){/*APPEND_4506_DUP plus d'appelant depuis la 4.504, et
+  copie exacte de __appSrcTune : on la replie dessus plutot que la laisser diverger*/
+  var mt=(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null;
+  return __appSrcTune(mt&&mt[i]);
+}
+/*APPEND_4504_PAN le panneau de choix, partage par le recueil et par un
+  fichier a plusieurs morceaux (la 4.503 l'ecrivait en dur dans __appendTune). */
+function __appSrcTune(t){
+  /* rend un instantane utilisable par __appColler, sans toucher a l'etat */
+  if(!t)return null;
+  if(t.snap)return t.snap;              /*APPEND_4507_SNAP deja charge (fichier)*/
+  if(t.__live)return t.__live;          /* morceau vivant : deja un instantane */
+  if(typeof parseAbcText!=='function')return null;
+  var ns=null;try{ns=parseAbcText(t.abc||'');}catch(e){ns=null;}
+  return ns?JSON.stringify(ns):null;
+}
+/*APPEND_4505_WIRE recherche, tri et ordre de selection dans la liste
+  a cocher. __appSel garde l'ordre des clics : c'est lui qui decide l'ordre
+  d'ajout, puisqu'avec une recherche l'ordre de la liste ne veut plus rien dire. */
+var __appSel=[];
+function __appPli(s){
+  s=String(s||'');
+  try{s=s.normalize('NFD').replace(/[̀-ͯ]/g,'');}catch(e){}
+  return s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function __appRangs(){
+  var l=document.getElementById('app-l');if(!l)return;
+  var r=l.querySelectorAll('[data-app-n]');
+  for(var i=0;i<r.length;i++){
+    var k=__appSel.indexOf(parseInt(r[i].getAttribute('data-app-n'),10));
+    r[i].textContent=(k<0)?'':String(k+1);
+  }
+}
+function __appWire(){
+  var l=document.getElementById('app-l');if(!l)return;
+  if(!__appGarde)__appSel=[];/*APPEND_4508_GARDE au retour d'un apercu, on garde*/
+  var q=document.getElementById('app-q'),tb=document.getElementById('app-tri'),
+      cp=document.getElementById('app-c');
+  var MODES=['Fichier','A-Z','X:'],mode=0,lignes=[];
+  var rows=l.querySelectorAll('[data-app-row]');
+  for(var i=0;i<rows.length;i++)lignes.push(rows[i]);
+  function filtrer(){
+    var s=__appPli(q?q.value:''),n=0;
+    for(var i=0;i<lignes.length;i++){
+      var ok=(!s)||((lignes[i].getAttribute('data-k')||'').indexOf(s)>=0);
+      lignes[i].style.display=ok?'':'none';if(ok)n++;
+    }
+    if(cp)cp.textContent=n+' / '+lignes.length;
+  }
+  function trier(){
+    var ord=lignes.slice();
+    if(mode===1)ord.sort(function(a,b){
+      var x=a.getAttribute('data-k')||'',y=b.getAttribute('data-k')||'';
+      return (x<y)?-1:((x>y)?1:0);});
+    else if(mode===2)ord.sort(function(a,b){
+      var x=parseInt(a.getAttribute('data-x'),10),y=parseInt(b.getAttribute('data-x'),10);
+      if(isNaN(x))x=1e9;if(isNaN(y))y=1e9;return x-y;});
+    for(var i=0;i<ord.length;i++)l.appendChild(ord[i]);
+  }
+  if(q)q.addEventListener('input',filtrer);
+  if(tb)tb.addEventListener('click',function(){
+    mode=(mode+1)%3;tb.textContent='Tri : '+MODES[mode];trier();});
+  l.addEventListener('change',function(e){
+    var t=e.target;
+    if(!t||!t.getAttribute||t.getAttribute('data-app')===null)return;
+    var i=parseInt(t.getAttribute('data-app'),10),k=__appSel.indexOf(i);
+    if(t.checked){if(k<0)__appSel.push(i);}else if(k>=0)__appSel.splice(k,1);
+    __appRangs();
+  });
+  l.addEventListener('click',function(e){/*APPEND_4508_CLIC*/
+    var t=e.target;if(!t||!t.getAttribute)return;
+    var v=t.getAttribute('data-app-voir');if(v===null)return;
+    __appVoir(parseInt(v,10));
+  });
+  if(__appGarde){          /* retour d'un apercu : on recoche ce qui l'etait */
+    __appGarde=false;
+    for(var j=0;j<__appSel.length;j++){
+      var cj=l.querySelector('input[data-app="'+__appSel[j]+'"]');
+      if(cj)cj.checked=true;
+    }
+    __appRangs();
+  }else if(lignes.length===1){/*APPEND_4507_UNE une seule ligne : rien a choisir, on la coche*/
+    var c0=l.querySelector('input[data-app]');
+    if(c0){c0.checked=true;__appSel=[0];__appRangs();}
+  }
+  filtrer();
+}
+/*APPEND_4506_SEL les voix d'un morceau, lues dans son ABC : pas besoin
+  de l'analyser en entier pour savoir s'il en a plusieurs. L'ordre des V:
+  est celui des pistes que parseAbcText fabriquera. */
+function __appVoixSnap(snap){
+  /* les voix d'un morceau DEJA CHARGE : on les lit dans son instantane, il n'y
+     a pas d'ABC sous la main (un .mid ou un .mscz n'en a jamais eu). */
+  var o=null;try{o=JSON.parse(snap);}catch(e){return null;}
+  if(!o||!o.tracks||o.tracks.length<2)return null;
+  return o.tracks.map(function(t,i){return (t&&t.name)||('V'+(i+1));});
+}
+function __appVoix(t){
+  if(t&&t.voix)return (t.voix.length>1)?t.voix:null;/*APPEND_4507_VX*/
+  var a=(t&&t.abc)?String(t.abc):'';if(!a)return null;
+  var ids=[],noms=[],re=/^V:[ \t]*(\S+)(.*)$/mg,m;
+  while((m=re.exec(a))){
+    if(ids.indexOf(m[1])>=0)continue;
+    ids.push(m[1]);
+    var nm=m[2].match(/(?:^|\s)(?:name|nm)\s*=\s*"([^"]*)"/i)
+          ||m[2].match(/(?:^|\s)(?:name|nm)\s*=\s*(\S+)/i);
+    noms.push(nm?nm[1]:('V'+m[1]));
+  }
+  return (ids.length>1)?noms:null;
+}
+function __appVoixSel(t,i){
+  var v=__appVoix(t);if(!v)return '';
+  var s='<select data-app-v="'+i+'" title="Quelle voix de ce morceau ajouter"'
+       +' style="margin-left:auto;max-width:10em;">';
+  for(var k=0;k<v.length;k++)
+    s+='<option value="'+k+'">'
+      +String(v[k]).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>';
+  return s+'</select>';
+}
+/*APPEND_4508_VOIR voir la partition d'un morceau sans quitter la liste.
+  Meme va-et-vient que le mode Scene : on garde l'etat, on charge le morceau,
+  et le retour rend tout - y compris les cases cochees et leur ordre. */
+var __appCtx={liste:null,avec:false},__appGarde=false,__appVu=null;
+function __appRetour(){
+  var k=__appVu;if(!k)return;__appVu=null;
+  var b=document.getElementById('app-bar');
+  if(b&&b.parentNode)b.parentNode.removeChild(b);
+  loadFrom(k.e);history.stack=k.p;history.pos=k.i;
+  try{lastMultiTunes=k.mt;lastMultiIndex=k.mi;lastMultiFileName=k.mf;
+    if(typeof updateListBtn==='function')updateListBtn();}catch(_e){}
+  try{render();}catch(_e){}
+  __appGarde=true;                 /* la selection doit survivre */
+  __appPanneau(k.liste,k.avec);
+}
+function __appVoir(i){
+  var liste=__appCtx.liste;if(!liste||!liste[i])return;
+  var snap=__appSrcTune(liste[i]);
+  var _fl=(typeof flash==='function')?flash:function(){};
+  if(!snap){_fl('Morceau illisible');return;}
+  if(!__appVu)__appVu={e:snapshot(),p:history.stack,i:history.pos,
+    mt:(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null,
+    mi:(typeof lastMultiIndex!=='undefined')?lastMultiIndex:-1,
+    mf:(typeof lastMultiFileName!=='undefined')?lastMultiFileName:null,
+    liste:liste,avec:__appCtx.avec};
+  closePanel();
+  try{loadFrom(snap);}catch(e){}
+  try{render();}catch(e){}
+  var vieux=document.getElementById('app-bar');   /* jamais deux barres */
+  if(vieux&&vieux.parentNode)vieux.parentNode.removeChild(vieux);
+  var b=document.createElement('div');b.id='app-bar';
+  b.style.cssText='position:fixed;left:0;top:0;right:0;z-index:99999;display:flex;'
+    +'gap:8px;align-items:center;flex-wrap:wrap;background:#d32f2f;color:#fff;'
+    +'border-bottom:3px solid #7f0000;padding:6px 8px;';/*APPEND_4510_ROUGE
+      remplace la teinte creme de la 4.509 : l'apercu ouvre le morceau en grand
+      et tout y est actif, il doit se voir de loin */
+  var r=document.createElement('button');r.className='k';r.type='button';
+  r.textContent='\u2190 Revenir a la liste';
+  r.addEventListener('click',__appRetour);
+  var t=document.createElement('span');
+  t.textContent=(liste[i]&&liste[i].title)||'';
+  t.style.cssText='overflow:hidden;white-space:nowrap;text-overflow:ellipsis;'
+    +'flex:1 1 auto;min-width:0;font-weight:700;color:#fff;';/*APPEND_4510_BLANC*/
+  var n=document.createElement('span');/*APPEND_4509_NOTE*/
+  n.textContent='APERCU \u2014 rien n\'est garde ici';
+  n.style.cssText='white-space:nowrap;font-weight:700;color:#fff;';
+  b.appendChild(r);b.appendChild(t);b.appendChild(n);
+  document.body.appendChild(b);
+}
+function __appPanneau(liste,avecFichier){
+  __appCtx={liste:liste,avec:!!avecFichier};/*APPEND_4508_CTX*/
+  var h='<small>Coche les morceaux a ajouter a la suite du morceau courant.'
+       +' Ils seront ajoutes dans l\'ordre ou tu les coches.</small>'/*APPEND_4505_H*/
+       +'<div class="row" style="gap:6px;margin-top:6px;align-items:center;">'
+       +'<input id="app-q" type="text" placeholder="Chercher un titre" '
+       +'style="flex:1 1 auto;min-width:0;"/>'
+       +'<button class="k" type="button" id="app-tri">Tri : Fichier</button>'
+       +'<span id="app-c" style="opacity:.6;white-space:nowrap;"></span>'
+       +'</div>'
+       +'<div id="app-l" style="max-height:50vh;overflow:auto;margin-top:6px;">';
+  for(var i=0;i<liste.length;i++){
+    var ti=(liste[i]&&liste[i].title)||('Morceau '+(i+1));
+    var xx=(liste[i]&&liste[i].x!=null)?String(liste[i].x):'';/*APPEND_4505_ROW*/
+    h+='<div class="row" data-app-row="1" data-k="'+__appPli(ti+' '+xx)
+      +'" data-x="'+xx.replace(/[^0-9]/g,'')+'"'
+      +' style="display:flex;align-items:center;gap:6px;">'/*APPEND_4506_ROW*/
+      +'<label style="display:flex;gap:8px;align-items:center;">'
+      +'<input type="checkbox" data-app="'+i+'"/>'
+      +'<span data-app-n="'+i+'" style="min-width:1.4em;text-align:right;opacity:.7;"></span>'
+      +'<span>'
+      +String(ti).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span></label>'
+      /* le bouton et la liste des voix sont HORS du label : sinon un clic
+         dessus cocherait la case */
+      +'<button class="k" type="button" data-app-voir="'+i+'"'
+      +' title="Voir la partition de ce morceau"'
+      +' style="margin-left:auto;">Voir</button>'/*APPEND_4508_BTN*/
+      +__appVoixSel(liste[i],i)+'</div>';
+  }
+  h+='</div>';
+  openPanel({title:'Ajouter a la suite',body:h,hideActions:true,onMount:__appWire,/*APPEND_4505_MOUNT*/
+    extraButtons:avecFichier?['Annuler','Depuis un fichier\u2026','Ajouter']
+                            :['Annuler','Ajouter'],
+    onExtra:function(w){
+      var _fl=(typeof flash==='function')?flash:function(){};
+      if(w==='Annuler'){closePanel();return;}
+      if(w==='Depuis un fichier\u2026'){closePanel();__appDepuisFichier();return;}
+      var l=document.getElementById('app-l');
+      var ordre=__appSel.slice();/*APPEND_4505_ORD ordre des clics*/
+      if(!ordre.length&&l){          /* repli : aucun clic vu, on prend le DOM */
+        var ch=l.querySelectorAll('input[data-app]:checked');
+        for(var z=0;z<ch.length;z++)ordre.push(parseInt(ch[z].getAttribute('data-app'),10));
+      }
+      var n=0;
+      for(var k=0;k<ordre.length;k++){
+        var idx=ordre[k];
+        var snap=__appSrcTune(liste[idx]);
+        if(!snap)continue;
+        var sv=document.querySelector('select[data-app-v="'+idx+'"]');/*APPEND_4506_PICK*/
+        var vi=sv?parseInt(sv.value,10):NaN;
+        if(__appColler(snap,(liste[idx]&&liste[idx].title)||'',isNaN(vi)?null:vi))n++;
+      }
+      closePanel();
+      if(n){if(typeof pushHistory==='function')pushHistory();render();}
+      _fl(n?(n+' morceau'+(n>1?'x':'')+' ajoute'+(n>1?'s':'')+' a la suite')
+           :'Aucun morceau coche');
+    }});
+}
+function __appendTune(){
+  var mt=(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null;
+  if(!mt||!mt.length){__appDepuisFichier();return;}
+  if(typeof __commitCur==='function'){try{__commitCur();}catch(_e){}}
+  /*APPEND_4510_SOI le morceau courant s'ajoutait a sa propre suite : on le
+    retire de la liste. Un recueil d'un seul morceau n'a plus rien a lister. */
+  var _c=(typeof lastMultiIndex==='number')?lastMultiIndex:-1,_l=[];
+  for(var _i=0;_i<mt.length;_i++)if(_i!==_c)_l.push(mt[_i]);
+  if(!_l.length){__appDepuisFichier();return;}
+  __appPanneau(_l,true);/*APPEND_4504_REC*/
+}
+function __appDepuisFichier(){
+  var inp=document.createElement('input');inp.type='file';
+  inp.accept='.abc,.atm,.atmz,.mxl,.musicxml,.xml,.mid,.midi,.mscz,.mscx';
+  inp.style.display='none';document.body.appendChild(inp);
+  inp.addEventListener('change',function(){
+    var f=inp.files&&inp.files[0];
+    try{document.body.removeChild(inp);}catch(_e){}
+    if(!f)return;
+    var _fl=(typeof flash==='function')?flash:function(){};
+    var garde=snapshot(),gp=history.stack,gi=history.pos;
+    var gmt=(typeof lastMultiTunes!=='undefined')?lastMultiTunes:null,
+        gmi=(typeof lastMultiIndex!=='undefined')?lastMultiIndex:-1,
+        gmf=(typeof lastMultiFileName!=='undefined')?lastMultiFileName:null;
+    var rendre=function(){loadFrom(garde);history.stack=gp;history.pos=gi;
+      try{lastMultiTunes=gmt;lastMultiIndex=gmi;lastMultiFileName=gmf;if(typeof updateListBtn==='function')updateListBtn();}catch(_e){}};/*APPEND_4504_BTN le bouton Liste doit etre repeint : sinon il reste bleu, allume par le fichier charge au passage*/
+    __appOuvrirP(f).then(function(ok){
+      if(!ok){rendre();render();_fl('Fichier illisible');return;}
+      var src=snapshot();
+      var t=(state.headers&&state.headers.T)?String(state.headers.T).split('\n')[0].trim():'';
+      var lst=__appListe;
+      var nom=t||String(f.name).replace(/\.[^.]+$/,'');
+      var vx=__appVoixSnap(src);/*APPEND_4507_BR un seul morceau a plusieurs voix*/
+      rendre();
+      if(lst&&lst.length>1){/*APPEND_4504_MULTI plusieurs morceaux : on choisit*/
+        render();__appPanneau(lst,false);return;
+      }
+      if(vx){   /* SATB et compagnie : une seule ligne, mais il faut choisir */
+        render();__appPanneau([{title:nom,snap:src,voix:vx}],false);return;
+      }
+      if(__appColler(src,nom)){
+        if(typeof pushHistory==='function')pushHistory();
+        render();
+        _fl('Morceau ajoute a la suite');
+      }else{render();_fl('Rien a ajouter');}
+    });
+  });
   inp.click();
 }
 /*IMPORT_4305_FN*/function __addTune(){
@@ -11057,7 +11653,7 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
   document.getElementById('btn-export-mxl').addEventListener('click',()=>{openSavePanel('mxl');});
   document.getElementById('btn-export-mid').addEventListener('click',()=>{openSavePanel('mid');});/*MIDEXPORT_4283*/
 
-  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Ajouter un morceau au fichier, ou tout effacer ?</small>',hideActions:true,extraButtons:['Annuler','Ajouter','Depuis un fichier…','Effacer tout']/*IMPORT_4305_BTN1*/,onExtra:(w)=>{if(w==='Ajouter'){__addTune();closePanel();return}if(w==='Depuis un fichier…'){closePanel();__importFromFile();return}/*IMPORT_4305_BTN2*/if(w==='Effacer tout'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.tempoChanges={};state.breaks={};state.openedFileName=null;state.openedFileExt=null;state.nameFromTitle=false;savedFileHandle=null;savedFileHandleExt=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();history.stack=[];history.pos=-1;state.accMem={};pushHistory();render()}closePanel()}})});
+  document.getElementById('btn-new').addEventListener('click',()=>{openPanel({title:'Nouveau',body:'<small>Que veux-tu faire ?</small>'/*APPEND_4511_AIDE une ligne par bouton, dans l\'ordre d\'affichage*/+'<div style="margin-top:6px;line-height:1.5;font-size:90%;">'+'<b>Annuler</b> : revenir en arri\u00e8re sans rien faire.<br/>'+'<b>Ajouter</b> : ajouter un morceau vide au recueil.<br/>'+'<b>Depuis un fichier\u2026</b> : aller chercher des morceaux dans un '+'fichier pour les int\u00e9grer au recueil.<br/>'+'<b>\u00c0 la suite\u2026</b> : aller chercher une piste d\'un morceau '+'pour l\'ins\u00e9rer \u00e0 la suite de la piste s\u00e9lectionn\u00e9e.<br/>'+'<b>Effacer tout</b> : repartir d\'un fichier neuf, avec un seul '+'morceau vide.'+'</div>',hideActions:true,extraButtons:['Annuler','Ajouter','Depuis un fichier…','\u00c0 la suite\u2026','Effacer tout']/*APPEND_4502_BTN*//*IMPORT_4305_BTN1*/,onExtra:(w)=>{if(w==='Ajouter'){__addTune();closePanel();return}if(w==='Depuis un fichier…'){closePanel();__importFromFile();return}/*IMPORT_4305_BTN2*/if(w==='\u00c0 la suite\u2026'){closePanel();__appendTune();return}/*APPEND_4502_CALL*/if(w==='Effacer tout'){state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.tempoChanges={};state.breaks={};state.openedFileName=null;state.openedFileExt=null;state.nameFromTitle=false;savedFileHandle=null;savedFileHandleExt=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();history.stack=[];history.pos=-1;state.accMem={};pushHistory();render()}closePanel()}})});
 
   // Point 9 : Bouton Aide
   document.getElementById('btn-help').addEventListener('click',()=>{
