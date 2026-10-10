@@ -264,7 +264,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.642 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.644 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -5874,7 +5874,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       +'<button id="sc-close" title="Revenir a l\'editeur">\u2715</button>'
       +'<button id="sc-dir">\uD83D\uDCC2 Dossier\u2026</button>'
       +'<button id="sc-files">\uD83D\uDCC4 Fichiers\u2026</button>'
-      +'<button id="sc-doc">\uD83D\uDCD6 Document ouvert</button>'/*SCFILES_4489_UI*/
+      +'<button id="sc-doc">\uD83D\uDCD6 Document ouvert</button>'/*SCFILES_4489_UI*/+'<button id="sc-aide" title="Aide" aria-label="Aide" style="margin-left:auto;font-weight:700;">?</button>'/*V4644_SC*/
       +'</div><div class="sc-st" id="sc-st"></div><div class="sc-log" id="sc-log"></div>';
     document.body.appendChild(o);
     document.getElementById('sc-close').addEventListener('click',function(){_scFS(false);_fermer();});/*SCFS_4496_CLOSE*/
@@ -9438,7 +9438,7 @@ window.__readViewCfg=__readViewCfg;window.__viewCfgPayload=__viewCfgPayload;
 /*SLOTVIEW_4317*/function __applySlotTracks(_a){if(!_a||!_a.length)return;(state.tracks||[]).forEach(function(_t,_i){var v=_a[_i];if(!_t||!v)return;_t.tabShow=v.show!==false;_t.tabOctave=v.octave||0;if(v.gap!==undefined)_t.tabGap=v.gap;if(v.vg!==undefined)_t.trkGap=v.vg;/*V4603_APP*/if(v.kind!==undefined)_t.tabKind=v.kind;_t.tabLh=!!v.lh;if(v.lhOff!==undefined)_t.tabLhOffset=v.lhOff;if(v.lhSize!==undefined)_t.tabLhSize=v.lhSize;_t.tabRhythm=!!v.rhythm;if(v.sv)_t.staffView=v.sv;if(v.dSys)_t.diatoSystem=v.dSys;if(v.dOut!=null)_t.diatoOuter=v.dOut;if(v.dRows!=null)_t.diatoRows=v.dRows;if(v.dStr)_t.diatoStrategy=v.dStr;});}window.__applySlotTracks=__applySlotTracks;/*TRKSLOT_4372_FN*/function __applySlotView(_s){if(!_s||!_s.__view)return;if(typeof __applyViewCfg==='function')__applyViewCfg(_s.__view.view||{});if(_s.__view.hdr)state.hdrCfg=JSON.parse(JSON.stringify(_s.__view.hdr));if(!state.recueil&&typeof renderOeilHdr==='function')renderOeilHdr();/*F4447_HDRUI2*/if(_s.__view.pageLayout)state.pageLayout=JSON.parse(JSON.stringify(_s.__view.pageLayout));if(_s.__view.breaks)state.breaks=JSON.parse(JSON.stringify(_s.__view.breaks));if(_s.__view.lyr){var _Lo=_s.__view.lyr;(state.tracks||[]).forEach(function(_t,_ti){if(_t&&_Lo[_ti]!=null)_t.lyricOffset=_Lo[_ti];});}if(_s.__view.trk&&typeof __applySlotTracks==='function'){__applySlotTracks(_s.__view.trk);try{window.__atmTrk=_s.__view.trk;}catch(_e){}}/*TRKSLOT_4372_APP*/if(state.viewFlags){delete state.viewFlags.orn;delete state.viewFlags.trkLbl;}/*ACC4439_OAPP*//*F4444_LBLAPP*/if(_s.__view.vf){state.viewFlags=state.viewFlags||{};for(var _vk in _s.__view.vf)state.viewFlags[_vk]=_s.__view.vf[_vk];}/*VFSLOT_4373_APP*/state.zoom=(_s.__view.z!=null?_s.__view.z:100);state.scoreScale=(_s.__view.ss!=null?_s.__view.ss:100);/*SLOTZ_4395_APP*//*RECPB_4321_APP*//*LYROFF_4326_APP*/}
 function __captureSlotView(){return {view:(typeof __viewCfgPayload==='function'?__viewCfgPayload():{}),hdr:(state.hdrCfg?JSON.parse(JSON.stringify(state.hdrCfg)):{}),pageLayout:(state.pageLayout?JSON.parse(JSON.stringify(state.pageLayout)):{}),breaks:(state.breaks?JSON.parse(JSON.stringify(state.breaks)):{}),lyr:(state.tracks||[]).map(function(_t){return (_t&&_t.lyricOffset!=null)?_t.lyricOffset:null;})/*RECPB_4321_CAP*//*LYROFF_4326_CAP*/,trk:(state.tracks||[]).map(function(_t){return _t?{show:(_t.tabShow!==false),octave:(_t.tabOctave||0),gap:(_t.tabGap||0),vg:(_t.trkGap||0)/*V4603_CAP*/,kind:(_t.tabKind||null),lh:!!_t.tabLh,lhOff:(_t.tabLhOffset||0),lhSize:(_t.tabLhSize!=null?_t.tabLhSize:9),rhythm:!!_t.tabRhythm,sv:(_t.staffView||'both'),dSys:(_t.diatoSystem||null),dOut:(_t.diatoOuter!=null?_t.diatoOuter:null),dRows:(_t.diatoRows!=null?_t.diatoRows:null),dStr:(_t.diatoStrategy||null)}:null;})/*TRKSLOT_4372_CAP*/,vf:(state.viewFlags?JSON.parse(JSON.stringify(state.viewFlags)):null)/*VFSLOT_4373_CAP*/,z:(state.zoom!=null?state.zoom:100),ss:(state.scoreScale!=null?state.scoreScale:100)/*SLOTZ_4395_CAP*/};}
 window.__applySlotView=__applySlotView;window.__captureSlotView=__captureSlotView;
-/*LIVE_B1_4306*/var __liveSeq=0;var LIVE_CAP=3;var VIEW_KEYS=['zoom','scoreScale','lyricOffset','recueil','scoreLayout'];/*VIEWKEYS_4317*//*B2FIX2_4309*/
+/*LIVE_B1_4306*/var __liveSeq=0;var LIVE_CAP=3;var VIEW_KEYS=['lyricOffset','recueil','scoreLayout'];/*V4643_VK*//*VIEWKEYS_4317*//*B2FIX2_4309*/
 /* __live[i] = snapshot d'un morceau QUITTE ; le courant vit dans `state` (pas de cache). Total vivants borne = courant + (LIVE_CAP-1) caches les plus recemment quittes (LRU par __seq). __seq est timbre a la SORTIE (dans __commitCur) => recence = derniere mise en cache ; il vit sur l'objet slot donc il suit __ordSwap sans tableau annexe. */
 function __liveEvict(){if(!lastMultiTunes)return;var live=[];for(var _i=0;_i<lastMultiTunes.length;_i++){if(_i!==lastMultiIndex&&lastMultiTunes[_i]&&lastMultiTunes[_i].__live)live.push(_i);}var nE=live.length-(LIVE_CAP-1);if(nE<=0)return;live.sort(function(a,b){return (lastMultiTunes[a].__seq||0)-(lastMultiTunes[b].__seq||0);});for(var e=0;e<nE;e++){var _s=lastMultiTunes[live[e]];delete _s.__live;delete _s.__seq;}}
 function __applyFileView(_snap){if(!_snap)return;try{var _o=JSON.parse(_snap);VIEW_KEYS.forEach(function(k){if(_o[k]!==undefined)state[k]=_o[k];});}catch(_e){}}
@@ -12080,69 +12080,37 @@ function importMidiFile(buf,fileName){/*IMPORTMID_4285*/
   /*V4541_NEW : Nouveau = Effacer tout, apres confirmation (Annuler en bleu)*/window.__docVide=function(){try{if(lastMultiTunes&&lastMultiTunes.length>1)return false;if(state.headers&&String(state.headers.T||'').trim())return false;var L=[state.measures];(state.tracks||[]).forEach(function(t){if(t)L.push(t.measures);});for(var a=0;a<L.length;a++){var M=L[a]||[];for(var i=0;i<M.length;i++){var m=M[i]||[];for(var j=0;j<m.length;j++){if(m[j]&&m[j].type==='note')return false;}}}return true;}catch(_e){return false;}};/*V4543_DOCVIDE*/window.__effacerTout=function(){window.__docDirty=false;/*V4543_CLR*/state.headers={X:'1',T:'',C:'',N:''};state.tracks=[makeTrack()];state.activeTrack=0;state.pieceMeter='4/4';state.pieceUnit='1/4';state.pieceKeySig=0;state.pieceClef='treble';state.tempoChanges={};state.breaks={};state.openedFileName=null;state.openedFileExt=null;state.nameFromTitle=false;savedFileHandle=null;savedFileHandleExt=null;lastMultiTunes=null;lastMultiFileName=null;lastMultiIndex=-1;updateListBtn();rebuildMeasures();history.stack=[];history.pos=-1;state.accMem={};pushHistory();render()};document.getElementById('btn-new').addEventListener('click',()=>{if(!window.__docDirty||window.__docVide()){window.__effacerTout();return;}/*V4543_NEW*/openPanel({title:'Nouveau',body:'<small>Ce qui est affich\u00e9 a \u00e9t\u00e9 modifi\u00e9 depuis le dernier enregistrement.</small><p>Tout effacer quand m\u00eame ?</p>',hideActions:true,extraButtons:['Effacer tout','Annuler'],onExtra:(w)=>{closePanel();if(w==='Effacer tout')window.__effacerTout();}})});/*V4568_PV : page A4 vierge (point 6), bouton a droite de memo*/(function(){var m=document.getElementById('btn-saves');if(!m||window.__pvBound||document.getElementById('btn-pvierge'))return;window.__pvBound=true;var b=document.createElement('button');b.id='btn-pvierge';b.type='button';b.className=m.className;var st=m.getAttribute('style');if(st)b.setAttribute('style',st);b.title='Page A4 de portées vides, à imprimer pour écrire à la main';b.textContent='📃 Page vierge';m.insertAdjacentElement('afterend',b);var W=210,H=297,EP=0.18,D={nl:5,np:10,el:2.5,ep:14,mh:12,mb:12,mg:12,md:12};var CH=[['nl','Lignes par portée',1,12,1],['np','Nombre de portées',1,40,1],['el','Entre lignes (mm)',0.5,15,0.1],['ep','Entre portées (mm)',0,80,0.5],['mh','Marge haut (mm)',4,60,0.5],['mb','Marge bas (mm)',4,60,0.5],['mg','Marge gauche (mm)',4,60,0.5],['md','Marge droite (mm)',4,60,0.5]];function lire(){var o={};CH.forEach(function(c){var e=document.getElementById('pv-'+c[0]);var x=e?parseFloat(e.value):NaN;o[c[0]]=isNaN(x)?D[c[0]]:x;});o.nl=Math.max(1,Math.round(o.nl));o.np=Math.max(1,Math.round(o.np));['mh','mb','mg','md'].forEach(function(k){o['_'+k]=o[k]<4;o[k]=Math.max(4,o[k]);});o.el=Math.max(0.5,o.el);o.ep=Math.max(0,o.ep);return o;}function hp(o){return (o.nl-1)*o.el;}function tiennent(o){var d=H-o.mh-o.mb,h=hp(o);if(h>d)return 0;return Math.floor((d+o.ep)/(h+o.ep));}function dessin(o,dim){var x1=o.mg,x2=W-o.md,y=o.mh,bas=H-o.mb,s='',n=0;for(var p=0;p<o.np;p++){if(y+hp(o)>bas+1e-6)break;for(var l=0;l<o.nl;l++){var yy=(y+l*o.el).toFixed(3);s+='<line x1="'+x1+'" y1="'+yy+'" x2="'+x2+'" y2="'+yy+'"/>';}y+=hp(o)+o.ep;n++;}return {n:n,html:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" '+dim+'><g stroke="#000" stroke-width="'+EP+'">'+s+'</g></svg>'};}function maj(){var o=lire(),r=dessin(o,'style="display:block;width:100%;height:auto;background:#fff;border:1px solid #cfcdc6;"');var ap=document.getElementById('pv-apercu');if(ap)ap.innerHTML=r.html;var d=H-o.mh-o.mb,ht=o.np*hp(o)+(o.np-1)*o.ep,mx=tiennent(o);var t='Portée : '+hp(o).toFixed(1)+' mm. Contenu : '+ht.toFixed(1)+' / '+d.toFixed(1)+' mm. Tiennent : '+mx+'.';if(r.n<o.np)t+=' <b style="color:#b3261e">'+r.n+' dessinée'+(r.n>1?'s':'')+' sur '+o.np+' : les autres ne tiennent pas entières.</b>';else t+=' Reste '+(d-ht).toFixed(1)+' mm en bas.';if(o._mh||o._mb||o._mg||o._md)t+=' <b style="color:#b3261e">Marge sous 4 mm ramenée à 4 mm.</b>';var e=document.getElementById('pv-etat');if(e)e.innerHTML=t;}function imprimer(){var r=dessin(lire(),'style="display:block;width:210mm;height:297mm"');var w=window.open('','_blank');if(!w){alert('Fenetre bloquee : autorisez les popups pour imprimer');return;}w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Page vierge</title><style>@page{size:A4 portrait;margin:0}html,body{margin:0;padding:0;background:#fff}</style></head><body>'+r.html+'</body></html>');w.document.close();w.focus();setTimeout(function(){try{w.print();}catch(e){}},350);}var FS=parseFloat(m.style.fontSize)||0,GR=FS>18,FL=GR?Math.round(FS*0.8)+'px':'0.85em',FI=GR?FS+'px':'inherit';/*V4569_FS*/b.addEventListener('click',function(){var h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;">';CH.forEach(function(c){h+='<label style="display:flex;flex-direction:column;gap:2px;font-size:'+FL+';">'+c[1]+'<input id="pv-'+c[0]+'" type="number" min="'+c[2]+'" max="'+c[3]+'" step="'+c[4]+'" value="'+D[c[0]]+'" style="width:100%;box-sizing:border-box;font-size:'+FI+';"/></label>';});/*V4569_IN*/h+='</div><div id="pv-etat" style="margin:8px 0;font-size:'+FL+';"></div><div id="pv-apercu" style="max-width:320px;margin:0 auto;"></div>';/*V4569_ET*/openPanel({title:'Page vierge',body:h,hideActions:true,extraButtons:['Remplir la page','Fermer','Imprimer'],onMount:function(){CH.forEach(function(c){var e=document.getElementById('pv-'+c[0]);if(e)e.addEventListener('input',maj);});maj();},onExtra:function(w){if(w==='Remplir la page'){var n=tiennent(lire()),e=document.getElementById('pv-np');if(n>0&&e){e.value=n;maj();}return;}if(w==='Imprimer'){imprimer();return;}closePanel();}});});})();/*V4541_AJOUT : bouton Ajout a cote de Nouveau, panneau Ajout au recueil / Ajout au morceau*/(function(){var n=document.getElementById('btn-new');if(!n||window.__ajoutBound||document.getElementById('btn-ajout'))return;window.__ajoutBound=true;var b=document.createElement('button');b.id='btn-ajout';b.type='button';b.className=n.className;var _st=n.getAttribute('style');if(_st)b.setAttribute('style',_st);var _h=String(n.innerHTML||'');b.innerHTML=(_h.indexOf('Nouveau')>=0)?_h.replace('Nouveau','Ajout').replace('\uD83D\uDCC4','\u2795'):'\u2795 Ajout';b.title='Ajouter un morceau au recueil, ou un morceau \u00e0 la suite du morceau courant';var p=n.parentNode;p.insertBefore(b,n.nextSibling);try{var _cs=getComputedStyle(p);if(_cs.display==='grid'){var _c=String(_cs.gridTemplateColumns||'').trim().split(/\s+/).length;if(_c===p.children.length-1)p.style.gridTemplateColumns='repeat('+p.children.length+',minmax(0,1fr))';}}catch(_e){}b.addEventListener('click',function(){openPanel({title:'Ajout',body:'<div class="stepper-label" style="margin-top:4px;">Ajout au recueil</div>'+'<div class="row-grid" style="margin-bottom:4px;"><button class="k" type="button" data-ajout="vide">Fichier vide</button>'+'<button class="k" type="button" data-ajout="fic">Depuis un fichier\u2026</button></div>'+'<small style="display:block;opacity:.75;margin-bottom:8px;">Un morceau vierge, ou des morceaux pris dans un autre fichier (recherche, tri, ordre des coches).</small>'+'<div class="stepper-label">Ajout au morceau</div>'+'<div class="row-grid" style="margin-bottom:4px;"><button class="k" type="button" data-ajout="suite">\u00c0 la suite\u2026</button></div>'+'<small style="display:block;opacity:.75;">Coller la piste d\u2019un autre morceau \u00e0 la suite de la piste s\u00e9lectionn\u00e9e \u2014 une seule voix par morceau.</small>'/*V4542_VX1*/,hideActions:true,extraButtons:['Annuler'],onExtra:function(){closePanel();},onMount:function(){var r=document.getElementById('panel-body');if(!r)return;r.querySelectorAll('[data-ajout]').forEach(function(x){x.addEventListener('click',function(){var a=x.getAttribute('data-ajout');closePanel();if(a==='vide')__addTune();else if(a==='fic')__importFromFile();else if(a==='suite')__appendTune();});});}});});})();
 
   // Point 9 : Bouton Aide
-  document.getElementById('btn-help').addEventListener('click',()=>{
-    const helpText='<div style="font-size:13px;line-height:1.4;font-weight:600;text-align:left;">'
-      +'<b style="color:#0c447c;">Onglet Notes</b><br>'
-      +'• 7 boutons Do…Si pour saisir une note<br>'
-      +'• Durées : ronde, blanche, noire, croche, double, triple<br>'
-      +'• Altérations ♯ ♭ ♮ et point pointé<br>'
-      +'• ⌒ liaison : un seul bouton. À la saisie de la note suivante, devient automatiquement un tie (même hauteur) ou un slur (hauteur différente). Posable sans note à droite → liaison en attente (pointillé bleu) · ⌫ remplace par silence<br>'
-      +'• 3:2 ouvre le panneau n-uplet<br>'
-      +'• ♫ Accord : empiler plusieurs notes (+ ajoute, − retire, ▲▼ note active). On peut mettre la même note à deux octaves ; les doublons exacts sont fusionnés à la sortie<br>'
-      +'• Cm bouton accord d\'accompagnement (texte) avec notes Do…Si + #/b/m/Maj…<br>'
-      +'• ~T ornements (trille, fermata, staccato, etc.)<br>'
-      +'• ↶ ↷ annuler/refaire · (la transposition est dans l\'onglet 👁 Œil)<br><br>'
-      +'<b style="color:#0c447c;">Onglet Mesure</b><br>'
-      +'• −Mes / +Mes ajouter ou supprimer des mesures<br>'
-      +'• Rythme, Armure et Clé s\'appliquent sur une plage « de la mesure X à la mesure Y ». Réglez chaque borne avec −10 −1 +1 +10 (le bouton-libellé actif est en bleu), ou cliquez directement une mesure dans la partition pour remplir la borne active. Armure et Clé ne changent PAS le son, seulement l\'affichage<br>'
-      +'• Changer de clé conserve la hauteur sonore des notes : leur position sur la portée se déplace selon la nouvelle clé (Sol/Fa). Sol-8 se lit comme Sol mais sonne une octave plus bas<br>'
-      +'• 𝄆 𝄇 reprises, |1 |2 voltas — appliquées à toutes les voix (cohérence globale)<br>'
-      +''
-      +'• 📋 copier mesures de la mesure active à N<br>'
-      +'• 📥 coller à partir de la mesure active<br>'
-      +'• ↶ ↷ annuler/refaire<br><br>'
-      +'<b style="color:#0c447c;">Onglet Play</b><br>'
-      +'• ▶ jouer, ■ stop, 👁 vue large<br>'
-      +'• Vol et ♩ tempo ajustables (−10 −5 −1 +1 +5 +10)<br>'
-      +'• Tempo par défaut : 80. Ouvrir un morceau sans indication Q: conserve le tempo courant (pas de réinitialisation)<br>'
-      +'• ⛶ plein écran<br>'
-      +'• Les liaisons de notes identiques sont jouées comme une seule note<br><br>'
-      +'<b style="color:#0c447c;">Onglet Titre</b><br>'
-      +'• X numéro<br>'
-      +'• Titre, Compositeur, Commentaire multi-lignes<br>'
-      +'• ↵ Nouvelle ligne génère plusieurs T:/C:/N: dans le ABC<br><br>'
-      +'<b style="color:#0c447c;">Onglet Pistes</b><br>'
-      +'• Multi-voix : jusqu\'à 6 pistes (V:1 à V:6 en ABC), affichées en portées empilées<br>'
-      +'• Cliquer une piste dans le panneau ou sur la portée la rend active (cadre bleu) et permet de l\'éditer<br>'
-      +'• 👁 / ∅ : afficher ou masquer une piste (rendu uniquement, données préservées)<br>'
-      +'• ✎ : renommer · 🗑 : supprimer · + : ajouter une piste vierge (la clé se règle dans l\'onglet Mesure)<br>'
-      +'• Lecture : cochez « Lire » par piste (bouton Toutes / Aucune), réglez le volume de chaque piste ; le Play joue toutes les pistes cochées en même temps<br>'
-      +'• Pendant la lecture, vous pouvez passer sur l\'onglet Pistes pour ajuster voix et volumes sans couper le son ; le tempo se règle aussi en direct (reprise au point courant). Quitter vers un autre onglet arrête le son<br>'
-      +'• L\'export ABC émet automatiquement V:1, V:2… quand il y a plusieurs pistes<br><br>'
-      +'<b style="color:#0c447c;">Onglet Fichier</b><br>'
-      +'• Ligne 1 : 📄 Nouveau · 📂 Ouvrir (.abc, .xml, .mxl) · ☰ Liste des morceaux du fichier<br>'
-      +'• Import MusicXML : ouvrir un .xml ou .mxl importe les notes, accords, n-uplets (y compris exotiques 5:4, 7:4…), liaisons de phrasé (slur), ornements/articulations, symboles d\'accords (Cm7, G/B…), paroles, armures, clés, métriques, répétitions et tempo<br>'
-      +'• Voix multiples : chaque &lt;part&gt; et chaque voix (backup) devient une piste distincte, sans rien modifier du fichier. Si le total dépasse 6 voix, l\'éditeur propose de les réunir (empilage en accords). Bouton « ⚇ Réunir des voix… » dans l\'onglet Pistes pour réunir à tout moment<br>'
-      +'• Ligne 2 : 💾 ABC · 💾 MXL (MusicXML compressé) · ⭐ mémo (mémoires locales)<br>'
-      +'• ABC (code) affiche le code généré<br>'
-      +'• Le bouton ☰ Liste devient actif (bleu) après l\'ouverture d\'un fichier contenant plusieurs morceaux ; le rouvrir réaffiche la liste positionnée sur le morceau en cours<br><br>'
-      +'<b style="color:#0c447c;">Onglet 👁 (Œil)</b><br>'
-      +'• ⮂ Réorganiser rythme : fusionne les valeurs liées identiques (2 croches liées → noire) et les silences contigus ; appelé aussi automatiquement après chaque Décaler<br>'
-      +'• Accords / Texte / Paroles : affiche ou masque ces éléments<br>'
-      +'• Parties / N° mesures : affiche ou masque les repères P: et les numéros de mesure<br>'
-      +'• Transp. ↓↑ et Armure → C agissent sur la voix active ou toutes les voix selon le sélecteur ; les conversions de swing (groove) agissent sur toutes les voix<br><br>'
-      +'<b style="color:#0c447c;">Parties (P:)</b><br>'
-      +'• Onglet Mesure → Partie P: nomme la partie qui commence à la mesure active (A, B, Refrain…)<br><br>'
-      +'<b style="color:#0c447c;">Grâce notes</b><br>'
-      +'• Grace notes (petites notes) : mode « ❄ grace » — sélectionnez une note, activez le mode, tapez les hauteurs ; « grace / » pour l\'acciaccatura barrée. Écrites {…} / {/…} en ABC, conservées à l\'ouverture<br><br>'
-      +'<b style="color:#0c447c;">Limites</b><br>'
-      +'• Une seule voix (monophonique), mais accords de plusieurs notes simultanées possibles (♫ Accord)<br>'
-      +'• Symbole d\'accord d\'accompagnement (texte) ET notes empilées peuvent coexister sur une note<br>'
-      +'• N-uplets joués en n notes pour le temps de 2<br>'
-      +'• 7 dièses ou 7 bémols max à l\'armure<br>'
-      +'</div>';
-    openPanel({title:'Aide',body:helpText,hideActions:true,closeTop:true});
-  });
+  /*V4644_AIDE Le mode d'emploi est un fichier a part, SaisieABC-Aide.html, range dans le meme dossier que l'appli.
+    Le bouton ? Aide (onglet Fichier) l'ouvre ; le ? du bandeau l'ouvre a la section de l'onglet ou l'on est ;
+    le ? de la Scene (bouton sc-aide, pose dans _ecran) l'ouvre a la section du mode Scene.
+    L'ancien panneau d'aide, ecrit ici en toutes lettres, est retire.*/
+  var __AIDE_FICHIER='SaisieABC-Aide.html';
+  var __AIDE_SECTION={notes:'notes',mesure:'mesures',pistes:'pistes',play:'ecouter',titre:'titre',fichier:'ouvrir',partition:'modifier',vue:'miseenpage',tab:'tablatures',percu:'percussions',scene:'scene'};
+  function __aideOuvrir(onglet){
+    var s=(onglet&&__AIDE_SECTION[onglet])?('#'+__AIDE_SECTION[onglet]):'';
+    var w=null;
+    try{w=window.open(__AIDE_FICHIER+s,'_blank');}catch(_e){w=null;}
+    if(!w){var f=(typeof flash==='function')?flash:((typeof __dotToast==='function')?__dotToast:null);if(f)f('Aide : le navigateur a bloqu\u00e9 la fen\u00eatre. Autorisez les fen\u00eatres pop-up pour SaisieABC.');}
+  }
+  function __aideOnglet(){var t=document.querySelector('#app .tab.active');return t?(t.getAttribute('data-tab')||''):'';}
+  document.getElementById('btn-help').addEventListener('click',function(){__aideOuvrir('');});
+  (function(){
+    try{
+      if(document.getElementById('btn-aide-ctx'))return;
+      var bd=document.querySelector('#app .ver-badge');if(!bd)return;
+      var ou=bd.lastElementChild||bd;
+      var tel=/saisieabc-tel/i.test(location.href);
+      var c=tel?54:16;
+      var b=document.createElement('button');
+      b.id='btn-aide-ctx';b.type='button';b.textContent='?';
+      b.title='Aide sur cet onglet';b.setAttribute('aria-label','Aide sur cet onglet');
+      b.style.cssText='display:inline-block;box-sizing:border-box;width:'+c+'px;height:'+c+'px;min-width:0;min-height:0;margin:'+(tel?'0 0 0 18px':'-3px 0 -3px 8px')+';padding:0;vertical-align:middle;border:'+(tel?2:1)+'px solid #185fa5;border-radius:50%;background:#fff;color:#185fa5;font:700 '+(tel?34:11)+'px/'+(c-(tel?4:2))+'px system-ui,sans-serif;text-align:center;cursor:pointer;';
+      b.addEventListener('click',function(){__aideOuvrir(__aideOnglet());});
+      ou.appendChild(b);
+    }catch(_e){}
+  })();
+  document.addEventListener('click',function(ev){var t=ev.target;if(t&&t.id==='sc-aide'){ev.preventDefault();ev.stopPropagation();__aideOuvrir('scene');}},true);
+  /*V4644_FIN*/
 
   const panel=document.getElementById('panel');
   const panelTitle=document.getElementById('panel-title');
