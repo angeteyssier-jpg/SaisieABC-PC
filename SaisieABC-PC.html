@@ -264,7 +264,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.715 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.716 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -6437,7 +6437,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       x.addEventListener('click',function(){_scPopFerme();/*V4682_QUIT*/_rendre();_scFS(false);_fermer();});/*SCFS_4496_QUIT*/
     }
     b.style.display='';
-    {var _pp=document.getElementById('sc-pis-pop');if(_pp&&_pp.parentNode)_pp.parentNode.removeChild(_pp);}/*V4679_NEW*/SCCUR=o;document.getElementById('sc-ttl').textContent=o.t||o.f;_scVueApp();_scOutils(b);_scRangs(b);/*SCENE_4487_BAR*//*SCENE_4464_BAR*//*SCENE_4474_CUR*//*SCENE_4475_APP*/
+    {var _pp=document.getElementById('sc-pis-pop');if(_pp&&_pp.parentNode)_pp.parentNode.removeChild(_pp);}/*V4679_NEW*/SCCUR=o;document.getElementById('sc-ttl').textContent=o.t||o.f;_scVueApp();_scOutils(b);_scRangs(b);_scPlanMaj();/*V4716_BAR*//*SCENE_4487_BAR*//*SCENE_4464_BAR*//*SCENE_4474_CUR*//*SCENE_4475_APP*/
     var app=document.getElementById('app');
     if(app){if(SCPAD===null)SCPAD=app.style.paddingTop;
       app.style.paddingTop=(b.offsetHeight+6)+'px';}
@@ -6531,7 +6531,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       render();
     }
   }
-  window.__scMontrer=_montrer;window.__scRendre=_rendre;
+  window.__scMontrer=_montrer;window.__scRendre=_rendre;/*V4716_FN plan de jeu (P:) dans la 1re rangee de la Scene, apres le titre (TEYSSIER, 22/10)*/function _scPlanMaj(){var t=document.getElementById('sc-ttl');if(!t||!t.parentNode)return;var p=document.getElementById('sc-plan');if(!p){p=document.createElement('span');p.id='sc-plan';p.style.cssText='flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700;';}if(p.parentNode!==t.parentNode||p.previousSibling!==t)t.parentNode.insertBefore(p,t.nextSibling);var s='';try{s=String((state.headers&&state.headers.P)||'').replace(/\s+/g,' ').trim();}catch(e){}p.textContent=s;p.title=s?('Plan de jeu : '+s):'';p.style.display=s?'':'none';_scTaille(p);}
   /*SCENE_4464_TOOLS reglages de scene : ecart, tonalite, affichage, lecture*/
   var SCTON=null;
   /*SCENE_4465_TEL commandes au doigt, partition en mode Page*/
