@@ -264,7 +264,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.765 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.767 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -3147,7 +3147,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
         if(!__hideStaff)/*STAFFHIDE_4196*/svg+='<line x1="'+x+'" y1="'+staffTop+'" x2="'+x+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="'+(i===0?1.1:0.7)+'" opacity="0.7"/>';if(!__hideStaff&&(__tabOn||__diatoOn)){var _clY2=__rowY('band',staffTop);svg+='<line x1="'+x+'" y1="'+(staffTop+4*LINE_GAP)+'" x2="'+x+'" y2="'+_clY2+'" stroke="'+ink+'" stroke-width="'+(i===0?1.1:0.4)+'" opacity="0.6"/>';}if(!__hideStaff&&i>=1){var _eb=state.repeats[lineData.mIdxs[i-1]]&&state.repeats[lineData.mIdxs[i-1]].endbar;if(_eb){svg+='<line x1="'+(x-3)+'" y1="'+staffTop+'" x2="'+(x-3)+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="0.7" opacity="0.7"/>';if(_eb==='final')svg+='<line x1="'+x+'" y1="'+staffTop+'" x2="'+x+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="2.5"/>';else if(_eb==='double')svg+='<line x1="'+x+'" y1="'+staffTop+'" x2="'+x+'" y2="'+(staffTop+4*LINE_GAP)+'" stroke="'+ink+'" stroke-width="0.7" opacity="0.7"/>';/*DBLBAR_4227*/}}/*ENDBAR_4170*/
       }
       // Repères de mise en page (fin de ligne / fin de page) — affichés sur la voix active seulement.
-      if(isActiveVoice&&state.breaks){
+      if(isActiveVoice&&state.breaks&&!window.__scJust){/*V4767_BR : en Scene, pas de repere de fin de ligne ni de page*/
         for(let i=0;i<lineData.mIdxs.length;i++){
           const mIdx=lineData.mIdxs[i];const br=state.breaks[mIdx];if(!br)continue;
           const xR=measureBounds[i].xR;const yTop=staffTop-2;
@@ -3655,10 +3655,10 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
         const tr=tracks[i];
         const isActive=(i===saved);
         const _snm=(tr.sname||'').trim();const label=((si>0&&_snm)?_snm:((tr.name||'').trim()+((__tpLab(tr.transp)&&((tr.name||'').trim()||!single))?(((tr.name||'').trim()?' ':'')+__tpLab(tr.transp)):''))).trim();/*V4617_LBLP*//*V4616_LBLP*//*TRKLBL_4268*//*NOMUET_4477_PAGE*/
-        const border=isActive&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
-        const bg=isActive&&!single?'background:#f4f8fd;':'background:#ffffff;';
-        const labelHtml=(__trkLblOff()/*TRKLBL1_4533_USE*/)?'':/*F4444_LBL*//*MONOLBL_4213*/'<div style="position:absolute;top:'+(((STAFF_TOP_Y+(layout._lastTopExtra!=null?layout._lastTopExtra:(layout._forceTopExtra||0))/*V4588_PGL*/)*pxPerUnit)-20-(((state.view&&state.view.trackLabelOff!=null)?state.view.trackLabelOff:0))-__tlUp4698(11))+'px/*LBLFIX_4271*/;left:8px;font-size:'+__tlSz4698(11)/*V4698_LBL*/+'px;font-weight:700;color:'+(isActive?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';/*PGLBL_4269*/
-        sysHtml+='<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+(_ov4603?(((isActive&&!single)?'background:rgba(72,138,222,0.06);':'background:transparent;')+'border-top-color:transparent;'):'')+((GAP+_g4603<0)?'border-bottom-color:transparent;':'')/*V4603_BLK*/+'border-radius:6px;margin-bottom:'+(GAP+_g4603)+'px;padding-top:'+(single?2:LABEL_PX)+'px;width:'+blockPxW+'px;height:'+bH+'px;box-sizing:content-box;">'+labelHtml+'<div class="voice-svg" style="width:'+blockPxW+'px;height:'+bH+'px;overflow:hidden;">'+svg.replace('preserveAspectRatio="xMinYMin meet">','preserveAspectRatio="xMinYMin meet" style="display:block;width:100%;height:100%">')+'</div></div>';{var _bw=(isActive&&!single)?2:1;var _txP=(layout._lastTopExtra!=null)?layout._lastTopExtra:(layout._forceTopExtra||0);/*V4588_PGB : en page, nom de piste et barre qui relie les portees suivent la place reellement prise (la nouvelle passe peut l'agrandir)*/if(_barTop===null){_barTop=_barYacc+_bw+(STAFF_TOP_Y+_txP)*pxPerUnit;_barX=Math.round((_sysStart-_scDX)*pxPerUnit);/*V4681_BX*/}_barBot=_barYacc+_bw+(STAFF_TOP_Y+_txP+4*LINE_GAP)*pxPerUnit;_barN++;_barYacc+=2*_bw+bH+GAP+_g4603;/*V4603_BAR*/}
+        const _vu4767=isActive&&!window.__scJust;/*V4767_ACT : en Scene, pas de cadre de piste active*/const border=_vu4767&&!single?'border:2px solid #185fa5;':'border:1px solid #d8d6ce;';
+        const bg=_vu4767&&!single?'background:#f4f8fd;':'background:#ffffff;';/*V4767_BG*/
+        const labelHtml=(__trkLblOff()/*TRKLBL1_4533_USE*/)?'':/*F4444_LBL*//*MONOLBL_4213*/'<div style="position:absolute;top:'+(((STAFF_TOP_Y+(layout._lastTopExtra!=null?layout._lastTopExtra:(layout._forceTopExtra||0))/*V4588_PGL*/)*pxPerUnit)-20-(((state.view&&state.view.trackLabelOff!=null)?state.view.trackLabelOff:0))-__tlUp4698(11))+'px/*LBLFIX_4271*/;left:8px;font-size:'+__tlSz4698(11)/*V4698_LBL*/+'px;font-weight:700;color:'+(_vu4767?'#0c447c':'#5f5e5a')+';z-index:2;">'+escXml(label)+'</div>';/*PGLBL_4269*//*V4767_LBL*/
+        sysHtml+='<div class="track-block" data-track="'+i+'" style="position:relative;'+border+bg+(_ov4603?(((_vu4767&&!single)/*V4767_OV*/?'background:rgba(72,138,222,0.06);':'background:transparent;')+'border-top-color:transparent;'):'')+((GAP+_g4603<0)?'border-bottom-color:transparent;':'')/*V4603_BLK*/+'border-radius:6px;margin-bottom:'+(GAP+_g4603)+'px;padding-top:'+(single?2:LABEL_PX)+'px;width:'+blockPxW+'px;height:'+bH+'px;box-sizing:content-box;">'+labelHtml+'<div class="voice-svg" style="width:'+blockPxW+'px;height:'+bH+'px;overflow:hidden;">'+svg.replace('preserveAspectRatio="xMinYMin meet">','preserveAspectRatio="xMinYMin meet" style="display:block;width:100%;height:100%">')+'</div></div>';{var _bw=(isActive&&!single)?2:1;var _txP=(layout._lastTopExtra!=null)?layout._lastTopExtra:(layout._forceTopExtra||0);/*V4588_PGB : en page, nom de piste et barre qui relie les portees suivent la place reellement prise (la nouvelle passe peut l'agrandir)*/if(_barTop===null){_barTop=_barYacc+_bw+(STAFF_TOP_Y+_txP)*pxPerUnit;_barX=Math.round((_sysStart-_scDX)*pxPerUnit);/*V4681_BX*/}_barBot=_barYacc+_bw+(STAFF_TOP_Y+_txP+4*LINE_GAP)*pxPerUnit;_barN++;_barYacc+=2*_bw+bH+GAP+_g4603;/*V4603_BAR*/}
       });
       sysHtml+='</div>';
       const _lastM=sys[sys.length-1];const _pbk=!!(state.breaks&&state.breaks[_lastM]&&state.breaks[_lastM].page);if(_barN>1){var _bi=sysHtml.lastIndexOf('</div>');sysHtml=sysHtml.slice(0,_bi)+'<div style="position:absolute;left:'+_barX+'px;top:'+_barTop+'px;height:'+(_barBot-_barTop)+'px;border-left:1.6px solid #1a1a1a;pointer-events:none;"></div>'+sysHtml.slice(_bi);}sysBlocks.push({html:sysHtml,h:_sysPxH,pb:_pbk});
@@ -7972,9 +7972,9 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     ps.forEach(function(p,idx){
       var c=Object.assign({},sl,{dur:p.dur,dot:p.dot});
       if(sl.stack)c.stack=sl.stack.map(function(x){return Object.assign({},x);});
-      if(idx<ps.length-1)c.tieToNext=true;
-      else if(forceTie)c.tieToNext=true;
-      else if(!sl.tieToNext)delete c.tieToNext;
+      if(idx<ps.length-1){c.tieToNext=true;c._sp4764=1;}/*V4766_E1 : liaisons creees par la coupure, marquees*/
+      else if(forceTie){c.tieToNext=true;c._sp4764=1;}
+      else{if(!sl.tieToNext)delete c.tieToNext;delete c._sp4764;}
       if(idx>0){delete c.chord;delete c.text;if(typeof dropContinuationLyric==='function')dropContinuationLyric(c);}
       arr.push(c);
     });
@@ -8067,7 +8067,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     // 3) Application : mesures reconstruites, puis indices remappes i -> 2i/2i+1.
     applyToAllTracks(function(){
       var ms=state.measures;if(!ms)return;
-      __accGel();/*ACCGEL_4525_DBL_IN*/
+      __accGel();/*ACCGEL_4525_DBL_IN*/ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_D0*/
       var out=[],map=[],mapR=[];
       for(var mi=0;mi<ms.length;mi++){
         var meas=ms[mi],cap=caps[mi],beat=beats[mi],dbl=[];
@@ -8086,7 +8086,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
         if(!R.length)R=__durRestFill(cap,beat);
         out.push(L);out.push(R);mapR[mi]=out.length-1;
       }
-      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4538_REFOND : x2 - refond les notes hachees sur les temps (D4-D4 -> D8), notes seules, silences intacts*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});
+      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4538_REFOND : x2 - refond les notes hachees sur les temps (D4-D4 -> D8), notes seules, silences intacts*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4766_TIE1*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_CLR1*/
       if(!gmap||map.length>gmap.length){gmap=map;gmapR=mapR;}
       // Ce qui OUVRE la mesure -> moitie gauche.
       var toL=function(mp){if(!mp)return mp;var o={};Object.keys(mp).forEach(function(k){var i=parseInt(k,10);if(map[i]!=null)o[map[i]]=mp[k];});return o;};
@@ -8169,15 +8169,15 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     applyToAllTracks(function(){
       var ms=state.measures;if(!ms)return;
       var out=[];
-      __accGel();/*ACCGEL_4525_HLV_IN*/
+      __accGel();/*ACCGEL_4525_HLV_IN*/ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_H0*/
       for(var a=0;a<ms.length;a+=2){
         var merged=[];
         [ms[a],ms[a+1]].forEach(function(meas){
           for(var i=0;i<(meas||[]).length;i++)merged.push(__durCopy(meas[i],0.5));
         });
-        out.push(merged);
+        {var _k4766=(ms[a]||[]).length-1;if(_k4766>=0&&merged[_k4766]&&merged[_k4766].tieToNext)merged[_k4766]._sp4764=1;}/*V4766_H1 : la liaison par-dessus la barre qui disparait*/out.push(merged);
       }
-      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4539_HLV : ÷2 - refond les notes liees identiques ramenees dans la meme mesure*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});
+      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4539_HLV : ÷2 - refond les notes liees identiques ramenees dans la meme mesure*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4766_TIE2*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_CLR2*/
       var rm=function(mp){if(!mp)return mp;var o={};Object.keys(mp).forEach(function(k){o[half(parseInt(k,10))]=mp[k];});return o;};
       state.timeChanges=rm(state.timeChanges);
       state.keyChanges=rm(state.keyChanges);
