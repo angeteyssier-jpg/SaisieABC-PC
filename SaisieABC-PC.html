@@ -264,7 +264,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.763 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.765 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -7801,14 +7801,14 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       const beat=4/parseMeter(meter).den;
       // ---- Passe 1 : NOTES liees identiques -> valeurs plus longues (ex. 2 noires liees -> blanche)
       // On autorise les valeurs longues meme a travers les temps (blanche, ronde, pointees).
-      let changed=!!window.__reorgNotes4747;/*V4747_P1 : TODO 233, les notes liees ne sont fondues que par le bouton*/
+      let changed=true;/*V4747_P1 : TODO 233, les notes liees ne sont fondues que par le bouton*//*V4764_P1 : hors bouton, seules les liaisons creees par une coupure (marque _sp4764) sont refondues*/
       while(changed){
         changed=false;
         for(let i=0;i<meas.length-1;i++){
           const a=meas[i],b=meas[i+1];
           if(a.tuplet||b.tuplet)continue;
           if(a.type!=='note'||b.type!=='note')continue;
-          if(!a.tieToNext)continue;
+          if(!a.tieToNext||!(window.__reorgNotes4747||a._sp4764))continue;/*V4764_TIE*/
           if(a.note!==b.note||a.octave!==b.octave||(a.acc||'')!==(b.acc||''))continue;
           if(b.orn&&b.orn.length&&JSON.stringify(b.orn)!==JSON.stringify(a.orn||[]))continue;if(b.grace&&b.grace.length&&JSON.stringify(b.grace)!==JSON.stringify(a.grace||[]))continue;/*V4545_CONS*/{var _sk=function(x){return(x.stack||[]).map(function(n){return n.note+'|'+(n.octave||0)+'|'+(n.acc||'');}).sort().join(',');};if(_sk(a)!==_sk(b))continue;}/*V4546_STK*/
           if(b.chord||b.text)continue;
@@ -7824,12 +7824,12 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           if(b._linkKind!==undefined)merged._linkKind=b._linkKind;else delete merged._linkKind;/*TIE_MERGE_LINK_4131*/
           if(b.lyric&&!merged.lyric)merged.lyric=b.lyric;
           if(b.verses&&!merged.verses)merged.verses=b.verses.slice();
-          if(a._selMark||b._selMark)merged._selMark=true;
+          if(a._selMark||b._selMark)merged._selMark=true;if(b._sp4764)merged._sp4764=1;else delete merged._sp4764;/*V4764_MG*/
           meas.splice(i,2,merged);
           count++;changed=true;break;
         }
       }
-      // ---- Passe 2 : SILENCES -> recanonisation par plage, exactement comme une mesure neuve.
+      meas.forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});/*V4764_CLR*/// ---- Passe 2 : SILENCES -> recanonisation par plage, exactement comme une mesure neuve.
       // On detecte chaque plage continue de silences "simples" (sans ornement/accord/texte)
       // et on la remplace par la decomposition canonique splitDurationByBeat(offset,duree,beat).
       let i=0;
@@ -8341,7 +8341,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           head.tieToNext=true;
           if(!sl.tieToNext)delete tail.tieToNext;
         }
-        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL1*/dropContinuationLyric(tail);
+        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL1*/dropContinuationLyric(tail);head._sp4764=1;/*V4764_SP1 : liaison creee par la coupure*/
         return[head,tail];
       }
       if(sl.dot&&!sl.tuplet){
@@ -8352,7 +8352,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           head.tieToNext=true;
           if(!sl.tieToNext)delete tail.tieToNext;
         }
-        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL2*/dropContinuationLyric(tail);
+        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL2*/dropContinuationLyric(tail);head._sp4764=1;/*V4764_SP2*/
         return[head,tail];
       }
       return[sl,null];
@@ -8367,7 +8367,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
         const c=Object.assign({},sl,{dur:p.dur,dot:p.dot});
         if(sl.stack)c.stack=sl.stack.map(x=>Object.assign({},x));
         // chaîner par des tie : toutes liées sauf, pour la dernière, on garde le tie d'origine
-        if(i<pieces.length-1)c.tieToNext=true;
+        if(i<pieces.length-1){c.tieToNext=true;c._sp4764=1;}/*V4764_SP3*/
         else { if(sl.tieToNext)c.tieToNext=true; else delete c.tieToNext; }
         // accords/chord-symbol et texte uniquement sur la 1re figure
         if(i>0){delete c.chord;delete c.text;delete c.orn;delete c.grace;/*V4545_ORN*/dropContinuationLyric(c);}
@@ -9006,17 +9006,17 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     if(dir<0){
       if(t0sel-D<-eps)return false;
       const before=S.slice(0,a),sel=S.slice(a,b+1),after=S.slice(b+1);let need=D;
-      while(need>eps&&before.length>0){const last=before[before.length-1];const e=effDur(last);if(e<=need+eps){before.pop();need=+(need-e).toFixed(6);}else{before.pop();durToSlots(last,e-need).forEach(p=>before.push(p));need=0;}}
+      while(need>eps&&before.length>0){const last=before[before.length-1];const e=effDur(last);if(e<=need+eps){before.pop();need=+(need-e).toFixed(6);}else{before.pop();durToSlots(last,e-need).forEach((p,k,A)=>{if(k<A.length-1)p._sp4764=1;before.push(p);});/*V4765_D1 : liaisons de la coupure marquees*/need=0;}}
       if(need>eps)return false;
       seq=before.concat(sel,durToSlots({type:'rest',dur:0,dot:false},D),after);
     } else {
       const before=S.slice(0,a),sel=S.slice(a,b+1),after=S.slice(b+1);let need=D,i=0;const head=[];
-      while(need>eps&&i<after.length){const first=after[i];const e=effDur(first);if(e<=need+eps){need=+(need-e).toFixed(6);i++;}else{durToSlots(first,e-need).forEach(p=>head.push(p));i++;need=0;}}
+      while(need>eps&&i<after.length){const first=after[i];const e=effDur(first);if(e<=need+eps){need=+(need-e).toFixed(6);i++;}else{durToSlots(first,e-need).forEach((p,k,A)=>{if(k<A.length-1)p._sp4764=1;head.push(p);});/*V4765_D2*/i++;need=0;}}
       if(need>eps)return false;
       seq=before.concat(durToSlots({type:'rest',dur:0,dot:false},D),sel,head,after.slice(i));
     }
     const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
-    state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);/*V4537_REFOND : refond les notes hachees sur les temps (blanche = 2 noires liees) ; NOTES seules, memes accords, silences intacts*/state.measures.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});respellAccidentals();
+    state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);/*V4537_REFOND : refond les notes hachees sur les temps (blanche = 2 noires liees) ; NOTES seules, memes accords, silences intacts*/state.measures.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4765_TIE : une liaison tapee reste*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});state.measures.forEach(function(m){m.forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4765_CLR*/respellAccidentals();
     const nt0=dir<0?t0sel-D:t0sel+D, nt1=dir<0?t1sel-D:t1sel+D;
     const na=flatIndexAtTime(nt0,'t0'),nb=flatIndexAtTime(nt1,'t1');
     const flat2=flatSlots();const ci=dir<0?na:nb;const cur=flat2[ci]?{m:flat2[ci].m,s:flat2[ci].s}:state.sel;
