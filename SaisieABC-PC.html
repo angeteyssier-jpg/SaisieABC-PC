@@ -264,7 +264,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.767 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.774 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -1545,7 +1545,7 @@
   // Aligne la longueur de toutes les voix sur la plus longue, en completant avec
   // des mesures de silence. state.measures ne designe que la voix active : toute
   // operation qui rallonge le morceau doit passer par ici. Idempotente.
-  function __padAllVoicesToMax(){
+  function __finLens4768(){var a=[];applyToAllTracks(function(i){a[i]=state.measures.length;});return a;}/*V4768_FN : longueur de chaque voix avant un geste qui peut allonger le morceau*/function __finSuit4768(av){applyToAllTracks(function(i){var n0=av[i],n=state.measures.length;if(!(n0>0)||n<=n0||!state.repeats)return;var r=state.repeats[n0-1];if(!r||r.endbar!=='final')return;var z=state.repeats[n-1];if(z&&z.endbar)return;delete r.endbar;if(!Object.keys(r).length)delete state.repeats[n0-1];if(!z)z=state.repeats[n-1]={};z.endbar='final';});}/*V4768_SUIT : une voix allongee emporte sa barre de fin sur sa nouvelle derniere mesure (TODO 145)*/function __rcRun4769(fn){var o=window.__rc4769;window.__rc4769=true;try{return fn();}finally{window.__rc4769=o;}}/*V4769_FN : pendant un collage, seuls les silences coupes sont remis en forme (TODO 149)*/function __padAllVoicesToMax(){
     let n=0;
     applyToAllTracks(()=>{if(state.measures.length>n)n=state.measures.length;});
     applyToAllTracks(()=>{
@@ -1907,7 +1907,7 @@ function nominalDur(t){var _dn=(+t.dot||0);return t.dur*(_dn>=2?1.75:(_dn>=1?1.5
     const transOne=(o)=>{
       let oldMidi=60+baseSemi[o.note]+o.octave*12;
       if(o.acc==='^')oldMidi+=1;else if(o.acc==='_')oldMidi-=1;
-      const out=midiToNote(oldMidi+semitones,preferFlats);
+      if(semitones&&semitones%12===0){o.octave+=semitones/12;if(o.acc==='=')o.acc='';return;}/*V4772_OCT2*/const out=midiToNote(oldMidi+semitones,preferFlats);
       o.note=out.note;o.octave=out.octave;o.acc=out.acc;
     };
     state.measures.forEach((meas,mi)=>{
@@ -3735,7 +3735,7 @@ if(+t.dot>=1)svg+='<circle cx="'+(cx+7)+'" cy="'+y+'" r="1.2" fill="'+color+'"/>
     return s;
   }
   document.addEventListener('click',function(ev){try{var el=ev.target&&ev.target.closest&&ev.target.closest('.tabfret');if(!el)return;ev.stopPropagation();/*F4443_TABTRK*/if(state.recueil){try{var _tw4757=el.closest('[data-tune]');if(_tw4757){var _k4757=parseInt(_tw4757.getAttribute('data-tune'),10);if(!isNaN(_k4757)&&lastMultiTunes&&lastMultiTunes[_k4757]&&_k4757!==lastMultiIndex&&typeof window.__gotoTune==='function')window.__gotoTune(_k4757);}}catch(_e){}}/*V4757_TUNE*/(window.__tabTrkSwitch||(window.__tabTrkSwitch=function(el){try{if(state.recueil){var _tv4757=el&&el.closest&&el.closest('[data-tune]');if(!_tv4757||parseInt(_tv4757.getAttribute('data-tune'),10)!==lastMultiIndex)return;}/*V4757_TRK*/var tb=el&&el.closest&&el.closest('[data-track]');if(!tb)return;var ti=parseInt(tb.getAttribute('data-track'),10);if(isNaN(ti)||ti===state.activeTrack||!state.tracks[ti])return;state.activeTrack=ti;if(typeof renderTracksPanel==='function')renderTracksPanel();if(typeof renderOeilPisteTracks==='function')renderOeilPisteTracks();if(typeof renderOeilTabTracks==='function')renderOeilTabTracks();if(window.__lyrSyncActive)window.__lyrSyncActive();}catch(_e){}}))(el);state.sel.m=+el.getAttribute('data-m');state.sel.s=+el.getAttribute('data-s');if(typeof onSelMoved==='function')onSelMoved();state.chordActive=+el.getAttribute('data-n');render();}catch(_e){}},true);/*TABSTRIPSEL_4241*/
-  function renderOeilHdr(){var host=document.getElementById('oeil-hdr-host');if(!host)return;var _d=HDR_DEF/*V4550_PANEL*/;var c=state.hdrCfg||{};var g=function(k){return c[k]!=null?c[k]:_d[k];};var ck=function(on){return on?'☑':'☐';};var blk=function(pfx,label,sK,szK,pK){return '<div style="margin-bottom:5px;">'+'<button class="k'+(g(sK)?' active':'')+'" data-hdrc="'+pfx+'Show" style="width:100%;text-align:left;font-size:12px;margin-bottom:2px;">'+ck(g(sK))+' '+label+'</button>'+'<div style="display:flex;align-items:center;gap:3px;">'+'<button class="k" data-hdrc="'+pfx+'PosD" title="Position (monter)" style="flex:1;font-size:12px;">-</button>'+'<span style="min-width:22px;text-align:center;font-size:11px;color:#5f5e5a;">'+g(pK)+'</span>'+'<button class="k" data-hdrc="'+pfx+'PosU" title="Position (descendre)" style="flex:1;font-size:12px;">+</button>'+'<button class="k" data-hdrc="'+pfx+'SzD" title="Taille" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+g(szK)+'</span>'+'<button class="k" data-hdrc="'+pfx+'SzU" title="Taille" style="flex:1;font-size:12px;">A+</button>'+'</div></div>';};var _pOn=!(state.hdrCfg&&state.hdrCfg.pS===0);/*PGSHOW_4404*/var rP='<div style="display:flex;align-items:center;gap:3px;">'+'<button class="k'+(_pOn?' active':'')+'" data-hdrc="pgShow" title="Afficher ou masquer le numéro de page" style="flex:1;text-align:left;font-size:12px;">'+ck(_pOn)+' No page</button>'+'<button class="k" data-hdrc="pSzD" title="Taille no page" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+g('pSz')+'</span>'+'<button class="k" data-hdrc="pSzU" title="Taille no page" style="flex:1;font-size:12px;">A+</button></div>';/*PLANDECO_4531_UI*/if(!window.__planCfgBound){window.__planCfgBound=true;document.addEventListener('click',function(e){var b=(e.target&&e.target.closest)?e.target.closest('[data-plcfg]'):null;if(!b)return;var a=b.getAttribute('data-plcfg');state.hdrCfg=state.hdrCfg||{};var c=state.hdrCfg;if(a==='plShow')c.plS=(c.plS===0)?1:0;else if(a==='plSzD')c.plSz=Math.max(5,((c.plSz!=null)?c.plSz:11)-1);else if(a==='plSzU')c.plSz=Math.min(24,((c.plSz!=null)?c.plSz:11)+1);else return;if(typeof pushHistory==='function')pushHistory();if(typeof renderOeilHdr==='function')renderOeilHdr();if(typeof render==='function')render();});}var _plOn=!(state.hdrCfg&&state.hdrCfg.plS===0);var _plV=(state.hdrCfg&&state.hdrCfg.plSz!=null)?state.hdrCfg.plSz:13;/*PLANMOVE_4532_V*/var rPlan='<div style="display:flex;align-items:center;gap:3px;margin-top:5px;">'+'<button class="k'+(_plOn?' active':'')+'" data-plcfg="plShow" title="Écrire le plan des parties (P:) sous le rythme, en haut à gauche" style="flex:1;text-align:left;font-size:12px;">'+ck(_plOn)+' Plan</button>'+'<button class="k" data-plcfg="plSzD" title="Taille du plan" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+_plV+'</span>'+'<button class="k" data-plcfg="plSzU" title="Taille du plan" style="flex:1;font-size:12px;">A+</button></div>';var _r8=function(key,lab,tip){var on=c[key+'S']!==0;var v=(c[key+'Sz']!=null)?c[key+'Sz']:g('pSz');return '<div style="display:flex;align-items:center;gap:3px;margin-top:5px;">'+'<button class="k'+(on?' active':'')+'" data-hdrc="'+key+'Show" title="'+tip+'" style="flex:1;text-align:left;font-size:12px;">'+ck(on)+' '+lab+'</button>'+'<button class="k" data-hdrc="'+key+'SzD" title="Taille" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+v+'</span>'+'<button class="k" data-hdrc="'+key+'SzU" title="Taille" style="flex:1;font-size:12px;">A+</button></div>';};/*V4608_FN*/host.innerHTML=blk('tit','Titre','tS','tSz','tP')+blk('cmp','Compositeur','cS','cSz','cP')+blk('com','Commentaire','nS','nSz','nP')/*V4607_OEIL*/+rP+_r8('r','Rythme (R:)','Écrire le rythme (R:) en haut à gauche')+rPlan+_r8('f','Titre en bas','Reprendre le titre en bas à gauche de chaque page')+_r8('v','Version','Écrire la version en bas à droite')/*V4608_ROWS*/;}
+  function renderOeilHdr(){var host=document.getElementById('oeil-hdr-host');if(!host)return;var _d=HDR_DEF/*V4550_PANEL*/;var c=state.hdrCfg||{};var g=function(k){return c[k]!=null?c[k]:_d[k];};var ck=function(on){return on?'☑':'☐';};var blk=function(pfx,label,sK,szK,pK){return '<div style="margin-bottom:5px;">'+'<button class="k'+(g(sK)?' active':'')+'" data-hdrc="'+pfx+'Show" style="width:100%;text-align:left;font-size:12px;margin-bottom:2px;">'+ck(g(sK))+' '+label+'</button>'+'<div style="display:flex;align-items:center;gap:3px;">'+'<button class="k" data-hdrc="'+pfx+'PosD" title="Position (monter)" style="flex:1;font-size:12px;">-</button>'+'<span style="min-width:22px;text-align:center;font-size:11px;color:#5f5e5a;">'+g(pK)+'</span>'+'<button class="k" data-hdrc="'+pfx+'PosU" title="Position (descendre)" style="flex:1;font-size:12px;">+</button>'+'<button class="k" data-hdrc="'+pfx+'SzD" title="Taille" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+g(szK)+'</span>'+'<button class="k" data-hdrc="'+pfx+'SzU" title="Taille" style="flex:1;font-size:12px;">A+</button>'+'</div></div>';};var _pOn=!(state.hdrCfg&&state.hdrCfg.pS===0);/*PGSHOW_4404*/var rP='<div style="display:flex;align-items:center;gap:3px;">'+'<button class="k'+(_pOn?' active':'')+'" data-hdrc="pgShow" title="Afficher ou masquer le numéro de page" style="flex:1;text-align:left;font-size:12px;">'+ck(_pOn)+' No page</button>'+'<button class="k" data-hdrc="pSzD" title="Taille no page" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+g('pSz')+'</span>'+'<button class="k" data-hdrc="pSzU" title="Taille no page" style="flex:1;font-size:12px;">A+</button></div>';/*PLANDECO_4531_UI*/if(!window.__planCfgBound){window.__planCfgBound=true;document.addEventListener('click',function(e){var b=(e.target&&e.target.closest)?e.target.closest('[data-plcfg]'):null;if(!b)return;var a=b.getAttribute('data-plcfg');state.hdrCfg=state.hdrCfg||{};var c=state.hdrCfg;if(a==='plShow')c.plS=(c.plS===0)?1:0;else if(a==='plSzD')c.plSz=Math.max(5,((c.plSz!=null)?c.plSz:13)-1);else if(a==='plSzU')c.plSz=Math.min(24,((c.plSz!=null)?c.plSz:13)+1);/*V4773_PL : depart 13, comme l'affichage (TODO 155)*/else return;if(typeof pushHistory==='function')pushHistory();if(typeof renderOeilHdr==='function')renderOeilHdr();if(typeof render==='function')render();});}var _plOn=!(state.hdrCfg&&state.hdrCfg.plS===0);var _plV=(state.hdrCfg&&state.hdrCfg.plSz!=null)?state.hdrCfg.plSz:13;/*PLANMOVE_4532_V*/var rPlan='<div style="display:flex;align-items:center;gap:3px;margin-top:5px;">'+'<button class="k'+(_plOn?' active':'')+'" data-plcfg="plShow" title="Écrire le plan des parties (P:) sous le rythme, en haut à gauche" style="flex:1;text-align:left;font-size:12px;">'+ck(_plOn)+' Plan</button>'+'<button class="k" data-plcfg="plSzD" title="Taille du plan" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+_plV+'</span>'+'<button class="k" data-plcfg="plSzU" title="Taille du plan" style="flex:1;font-size:12px;">A+</button></div>';var _r8=function(key,lab,tip){var on=c[key+'S']!==0;var v=(c[key+'Sz']!=null)?c[key+'Sz']:g('pSz');return '<div style="display:flex;align-items:center;gap:3px;margin-top:5px;">'+'<button class="k'+(on?' active':'')+'" data-hdrc="'+key+'Show" title="'+tip+'" style="flex:1;text-align:left;font-size:12px;">'+ck(on)+' '+lab+'</button>'+'<button class="k" data-hdrc="'+key+'SzD" title="Taille" style="flex:1;font-size:12px;">A-</button>'+'<span style="min-width:20px;text-align:center;font-size:11px;color:#5f5e5a;">'+v+'</span>'+'<button class="k" data-hdrc="'+key+'SzU" title="Taille" style="flex:1;font-size:12px;">A+</button></div>';};/*V4608_FN*/host.innerHTML=blk('tit','Titre','tS','tSz','tP')+blk('cmp','Compositeur','cS','cSz','cP')+blk('com','Commentaire','nS','nSz','nP')/*V4607_OEIL*/+rP+_r8('r','Rythme (R:)','Écrire le rythme (R:) en haut à gauche')+rPlan+_r8('f','Titre en bas','Reprendre le titre en bas à gauche de chaque page')+_r8('v','Version','Écrire la version en bas à droite')/*V4608_ROWS*/;}
   
   function __a4ScreenDeco(){if((state.scoreLayout||'line')!=='a4')return;var sh=document.querySelectorAll('#score .a4-sheet');if(!sh.length)return;var N=sh.length;var ttl=escXml((state.headers.T||'').split(String.fromCharCode(10))[0]||'');var ver=escXml((state.headers.scoreVersion||'').trim());var rhy=escXml(((state.headers.R||'')+'').split(String.fromCharCode(10))[0].trim());/*RYTHSCR_4362_VAR*/var sz=(state.hdrCfg&&state.hdrCfg.pSz!=null)?state.hdrCfg.pSz:HDR_DEF.pSz/*V4550_PG1*/;var _plSz=(state.hdrCfg&&state.hdrCfg.plSz!=null)?state.hdrCfg.plSz:13;/*PLANMOVE_4532_SZ*/var _plTxt=(!(state.hdrCfg&&state.hdrCfg.plS===0))?escXml(String((state.headers&&state.headers.P)||'').trim()):'';/*PLANDECO_4531_SCRVAR*/var _hc8=state.hdrCfg||{};var _rOn=_hc8.rS!==0,_rSz=(_hc8.rSz!=null)?_hc8.rSz:sz,_fOn=_hc8.fS!==0,_fSz=(_hc8.fSz!=null)?_hc8.fSz:sz,_vOn=_hc8.vS!==0,_vSz=(_hc8.vSz!=null)?_hc8.vSz:sz;/*V4608_SV rythme, titre de pied, version : afficher et taille (taille absente = celle du no de page)*/for(var i=0;i<N;i++){(function(s,idx){s.style.position='relative';var _at=(s.getAttribute&&s.getAttribute('data-t'))||'';var _tt=_at?escXml(_at):ttl;var _ar=(s.getAttribute&&s.getAttribute('data-r'))||'';var _rr=_ar?escXml(_ar):(idx===0?rhy:'');/*V4633_SCR*//*RECDECO_4366_SCR*/var _plS=(s.hasAttribute&&s.hasAttribute('data-p'))?((!(state.hdrCfg&&state.hdrCfg.plS===0))?escXml(s.getAttribute('data-p')||''):''):_plTxt;/*V4710_SC*/var old=s.querySelectorAll('.a4-pgdeco');for(var j=0;j<old.length;j++)old[j].parentNode.removeChild(old[j]);var pg=(idx+1)+'/'+N;var fs='position:absolute;font-family:serif;font-size:'+sz+'px;color:#000;pointer-events:none;white-space:pre;';/*SPACES_4418 : rythme et version gardent leurs espaces, a l'ecran comme au PDF*/var mk=function(css,h){var d=document.createElement('div');d.className='a4-pgdeco';d.setAttribute('style',fs+css);d.innerHTML=h;s.appendChild(d);};var _pOn=!(state.hdrCfg&&state.hdrCfg.pS===0);/*PGSHOW_4404*/if(_pOn)mk('top:8px;right:12px;',pg);if(_rr&&_rOn)mk((_rSz!==sz?('font-size:'+_rSz+'px;'):'')+'top:8px;left:12px;',_rr);/*V4608_SR*//*RYTHSCR_4362_BLK*/if(_plS)mk('font-size:'+_plSz+'px;top:'+((_rr&&_rOn)?(8+_rSz+2):8)/*V4608_SP*/+'px;left:12px;','Plan : '+_plS);/*V4710_SM*//*PLANMOVE_4532_SCR*/if(_fOn)mk((_fSz!==sz?('font-size:'+_fSz+'px;'):'')+'bottom:8px;left:12px;',_tt);/*V4608_SF*//*PLANMOVE_4532_TIT*//*PLANDECO_4531_SCRMK*//*RECDECO_4366_MK*/var _vv8=!!(ver&&_vOn);var _br=(_vv8?((_vSz!==sz)?('<span style="font-size:'+_vSz+'px;">v '+ver+'</span>'):('v '+ver)):'')+(_pOn?((_vv8?' - ':'')+pg):'');/*V4608_SVR*/if(_br)mk('bottom:8px;right:12px;',_br);})(sh[i],i);}if(typeof __a4PageSeps==='function')__a4PageSeps(sh,N,sz);}
   function __a4PageSeps(sh,N,sz){var old=document.querySelectorAll('#score .a4-pgsep');for(var j=0;j<old.length;j++)old[j].parentNode.removeChild(old[j]);if(!sh||N<2)return;var h=sz+8;for(var i=1;i<N;i++){var s=sh[i];if(!s||!s.parentNode)continue;var w=s.style.width||'100%';var d=document.createElement('div');d.className='a4-pgsep';d.setAttribute('style','width:'+w+';height:'+h+'px;margin:0 auto 8px;position:relative;pointer-events:none;-webkit-user-select:none;user-select:none;');d.innerHTML='<div style="position:absolute;left:0;right:0;top:50%;border-top:1px dashed #9a9891;"></div>'+'<div style="position:absolute;left:50%;top:0;transform:translateX(-50%);height:'+h+'px;line-height:'+h+'px;padding:0 10px;border-radius:'+Math.round(h/2)+'px;background:#5f5e5a;color:#fff;font-family:serif;font-size:'+sz+'px;white-space:nowrap;">\u2702 page '+(i+1)+'</div>';s.parentNode.insertBefore(d,s);}}
@@ -4762,8 +4762,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     if(s+1<state.measures[m].length){state.sel={m,s:s+1};onSelMoved();render();playSelectedSlot();return}
     if(m+1<state.measures.length){state.sel={m:m+1,s:0};onSelMoved();render();playSelectedSlot();return}
     // À la toute fin : ajouter UNE seule mesure vide
-    state.measures.push(buildEmptyMeasure(meterAt(m)));
-    __padAllVoicesToMax();   // ...et la meme dans les autres voix, en silences
+    const _fl4768=__finLens4768();/*V4768_NXA*/state.measures.push(buildEmptyMeasure(meterAt(m)));
+    __padAllVoicesToMax();__finSuit4768(_fl4768);/*V4768_NX*/   // ...et la meme dans les autres voix, en silences
     state.sel={m:state.measures.length-1,s:0};onSelMoved();
     pushHistory();render();playSelectedSlot();
   }
@@ -7708,7 +7708,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       },
       onExtra:(w)=>{
         if(w==='Annuler'){closePanel();return}
-        const selM=state.sel.m;
+        const selM=state.sel.m;const _fl4768=__finLens4768();/*V4768_ADA*/
         applyToAllTracks(()=>{
           function sk(map,th,inc){const out={};for(const k of Object.keys(map)){const i=parseInt(k,10);const sh=inc?(i>=th):(i>th);out[sh?i+count:i]=map[k]}return out}
           if(side==='end'){
@@ -7734,7 +7734,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           if(state.tempoChanges)state.tempoChanges=sk1(state.tempoChanges);
           if(state.breaks)state.breaks=sk1(state.breaks);
         }
-        if(side==='end')state.sel={m:state.measures.length-count,s:0};
+        if(side==='end'||(side==='right'&&selM===_fl4768[state.activeTrack]-1))__finSuit4768(_fl4768);/*V4768_AD*/if(side==='end')state.sel={m:state.measures.length-count,s:0};
         else state.sel={m:(side==='right'?selM+1:selM),s:0};
         pushHistory();closePanel();render();
       }
@@ -7841,7 +7841,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
         const offs=slotOffsets(meas);
         const startOff=offs[i];
         let j=i,total=0,hadMark=false;
-        while(j<meas.length&&simpleRest(meas[j])){total+=effDur(meas[j]);if(meas[j]._selMark)hadMark=true;j++}
+        while(j<meas.length&&simpleRest(meas[j])){total+=effDur(meas[j]);if(meas[j]._selMark)hadMark=true;j++}if(window.__rc4769){let _c=false;for(let k=i;k<j;k++)if(meas[k]._rc4769)_c=true;if(!_c){i=j;continue;}}/*V4769_RUN*/
         // recanoniser [i, j) si plus d'un silence OU si le decoupage canonique differe
         const pieces=splitDurationByBeat(startOff,total,beat).map(p=>({type:'rest',dur:p.dur,dot:!!p.dot}));
         // ne remplacer que si ca change vraiment (evite boucle/inutile)
@@ -7856,7 +7856,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
         } else {
           i=j;
         }
-      }
+      }meas.forEach(function(x){if(x&&x._rc4769)delete x._rc4769;});/*V4769_CLR*/
     });
     if(!silent){
       if(count===0){alert('Reorganisation : rien a simplifier');return false}
@@ -7962,7 +7962,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   }
   // Decoupe d'un slot a cheval, calquee sur meas-cut (MEASCUT_4334) : liaison de
   // prolongation forcee sur la partie gauche, chord/texte/paroles non dupliques.
-  function __durEmit(arr,sl,off,dur,beat,forceTie){
+  function __durEmit(arr,sl,off,dur,beat,forceTie,cont){/*V4771_SIG : cont = suite de la note coupee (partie droite)*/
     if(sl.tuplet){arr.push(Object.assign({},sl));return;}
     if(sl.type==='rest'){
       splitDurationByBeat(off,dur,beat).forEach(function(p){arr.push({type:'rest',dur:p.dur,dot:p.dot});});
@@ -7975,7 +7975,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       if(idx<ps.length-1){c.tieToNext=true;c._sp4764=1;}/*V4766_E1 : liaisons creees par la coupure, marquees*/
       else if(forceTie){c.tieToNext=true;c._sp4764=1;}
       else{if(!sl.tieToNext)delete c.tieToNext;delete c._sp4764;}
-      if(idx>0){delete c.chord;delete c.text;if(typeof dropContinuationLyric==='function')dropContinuationLyric(c);}
+      if(idx>0||cont){delete c.chord;delete c.text;delete c.orn;delete c.grace;/*V4771_CONT : la suite d'une note coupee ne porte ni accord, ni texte, ni ornement, ni petites notes, ni syllabe (TODO 242)*/if(typeof dropContinuationLyric==='function')dropContinuationLyric(c);}
       arr.push(c);
     });
   }
@@ -8079,14 +8079,14 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           var sl=dbl[j],d=effDur(sl),en=st+d;
           if(en<=cap+eps)L.push(sl);
           else if(st>=cap-eps)R.push(sl);
-          else{__durEmit(L,sl,st,cap-st,beat,true);__durEmit(R,sl,0,en-cap,beat,false);}
+          else{__durEmit(L,sl,st,cap-st,beat,true);__durEmit(R,sl,0,en-cap,beat,false,true);/*V4771_R*/}
           st=en;
         }
         if(!L.length)L=__durRestFill(cap,beat);
         if(!R.length)R=__durRestFill(cap,beat);
         out.push(L);out.push(R);mapR[mi]=out.length-1;
       }
-      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4538_REFOND : x2 - refond les notes hachees sur les temps (D4-D4 -> D8), notes seules, silences intacts*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4766_TIE1*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_CLR1*/
+      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4538_REFOND : x2 - refond les notes hachees sur les temps (D4-D4 -> D8), notes seules, silences intacts*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4766_TIE1*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(b.orn&&b.orn.length&&JSON.stringify(b.orn)!==JSON.stringify(a.orn||[]))&&!(b.grace&&b.grace.length&&JSON.stringify(b.grace)!==JSON.stringify(a.grace||[]))/*V4770_O1 : x2*/&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_CLR1*/
       if(!gmap||map.length>gmap.length){gmap=map;gmapR=mapR;}
       // Ce qui OUVRE la mesure -> moitie gauche.
       var toL=function(mp){if(!mp)return mp;var o={};Object.keys(mp).forEach(function(k){var i=parseInt(k,10);if(map[i]!=null)o[map[i]]=mp[k];});return o;};
@@ -8177,7 +8177,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
         });
         {var _k4766=(ms[a]||[]).length-1;if(_k4766>=0&&merged[_k4766]&&merged[_k4766].tieToNext)merged[_k4766]._sp4764=1;}/*V4766_H1 : la liaison par-dessus la barre qui disparait*/out.push(merged);
       }
-      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4539_HLV : ÷2 - refond les notes liees identiques ramenees dans la meme mesure*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4766_TIE2*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_CLR2*/
+      ms.length=0;for(var q=0;q<out.length;q++)ms.push(out[q]);/*V4539_HLV : ÷2 - refond les notes liees identiques ramenees dans la meme mesure*/ms.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4766_TIE2*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(b.orn&&b.orn.length&&JSON.stringify(b.orn)!==JSON.stringify(a.orn||[]))&&!(b.grace&&b.grace.length&&JSON.stringify(b.grace)!==JSON.stringify(a.grace||[]))/*V4770_O2 : /2*/&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});ms.forEach(function(m){(m||[]).forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4766_CLR2*/
       var rm=function(mp){if(!mp)return mp;var o={};Object.keys(mp).forEach(function(k){o[half(parseInt(k,10))]=mp[k];});return o;};
       state.timeChanges=rm(state.timeChanges);
       state.keyChanges=rm(state.keyChanges);
@@ -8341,7 +8341,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           head.tieToNext=true;
           if(!sl.tieToNext)delete tail.tieToNext;
         }
-        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL1*/dropContinuationLyric(tail);head._sp4764=1;/*V4764_SP1 : liaison creee par la coupure*/
+        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL1*/dropContinuationLyric(tail);head._sp4764=1;/*V4764_SP1 : liaison creee par la coupure*/if(window.__rc4769&&sl.type==='rest'){head._rc4769=1;tail._rc4769=1;}/*V4769_SP1*/
         return[head,tail];
       }
       if(sl.dot&&!sl.tuplet){
@@ -8352,7 +8352,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
           head.tieToNext=true;
           if(!sl.tieToNext)delete tail.tieToNext;
         }
-        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL2*/dropContinuationLyric(tail);head._sp4764=1;/*V4764_SP2*/
+        delete tail.orn;delete tail.grace;delete tail.chord;delete tail.text;/*V4545_TAIL2*/dropContinuationLyric(tail);head._sp4764=1;/*V4764_SP2*/if(window.__rc4769&&sl.type==='rest'){head._rc4769=1;tail._rc4769=1;}/*V4769_SP2*/
         return[head,tail];
       }
       return[sl,null];
@@ -8853,7 +8853,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     let midi=60+baseSemi[o.note]+o.octave*12;
     if(o.acc==='^')midi+=1;else if(o.acc==='_')midi-=1;
     else if(o.acc==='^^')midi+=2;else if(o.acc==='__')midi-=2;
-    const out=midiToNote(midi+semitones,preferFlats);
+    if(semitones&&semitones%12===0){o.octave+=semitones/12;o.acc=o.acc||'=';return;}/*V4772_OCT1 : a l'octave seule l'octave change, l'ecriture reste (TODO 150)*/const out=midiToNote(midi+semitones,preferFlats);
     o.note=out.note;o.octave=out.octave;
     // Alteration ABSOLUE : '' (naturel) doit devenir '=', sinon respellAccidentals
     // la relit comme "ce que dit l'armure" et la note change de hauteur.
@@ -8891,7 +8891,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   // on remplace les slots un à un. La durée des slots collés peut différer ; on remplit tant que des
   // slots existent et qu'on n'a pas dépassé la capacité — sinon on s'arrête (pas d'insertion).
   function pasteOverwriteAt(startIdx){
-    if(!noteClip||!noteClip.length)return false;__accGel();/*V4600_PGV*/
+    if(!noteClip||!noteClip.length)return false;__accGel();/*V4600_PGV*/const _fl4768=__finLens4768();/*V4768_PS1A*/
     const flat=flatSlots();
     // Séquence cible : avant + portion collée (écrase) + reste après. Si le collage dépasse
     // la fin du morceau, l'excédent le prolonge (mesures ajoutées) au lieu d'être perdu.
@@ -8905,8 +8905,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     const totalDur=newSlots.reduce((a,s)=>a+effDur(s),0);
     let capSum=caps.reduce((a,b)=>a+b,0);
     while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}
-    state.measures=rebuildMeasuresFromSlots(newSlots.map(s=>({slot:s})),caps);consolidateRhythm(true);/*CONSO-COLLE-4104*/
-    __padAllVoicesToMax();   // le collage a pu allonger cette voix : aligner les autres
+    __rcRun4769(()=>{state.measures=rebuildMeasuresFromSlots(newSlots.map(s=>({slot:s})),caps);consolidateRhythm(true);});/*CONSO-COLLE-4104*//*V4769_PS1*/
+    __padAllVoicesToMax();__finSuit4768(_fl4768);/*V4768_PS1*/   // le collage a pu allonger cette voix : aligner les autres
     __poserArmureCollee(_t0,_clipLen,false);/*PASTEKEY_4495_PS1*/
     cleanupAccidentals();
     cleanupTies();
@@ -9016,7 +9016,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       seq=before.concat(durToSlots({type:'rest',dur:0,dot:false},D),sel,head,after.slice(i));
     }
     const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));
-    state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);/*V4537_REFOND : refond les notes hachees sur les temps (blanche = 2 noires liees) ; NOTES seules, memes accords, silences intacts*/state.measures.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4765_TIE : une liaison tapee reste*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(a.orn&&a.orn.length)&&!(b.orn&&b.orn.length)&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});state.measures.forEach(function(m){m.forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4765_CLR*/respellAccidentals();
+    state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);/*V4537_REFOND : refond les notes hachees sur les temps (blanche = 2 noires liees) ; NOTES seules, memes accords, silences intacts*/state.measures.forEach(function(meas){for(var i=0;i<meas.length-1;){var a=meas[i],b=meas[i+1],cv=null;if(a.type==='note'&&b.type==='note'&&!a.tuplet&&!b.tuplet&&a.tieToNext&&(window.__reorgNotes4747||a._sp4764)/*V4765_TIE : une liaison tapee reste*/&&a.note===b.note&&a.octave===b.octave&&(a.acc||'')===(b.acc||'')&&JSON.stringify(a.stack||[])===JSON.stringify(b.stack||[])&&!(b.orn&&b.orn.length&&JSON.stringify(b.orn)!==JSON.stringify(a.orn||[]))&&!(b.grace&&b.grace.length&&JSON.stringify(b.grace)!==JSON.stringify(a.grace||[]))/*V4770_O3 : Decaler, une note ornee se ressoude (TODO 148)*/&&!b.chord&&!b.text&&!b.lyric&&!(b.verses&&b.verses.some(function(x){return x&&x.length;})))cv=isCleanValue(effDur(a)+effDur(b));if(cv){var c=Object.assign({},a,{dur:cv.dur,dot:cv.dot});['tieToNext','slurToNext','linkToNext','_linkKind','tieSel','_sp4764'].forEach(function(k){if(b[k]!==undefined)c[k]=b[k];else delete c[k];});meas.splice(i,2,c);}else i++;}});state.measures.forEach(function(m){m.forEach(function(x){if(x&&x._sp4764)delete x._sp4764;});});/*V4765_CLR*/respellAccidentals();
     const nt0=dir<0?t0sel-D:t0sel+D, nt1=dir<0?t1sel-D:t1sel+D;
     const na=flatIndexAtTime(nt0,'t0'),nb=flatIndexAtTime(nt1,'t1');
     const flat2=flatSlots();const ci=dir<0?na:nb;const cur=flat2[ci]?{m:flat2[ci].m,s:flat2[ci].s}:state.sel;
@@ -9137,8 +9137,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   let clipFlatAll=null,clipFlatLen=0;
   function clipTrackToWindow(measures,t0,t1){const eps=1e-6;const vt=voiceAbsTimes(measures);const out=[];for(const e of vt){if(e.t1<=t0+eps||e.t0>=t1-eps)continue;const sl=measures[e.m][e.s];const lo=Math.max(e.t0,t0),hi=Math.min(e.t1,t1),d=+(hi-lo).toFixed(6);if(d<=eps)continue;if(Math.abs(d-(e.t1-e.t0))<eps)out.push(__accFige(cloneSlot(sl),measures[e.m],e.s,e.m));else durToSlots(sl,d).forEach(p=>out.push(__accFige(p,measures[e.m],e.s,e.m)));/*V4600_CPT*/}if(out.length){delete out[out.length-1].tieToNext;delete out[out.length-1].linkToNext;}return out;}
   function copyAllVoicesTime(t0,t1){clipFlatAll=[];clipFlatLen=+(t1-t0).toFixed(6);noteClipSig=__sigALaDate(t0);/*PASTEKEY_4495_CP2*/applyToAllTracks(()=>{clipFlatAll.push(clipTrackToWindow(state.measures,t0,t1));});return clipFlatLen>1e-6;}
-  function overwriteTimeRegionTrack(measures,atTime,L,insertSlots){const eps=1e-6;const tEnd=atTime+L;const vt=voiceAbsTimes(measures);const head=[],tail=[];for(const e of vt){const sl=measures[e.m][e.s];if(e.t1<=atTime+eps){head.push(cloneSlot(sl));}else if(e.t0>=tEnd-eps){tail.push(cloneSlot(sl));}else{if(e.t0<atTime-eps){const d=+(atTime-e.t0).toFixed(6);durToSlots(sl,d).forEach(p=>head.push(p));}if(e.t1>tEnd+eps){const d=+(e.t1-tEnd).toFixed(6);durToSlots(sl,d).forEach(p=>tail.push(p));}}}return head.concat(insertSlots.map(cloneSlot),tail);}
-  function pasteAllVoicesTime(atTime){if(!clipFlatAll||!clipFlatAll.length)return false;applyToAllTracks((i)=>{__accGel();/*V4600_PGT*/const ins=clipFlatAll[i]||[];const seq=overwriteTimeRegionTrack(state.measures,atTime,clipFlatLen,ins);const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;const totalDur=seq.reduce((a,s)=>a+effDur(s),0);let capSum=caps.reduce((a,b)=>a+b,0);while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);consolidateRhythm(true);cleanupAccidentals();});__poserArmureCollee(atTime,clipFlatLen,true);/*PASTEKEY_4495_PS2*/cleanupTies();return true;}
+  function overwriteTimeRegionTrack(measures,atTime,L,insertSlots){const eps=1e-6;const tEnd=atTime+L;const vt=voiceAbsTimes(measures);const head=[],tail=[];for(const e of vt){const sl=measures[e.m][e.s];if(e.t1<=atTime+eps){head.push(cloneSlot(sl));}else if(e.t0>=tEnd-eps){tail.push(cloneSlot(sl));}else{if(e.t0<atTime-eps){const d=+(atTime-e.t0).toFixed(6);durToSlots(sl,d).forEach(p=>{if(p.type==='rest')p._rc4769=1;head.push(p);});/*V4769_H*/}if(e.t1>tEnd+eps){const d=+(e.t1-tEnd).toFixed(6);durToSlots(sl,d).forEach(p=>{if(p.type==='rest')p._rc4769=1;tail.push(p);});/*V4769_T*/}}}return head.concat(insertSlots.map(cloneSlot),tail);}
+  function pasteAllVoicesTime(atTime){if(!clipFlatAll||!clipFlatAll.length)return false;const _fl4768=__finLens4768();/*V4768_PS2A*/applyToAllTracks((i)=>{__accGel();/*V4600_PGT*/const ins=clipFlatAll[i]||[];const seq=overwriteTimeRegionTrack(state.measures,atTime,clipFlatLen,ins);const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;const totalDur=seq.reduce((a,s)=>a+effDur(s),0);let capSum=caps.reduce((a,b)=>a+b,0);while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}__rcRun4769(()=>{state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);consolidateRhythm(true);});/*V4769_PS2*/cleanupAccidentals();});__finSuit4768(_fl4768);/*V4768_PS2*/__poserArmureCollee(atTime,clipFlatLen,true);/*PASTEKEY_4495_PS2*/cleanupTies();return true;}
   function openDecalerPanel(){
     const sc=makeScopeNoteSel();
     const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
@@ -9244,7 +9244,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     const startM=state.sel.m;
     const n=clipboardMes.measures.length;
     // Créer des mesures vides si besoin pour atteindre la longueur requise
-    while(state.measures.length<startM+n){state.measures.push(buildEmptyMeasure(meterAt(state.measures.length-1)))}
+    const _fl4768=__finLens4768();/*V4768_PMA*/while(state.measures.length<startM+n){state.measures.push(buildEmptyMeasure(meterAt(state.measures.length-1)))}__finSuit4768(_fl4768);/*V4768_PM*/
     // Écraser les mesures depuis startM
     for(let i=0;i<n;i++){
       state.measures[startM+i]=JSON.parse(JSON.stringify(clipboardMes.measures[i]));
@@ -9361,8 +9361,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   {const zd=document.getElementById('zoom-d');if(zd)zd.addEventListener('click',()=>{state.zoom=Math.max(50,(state.zoom||100)-10);render()});}
   function setMarge(side,d){if(!state.view.a4)state.view.a4={};var k=({l:'marginLeft',r:'marginRight',t:'marginTop',b:'marginBottom'})[side];var cur=(state.view.a4[k]!=null?state.view.a4[k]:15);state.view.a4[k]=Math.max(0,Math.min(60,cur+d));render();}{const e=document.getElementById('a4-mrg-l-d');if(e)e.addEventListener('click',()=>setMarge('l',-1));}{const e=document.getElementById('a4-mrg-l-u');if(e)e.addEventListener('click',()=>setMarge('l',1));}{const e=document.getElementById('a4-mrg-t-d');if(e)e.addEventListener('click',()=>setMarge('t',-1));}{const e=document.getElementById('a4-mrg-t-u');if(e)e.addEventListener('click',()=>setMarge('t',1));}{const e=document.getElementById('a4-mrg-b-d');if(e)e.addEventListener('click',()=>setMarge('b',-1));}{const e=document.getElementById('a4-mrg-b-u');if(e)e.addEventListener('click',()=>setMarge('b',1));}{const e=document.getElementById('a4-mrg-r-d');if(e)e.addEventListener('click',()=>setMarge('r',-1));}{const e=document.getElementById('a4-mrg-r-u');if(e)e.addEventListener('click',()=>setMarge('r',1));}
   
-  {const e=document.getElementById('a4-w-d');if(e)e.addEventListener('click',()=>{state.view.a4.maxW=Math.max(240,(state.view.a4.maxW!==undefined?state.view.a4.maxW:900)-40);render()});}
-  {const e=document.getElementById('a4-w-u');if(e)e.addEventListener('click',()=>{state.view.a4.maxW=(state.view.a4.maxW!==undefined?state.view.a4.maxW:900)+40;render()});}
+  {const e=document.getElementById('a4-w-d');if(e)e.addEventListener('click',()=>{{const _w=(state.view.a4.maxW!==undefined?state.view.a4.maxW:900);state.view.a4.maxW=Math.max(260,900+40*(Math.ceil((_w-900)/40)-1));}/*V4774_WD : - retombe sur la grille de 900, butee 260 (TODO 156)*/render()});}
+  {const e=document.getElementById('a4-w-u');if(e)e.addEventListener('click',()=>{{const _w=(state.view.a4.maxW!==undefined?state.view.a4.maxW:900);state.view.a4.maxW=900+40*(Math.floor((_w-900)/40)+1);}/*V4774_WU*/render()});}
   {const e=document.getElementById('a4-justify');if(e)e.addEventListener('click',()=>{state.pageLayout=state.pageLayout||{};var _cj=(state.pageLayout.justify!=null)?state.pageLayout.justify:((state.view&&state.view.a4&&state.view.a4.justify)||0);state.pageLayout.justify=(_cj+1)%3;/*PAGELAYOUT_4313_BTN*/render()});}
   {const e=document.getElementById('vg-sys-d');if(e)e.addEventListener('click',()=>{state.view.systemGap=(state.view.systemGap!==undefined?state.view.systemGap:14)-2;render()});}
   {const e=document.getElementById('vg-sys-u');if(e)e.addEventListener('click',()=>{state.view.systemGap=(state.view.systemGap!==undefined?state.view.systemGap:14)+2;render()});}
