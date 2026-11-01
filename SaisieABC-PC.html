@@ -264,7 +264,7 @@
 
 <div class="abc-app" id="app">
   <div class="ver-badge">
-    <span>Éditeur ABC <b>v4.774 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
+    <span>Éditeur ABC <b>v4.780 PC</b><b id="ver-title" style="color:#185fa5;margin-left:10px;"></b></span>
     <span style="font-size:11px;">win <b id="ww-tag">0</b>×<b id="wh-tag">0</b></span>
   </div>
 
@@ -1545,7 +1545,7 @@
   // Aligne la longueur de toutes les voix sur la plus longue, en completant avec
   // des mesures de silence. state.measures ne designe que la voix active : toute
   // operation qui rallonge le morceau doit passer par ici. Idempotente.
-  function __finLens4768(){var a=[];applyToAllTracks(function(i){a[i]=state.measures.length;});return a;}/*V4768_FN : longueur de chaque voix avant un geste qui peut allonger le morceau*/function __finSuit4768(av){applyToAllTracks(function(i){var n0=av[i],n=state.measures.length;if(!(n0>0)||n<=n0||!state.repeats)return;var r=state.repeats[n0-1];if(!r||r.endbar!=='final')return;var z=state.repeats[n-1];if(z&&z.endbar)return;delete r.endbar;if(!Object.keys(r).length)delete state.repeats[n0-1];if(!z)z=state.repeats[n-1]={};z.endbar='final';});}/*V4768_SUIT : une voix allongee emporte sa barre de fin sur sa nouvelle derniere mesure (TODO 145)*/function __rcRun4769(fn){var o=window.__rc4769;window.__rc4769=true;try{return fn();}finally{window.__rc4769=o;}}/*V4769_FN : pendant un collage, seuls les silences coupes sont remis en forme (TODO 149)*/function __padAllVoicesToMax(){
+  function __finLens4768(){var a=[];applyToAllTracks(function(i){a[i]=state.measures.length;});return a;}/*V4768_FN : longueur de chaque voix avant un geste qui peut allonger le morceau*/function __finSuit4768(av){applyToAllTracks(function(i){var n0=av[i],n=state.measures.length;if(!(n0>0)||n<=n0||!state.repeats)return;var r=state.repeats[n0-1];if(!r||r.endbar!=='final')return;var z=state.repeats[n-1];if(z&&z.endbar)return;delete r.endbar;if(!Object.keys(r).length)delete state.repeats[n0-1];if(!z)z=state.repeats[n-1]={};z.endbar='final';});}/*V4768_SUIT : une voix allongee emporte sa barre de fin sur sa nouvelle derniere mesure (TODO 145)*/function __rcRun4769(fn){var o=window.__rc4769;window.__rc4769=true;try{return fn();}finally{window.__rc4769=o;}}/*V4769_FN : pendant un collage, seuls les silences coupes sont remis en forme (TODO 149)*/function __tupIn4775(ms,t){var eps=1e-6,vt=voiceAbsTimes(ms||[]),i=0;while(i<vt.length){var e=vt[i],sl=ms[e.m][e.s];if(sl&&sl.tuplet&&sl.tupletId!=null){var j=i;while(j+1<vt.length&&vt[j+1].m===e.m){var n=ms[vt[j+1].m][vt[j+1].s];if(!n||!n.tuplet||n.tupletId!==sl.tupletId)break;j++;}if(e.t0<t-eps&&vt[j].t1>t+eps)return e.m;i=j+1;}else i++;}return -1;}function __tupBar4775(seq,t0,t1,caps){var eps=1e-6,bars=[],c=0,k;for(k=0;k<caps.length;k++){c+=caps[k];bars.push(c);}var t=0,i=0;while(i<seq.length){var s=seq[i],d=effDur(s);if(s.tuplet&&s.tupletId!=null){var j=i,e=t+d;while(j+1<seq.length&&seq[j+1].tuplet&&seq[j+1].tupletId===s.tupletId){j++;e+=effDur(seq[j]);}if(t>=t0-eps&&e<=t1+eps){for(k=0;k<bars.length;k++){if(bars[k]>t+eps&&bars[k]<e-eps)return k;}}t=e;i=j+1;}else{t+=d;i++;}}return -1;}function __tupColle4775(ms,t0,L,ins){var m=__tupIn4775(ms,t0);if(m>=0)return 'il commencerait au milieu d’un n-uplet (mesure '+(m+1)+').\nChoisissez la première note du n-uplet.';m=__tupIn4775(ms,t0+L);if(m>=0)return 'il finirait au milieu d’un n-uplet (mesure '+(m+1)+').\nUn n-uplet ne peut pas être coupé.';var seq=overwriteTimeRegionTrack(ms,t0,L,ins),caps=ms.map(function(_,mi){return measureCapacity(meterAt(mi));}),lc=measureCapacity(meterAt(Math.max(0,ms.length-1)))||4,tot=seq.reduce(function(a,s){return a+effDur(s);},0),cs=caps.reduce(function(a,b){return a+b;},0);while(cs<tot-1e-6){caps.push(lc);cs+=lc;}m=__tupBar4775(seq,t0,t0+L,caps);if(m>=0)return 'un n-uplet collé serait coupé par la barre de fin de la mesure '+(m+1)+'.';return '';}function __tupCopie4775(ms,a,b){var vt=voiceAbsTimes(ms||[]);if(!vt.length)return '';if(a>b){var x=a;a=b;b=x;}var t0=vt[Math.max(0,Math.min(a,vt.length-1))].t0,t1=vt[Math.max(0,Math.min(b,vt.length-1))].t1,m=__tupIn4775(ms,t0);if(m>=0)return 'la portion commence au milieu d’un n-uplet (mesure '+(m+1)+').\nPrenez le n-uplet entier.';m=__tupIn4775(ms,t1);if(m>=0)return 'la portion finit au milieu d’un n-uplet (mesure '+(m+1)+').\nPrenez le n-uplet entier.';return '';}function __tupCopieTout4775(t0,t1){var r='',nv=state.tracks.length;applyToAllTracks(function(i){if(r)return;var m=__tupIn4775(state.measures,t0),q='';if(m>=0)q='le début de la portion tombe au milieu d’un n-uplet (mesure '+(m+1)+').';else{m=__tupIn4775(state.measures,t1);if(m>=0)q='la fin de la portion tombe au milieu d’un n-uplet (mesure '+(m+1)+').';}if(q)r='Copie impossible'+(nv>1?' (voix '+(i+1)+')':'')+' : '+q;});return r;}function __tupNew4775(arr,ms){var used={},k,prev=null,cur=null;(ms||[]).forEach(function(m){(m||[]).forEach(function(s){if(s&&s.tupletId!=null)used[s.tupletId]=1;});});for(k=0;k<arr.length;k++){var s=arr[k];if(!s||!s.tuplet||s.tupletId==null){prev=null;continue;}if(prev===null||s.tupletId!==prev){prev=s.tupletId;while(used[nextTupletId])nextTupletId++;cur=nextTupletId++;used[cur]=1;}s.tupletId=cur;}return arr;}/*V4775_FN : Coller et Copier ne coupent plus un n-uplet (TODO 241)*/function __padAllVoicesToMax(){
     let n=0;
     applyToAllTracks(()=>{if(state.measures.length>n)n=state.measures.length;});
     applyToAllTracks(()=>{
@@ -6844,7 +6844,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       +'border:1px solid #d8d6ce;border-radius:10px;padding:6px;display:grid;gap:4px;'
       +'grid-template-columns:repeat('+BCOL+',auto);box-shadow:0 2px 10px rgba(0,0,0,.18);'/*SCENE_4465_POP*/
       +'font:'+FS+'px/1.3 system-ui,-apple-system,sans-serif;';
-    for(var i=0;i<cibles.length;i++){(function(t){
+    for(var i=0;i<cibles.length;i++){if(i>0&&(BCOL>=5?(cibles[i].g|0)!==(cibles[i-1].g|0):!!cibles[i].min!==!!cibles[i-1].min)){while(p.children.length%BCOL)p.appendChild(document.createElement('span'));}/*V4776_SC*/(function(t){
       var b=_bt(t.lab,'Transposer vers '+t.lab,function(){
         try{__kqGo(t);SCTON=t.lab;}catch(e){}
         var q=document.getElementById('sc-ton-pop');
@@ -6982,11 +6982,11 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     // Armure → C majeur. Un clic = tonalite d'arrivee COMPLETE : hauteurs (via
     // transposePiece, inchange), armure posee, notes reecrites dedans (via
     // respellRangeForKey, inchange), symboles d'accord transposes.
-    var KQ_T=[{lab:'Do',pc:0,sig:0,min:false},{lab:'Sol',pc:7,sig:1,min:false},
-              {lab:'R\u00e9',pc:2,sig:2,min:false},{lab:'La',pc:9,sig:3,min:false},
-              {lab:'Lam',pc:9,sig:0,min:true},{lab:'Mim',pc:4,sig:1,min:true},
-              {lab:'R\u00e9m',pc:2,sig:-1,min:true},{lab:'Solm',pc:7,sig:-2,min:true},
-              {lab:'Sim',pc:11,sig:2,min:true}];
+    var KQ_T=[{lab:'Do',pc:0,sig:0,min:false,g:0},{lab:'Sol',pc:7,sig:1,min:false,g:0},{lab:'R\u00e9',pc:2,sig:2,min:false,g:0},
+              {lab:'La',pc:9,sig:3,min:false,g:0},{lab:'Mi',pc:4,sig:4,min:false,g:0},{lab:'Fa',pc:5,sig:-1,min:false,g:1},
+              {lab:'Si\u266d',pc:10,sig:-2,min:false,g:1},{lab:'Mi\u266d',pc:3,sig:-3,min:false,g:1},{lab:'Lam',pc:9,sig:0,min:true,g:2},{lab:'Mim',pc:4,sig:1,min:true,g:2},
+              {lab:'Sim',pc:11,sig:2,min:true,g:2},{lab:'Fa\u266fm',pc:6,sig:3,min:true,g:2},{lab:'R\u00e9m',pc:2,sig:-1,min:true,g:3},
+              {lab:'Solm',pc:7,sig:-2,min:true,g:3},{lab:'Dom',pc:0,sig:-3,min:true,g:3},{lab:'Fam',pc:5,sig:-4,min:true,g:3}];/*V4776_KQ*/
     var KQ_SH=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
     var KQ_FL=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
     var KQ_FR=['Do','Do\u266f','R\u00e9','Mi\u266d','Mi','Fa','Fa\u266f','Sol','La\u266d','La','Si\u266d','Si'];
@@ -7105,7 +7105,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       for(var i=0;i<KQ_T.length;i++){var b=document.getElementById('kq-t'+i);
         if(b)b.classList.toggle('active',KQ_T[i].pc===pc&&KQ_T[i].min===mn);}
     }
-    window.__kqSync=__kqSync;window.__kqApplyTrack=__kqApplyTrack;window.__kqWrapSig=__kqWrapSig;/*V4616_KQ*/
+    window.__kqSync=__kqSync;window.__kqApplyTrack=__kqApplyTrack;window.__kqWrapSig=__kqWrapSig;/*V4616_KQ*/function __tsCh4776(a,b,semi){if(!(semi%12))return;var fl=flatSlots();if(a>b){var x=a;a=b;b=x;}for(var i=a;i<=b&&i<fl.length;i++){var sl=fl[i].slot;if(sl&&sl.chord&&(''+sl.chord).trim())sl.chord=__kqChordSym((''+sl.chord).trim(),semi,semi<0?-1:1);}}/*V4776_FN : le panneau Transposer emmene les noms d'accord (TODO 151)*/
     // interface creee en JS (l'habillage diverge PC/Tel : on herite la taille reelle
     // d'un bouton .k existant au lieu d'ancrer deux HTML differents)
     function __kqBuild(){
@@ -7127,13 +7127,13 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       sup.addEventListener('click',function(){__kqStepSrc(1);});
       src.title='Tonalité de DÉPART. « ? » = devinée sur l\'armure et la dernière note ; corrigez-la avec ◀ ▶ (demi-tons) et ce bouton (majeur / mineur). Cela ne modifie PAS la partition.';
       r0.appendChild(sdn);r0.appendChild(src);r0.appendChild(sup);box.appendChild(r0);
-      var r1=row(4),r2=row(5);
+      var _rg4776=[row(5),row(5),row(5),row(5)];/*V4776_ROWS*/
       for(var i=0;i<KQ_T.length;i++){(function(t,i){
         var b=mk('kq-t'+i,t.lab);
         b.title='Transposer vers '+t.lab+' : hauteurs, armure et accords, sur toutes les voix';
         b.addEventListener('click',function(){__kqGo(t);});/*KEYFREE_4380_GO*/
-        (t.min?r2:r1).appendChild(b);})(KQ_T[i],i);}
-      box.appendChild(r1);box.appendChild(r2);
+        _rg4776[t.g|0].appendChild(b);})(KQ_T[i],i);}
+      _rg4776.forEach(function(r){box.appendChild(r);});
       var r3=row(2),bd=mk('kq-d12','\u22128ve'),bu=mk('kq-u12','+8ve');
       bd.title='Descendre d\'une octave (armure et accords inchang\u00e9s)';
       bu.title='Monter d\'une octave (armure et accords inchang\u00e9s)';
@@ -8876,14 +8876,14 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     // Réécrit les altérations (ajoute les bécarres nécessaires, retire les redondances).
     respellAccidentals();
     // Les liaisons internes a la plage restent valides (tout a bouge pareil) ;
-    // celles qui franchissent la limite relient deux hauteurs differentes -> retirees.
+    __tsCh4776(fromIdx,toIdx,semitones);/*V4776_CH*/// celles qui franchissent la limite relient deux hauteurs differentes -> retirees.
     cleanupTies();
   }
   // Copie une plage (clones) dans noteClip.
   function __accFige(c,meas,si,mi){if(!c||c.type!=='note'||!meas||clefAt(mi)==='perc')return c;var sig=keyAt(mi);if(!c.acc)c.acc=effAccFor(meas,si,c.note,c.octave,sig)||'=';if(c.stack&&c.stack.length)c.stack.forEach(function(sn){if(!sn.acc)sn.acc=effAccFor(meas,si,sn.note,sn.octave,sig)||'=';});return c;}/*V4600_FN*/function copyRange(fromIdx,toIdx){
     const flat=flatSlots();
     if(fromIdx>toIdx){const t=fromIdx;fromIdx=toIdx;toIdx=t;}
-    noteClip=[];
+    {const _c5=__tupCopie4775(state.measures,fromIdx,toIdx);if(_c5){alert('Copie impossible : '+_c5);return false;}}/*V4775_C1*/noteClip=[];
     noteClipSig=flat[fromIdx]?keyAt(flat[fromIdx].m):null;/*PASTEKEY_4495_CP1*/
     for(let i=fromIdx;i<=toIdx&&i<flat.length;i++)noteClip.push(__accFige(cloneSlot(flat[i].slot),state.measures[flat[i].m],flat[i].s,flat[i].m));/*V4600_CPV*/
   }
@@ -8891,7 +8891,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   // on remplace les slots un à un. La durée des slots collés peut différer ; on remplit tant que des
   // slots existent et qu'on n'a pas dépassé la capacité — sinon on s'arrête (pas d'insertion).
   function pasteOverwriteAt(startIdx){
-    if(!noteClip||!noteClip.length)return false;__accGel();/*V4600_PGV*/const _fl4768=__finLens4768();/*V4768_PS1A*/
+    if(!noteClip||!noteClip.length)return false;{const _vt5=voiceAbsTimes(state.measures);const _r5=__tupColle4775(state.measures,_vt5[startIdx]?_vt5[startIdx].t0:0,noteClip.reduce((a,s)=>a+effDur(s),0),noteClip);if(_r5){alert('Collage impossible : '+_r5);return false;}}/*V4775_P1*/__accGel();/*V4600_PGV*/const _fl4768=__finLens4768();/*V4768_PS1A*/
     const flat=flatSlots();
     // Séquence cible : avant + portion collée (écrase) + reste après. Si le collage dépasse
     // la fin du morceau, l'excédent le prolonge (mesures ajoutées) au lieu d'être perdu.
@@ -9111,8 +9111,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
     openPanel({title:'Copier / Coller',body:body(),hideActions:true,extraButtons:['Fermer'],
       onMount:()=>{const root=document.getElementById('panel-body');sc.bind(root);
         document.getElementById('cl-copy').addEventListener('click',()=>{
-          if(!sc.isAllVoix()){copyRange(sc.getFrom(),sc.getTo());flash('Copié.');return;}
-          const z=sc.zone();/*V4632_CLIP*/const w=cutWarnings(z.t0,z.t1);
+          if(!sc.isAllVoix()){/*V4775_C2*/if(copyRange(sc.getFrom(),sc.getTo())!==false)flash('Copié.');return;}
+          const z=sc.zone();/*V4632_CLIP*/{const _c5=__tupCopieTout4775(z.t0,z.t1);if(_c5){alert(_c5);return;}}/*V4775_C3*/const w=cutWarnings(z.t0,z.t1);
           copyAllVoicesTime(z.t0,z.t1);
           if(w.length)flash('Copié (toutes voix) — note(s) des voix '+w.join(', ')+' ajustée(s) à la durée de la sélection.');
           else flash('Copié (toutes voix).');
@@ -9137,8 +9137,8 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
   let clipFlatAll=null,clipFlatLen=0;
   function clipTrackToWindow(measures,t0,t1){const eps=1e-6;const vt=voiceAbsTimes(measures);const out=[];for(const e of vt){if(e.t1<=t0+eps||e.t0>=t1-eps)continue;const sl=measures[e.m][e.s];const lo=Math.max(e.t0,t0),hi=Math.min(e.t1,t1),d=+(hi-lo).toFixed(6);if(d<=eps)continue;if(Math.abs(d-(e.t1-e.t0))<eps)out.push(__accFige(cloneSlot(sl),measures[e.m],e.s,e.m));else durToSlots(sl,d).forEach(p=>out.push(__accFige(p,measures[e.m],e.s,e.m)));/*V4600_CPT*/}if(out.length){delete out[out.length-1].tieToNext;delete out[out.length-1].linkToNext;}return out;}
   function copyAllVoicesTime(t0,t1){clipFlatAll=[];clipFlatLen=+(t1-t0).toFixed(6);noteClipSig=__sigALaDate(t0);/*PASTEKEY_4495_CP2*/applyToAllTracks(()=>{clipFlatAll.push(clipTrackToWindow(state.measures,t0,t1));});return clipFlatLen>1e-6;}
-  function overwriteTimeRegionTrack(measures,atTime,L,insertSlots){const eps=1e-6;const tEnd=atTime+L;const vt=voiceAbsTimes(measures);const head=[],tail=[];for(const e of vt){const sl=measures[e.m][e.s];if(e.t1<=atTime+eps){head.push(cloneSlot(sl));}else if(e.t0>=tEnd-eps){tail.push(cloneSlot(sl));}else{if(e.t0<atTime-eps){const d=+(atTime-e.t0).toFixed(6);durToSlots(sl,d).forEach(p=>{if(p.type==='rest')p._rc4769=1;head.push(p);});/*V4769_H*/}if(e.t1>tEnd+eps){const d=+(e.t1-tEnd).toFixed(6);durToSlots(sl,d).forEach(p=>{if(p.type==='rest')p._rc4769=1;tail.push(p);});/*V4769_T*/}}}return head.concat(insertSlots.map(cloneSlot),tail);}
-  function pasteAllVoicesTime(atTime){if(!clipFlatAll||!clipFlatAll.length)return false;const _fl4768=__finLens4768();/*V4768_PS2A*/applyToAllTracks((i)=>{__accGel();/*V4600_PGT*/const ins=clipFlatAll[i]||[];const seq=overwriteTimeRegionTrack(state.measures,atTime,clipFlatLen,ins);const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;const totalDur=seq.reduce((a,s)=>a+effDur(s),0);let capSum=caps.reduce((a,b)=>a+b,0);while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}__rcRun4769(()=>{state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);consolidateRhythm(true);});/*V4769_PS2*/cleanupAccidentals();});__finSuit4768(_fl4768);/*V4768_PS2*/__poserArmureCollee(atTime,clipFlatLen,true);/*PASTEKEY_4495_PS2*/cleanupTies();return true;}
+  function overwriteTimeRegionTrack(measures,atTime,L,insertSlots){const eps=1e-6;const tEnd=atTime+L;const vt=voiceAbsTimes(measures);const head=[],tail=[];for(const e of vt){const sl=measures[e.m][e.s];if(e.t1<=atTime+eps){head.push(cloneSlot(sl));}else if(e.t0>=tEnd-eps){tail.push(cloneSlot(sl));}else{if(e.t0<atTime-eps){const d=+(atTime-e.t0).toFixed(6);durToSlots(sl,d).forEach(p=>{if(p.type==='rest')p._rc4769=1;head.push(p);});/*V4769_H*/}if(e.t1>tEnd+eps){const d=+(e.t1-tEnd).toFixed(6);durToSlots(sl,d).forEach(p=>{if(p.type==='rest')p._rc4769=1;tail.push(p);});/*V4769_T*/}}}return head.concat(__tupNew4775(insertSlots.map(cloneSlot),measures),tail);}/*V4775_ID*/
+  function pasteAllVoicesTime(atTime){if(!clipFlatAll||!clipFlatAll.length)return false;{let _r5='';const _nv5=state.tracks.length,_a5=state.activeTrack;applyToAllTracks((i)=>{if(_r5)return;let r=__tupColle4775(state.measures,atTime,clipFlatLen,clipFlatAll[i]||[]);if(r&&i!==_a5)r=r.split('\n')[0];if(r)_r5='Collage impossible'+(_nv5>1?' (voix '+(i+1)+')':'')+' : '+r;});if(_r5){alert(_r5);return false;}}/*V4775_P2*/const _fl4768=__finLens4768();/*V4768_PS2A*/applyToAllTracks((i)=>{__accGel();/*V4600_PGT*/const ins=clipFlatAll[i]||[];const seq=overwriteTimeRegionTrack(state.measures,atTime,clipFlatLen,ins);const caps=state.measures.map((_,mi)=>measureCapacity(meterAt(mi)));const lastCap=measureCapacity(meterAt(Math.max(0,state.measures.length-1)))||4;const totalDur=seq.reduce((a,s)=>a+effDur(s),0);let capSum=caps.reduce((a,b)=>a+b,0);while(capSum<totalDur-1e-6){caps.push(lastCap);capSum+=lastCap;}__rcRun4769(()=>{state.measures=rebuildMeasuresFromSlots(seq.map(s=>({slot:s})),caps);consolidateRhythm(true);});/*V4769_PS2*/cleanupAccidentals();});__finSuit4768(_fl4768);/*V4768_PS2*/__poserArmureCollee(atTime,clipFlatLen,true);/*PASTEKEY_4495_PS2*/cleanupTies();return true;}
   function openDecalerPanel(){
     const sc=makeScopeNoteSel();
     const DURS=[{label:'\u{1D15D}',d:4},{label:'\u{1D15E}',d:2},{label:'\u2669',d:1},{label:'\u266A',d:0.5},{label:'\u266C',d:0.25},{label:'\u{1D160}',d:0.125}];
@@ -9148,7 +9148,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
       +'<div class="stepper-label" style="margin-top:8px;">Décaler de :</div>'
       +'<div class="row-grid row-6" style="margin-bottom:6px;">'+DURS.map(d=>'<button class="k symbol" data-dcdur="'+d.d+'">'+d.label+'</button>').join('')+'</div>'
       +'<div class="row-grid" style="margin-bottom:6px;"><button class="k" id="dc-dot">Pointée : <b id="dc-dot-v">non</b></button></div>'
-      +'<p class="lyr-hint">Déplace la portion de la durée choisie : la note voisine est fractionnée, un silence de cette durée apparaît de l\'autre côté. « Toutes voix » décale aussi les autres pistes au même endroit.</p>'
+      +'<p class="lyr-hint">Déplace la portion de la durée choisie : la note voisine est fractionnée, un silence de cette durée apparaît de l\'autre côté. « Toutes voix » décale la même zone dans toutes les pistes.<!--V4780_TXT--></p>'
       +'<div class="row-grid row-3"><button class="k" id="dc-left">⇦</button><button class="k primary" id="dc-done">Fini</button><button class="k" id="dc-right">⇨</button></div>';
     }
     openPanel({title:'Décaler',body:body(),hideActions:true,extraButtons:['Fermer'],
@@ -9165,7 +9165,7 @@ render=function(){if(state&&state.recueil&&!state.__inRecueil){try{state.__inRec
             else flash('Pas assez de place de ce côté.');
           } else {
             const z=sc.zone();/*V4632_DEC*/let any=false;
-            applyToAllTracks(()=>{const vt=voiceAbsTimes(state.measures);let idx=vt.findIndex(s=>s.t0<=z.t0+1e-6&&s.t1>z.t0+1e-6);if(idx<0)return;if(shiftSelByDur(idx,idx,dir,D))any=true;});
+            const _s4780=snapshot(),_a4780=state.activeTrack;let _r4780=null,_ko4780=false;applyToAllTracks((i)=>{if(_ko4780)return;const vt=voiceAbsTimes(state.measures);const ia=vt.findIndex(s=>s.t0<=z.t0+1e-6&&s.t1>z.t0+1e-6);if(ia<0)return;let ib=ia;for(let k=vt.length-1;k>ia;k--){if(vt[k].t0<z.t1-1e-6){ib=k;break;}}const r=shiftSelByDur(ia,ib,dir,D);if(!r){_ko4780=true;return;}any=true;if(i===_a4780)_r4780=r;});if(_ko4780){loadFrom(_s4780);any=false;render();}else if(_r4780){state.sel=_r4780.cursor;sc.setBounds(_r4780.a,_r4780.b);}/*V4780_ZONE : toutes voix, toute la zone avance dans chaque piste ; une piste sans place, rien ne bouge (TODO 147)*/
             if(any){pushHistory();render();sc.refresh();}else flash('Décalage toutes voix impossible ici.');
           }
         }
@@ -10013,7 +10013,7 @@ function __appWire(){
     var v=t.getAttribute('data-app-voir');if(v===null)return;
     __appVoir(parseInt(v,10));
   });
-  var __uv=null;if(__appGarde){__uv=window.__appUI||null;window.__appUI=null;if(__uv){if(q&&__uv.q)q.value=__uv.q;var __m=MODES.indexOf(String(__uv.tri||'').replace(/^Tri : /,''));if(__m>0&&tb){mode=__m;tb.textContent='Tri : '+MODES[mode];trier();}}}/*V4589_UI : retour d'un apercu : recherche, tri, place dans la liste et morceau vu sont retrouves*/
+  var __uv=null;if(__appGarde){__uv=window.__appUI||null;window.__appUI=null;if(__uv){if(q&&__uv.q)q.value=__uv.q;var __m=MODES.indexOf(String(__uv.tri||'').replace(/^Tri : /,''));if(__m>0&&tb){mode=__m;tb.textContent='Tri : '+MODES[mode];trier();}}}/*V4589_UI : retour d'un apercu : recherche, tri, place dans la liste et morceau vu sont retrouves*/if(__uv&&__uv.v){for(var _k4777 in __uv.v){var _se4777=document.querySelector('select[data-app-v="'+_k4777+'"]');if(_se4777)_se4777.value=__uv.v[_k4777];}}/*V4777_SET : la voix choisie sur chaque ligne revient aussi (TODO 146)*/if(__uv&&__uv.m){for(var _k4779 in __uv.m){var _s4779=document.querySelector('select[data-app-m="'+_k4779+'"]');if(_s4779)_s4779.value=__uv.m[_k4779];}}/*V4779_SET*/
   if(__appGarde){          /* retour d'un apercu : on recoche ce qui l'etait */
     __appGarde=false;
     for(var j=0;j<__appSel.length;j++){
@@ -10063,9 +10063,9 @@ function __appVoixSel(t,i){
   Meme va-et-vient que le mode Scene : on garde l'etat, on charge le morceau,
   et le retour rend tout - y compris les cases cochees et leur ordre. */
 var __appCtx={liste:null,avec:false},__appGarde=false,__appVu=null;
-/*V4589_FN : bouton Voir des listes a cocher, et etat de la liste (recherche, tri, defilement) retenu pendant l'apercu*/function __appVoirBtn(i){return '<button class="k" type="button" data-app-voir="'+i+'" title="Voir la partition de ce morceau" style="margin-left:auto;flex:0 0 auto;width:auto;">Voir</button>';}function __appUIget(i){var q=document.getElementById('app-q'),tb=document.getElementById('app-tri'),l=document.getElementById('app-l');return {q:q?q.value:'',tri:tb?tb.textContent:'',top:l?l.scrollTop:0,vu:i};}
+/*V4589_FN : bouton Voir des listes a cocher, et etat de la liste (recherche, tri, defilement) retenu pendant l'apercu*/function __appVoirBtn(i){return '<button class="k" type="button" data-app-voir="'+i+'" title="Voir la partition de ce morceau" style="margin-left:auto;flex:0 0 auto;width:auto;">Voir</button>';}function __appUIget(i){var q=document.getElementById('app-q'),tb=document.getElementById('app-tri'),l=document.getElementById('app-l');var _v4777={},_s4777=document.querySelectorAll('select[data-app-v]');for(var _k=0;_k<_s4777.length;_k++)_v4777[_s4777[_k].getAttribute('data-app-v')]=_s4777[_k].value;/*V4777_GET*/return {q:q?q.value:'',tri:tb?tb.textContent:'',top:l?l.scrollTop:0,vu:i,v:_v4777,m:__appMget4779()};}function __appMget4779(){var r={},s=document.querySelectorAll('select[data-app-m]');for(var k=0;k<s.length;k++)r[s[k].getAttribute('data-app-m')]=s[k].value;return r;}function __appVoixTous4779(t){var v=__appVoix(t);if(v)return v;var nm='';try{var src=t&&(t.snap||t.__live);if(src){var o=JSON.parse(src);var tr=(o.tracks&&o.tracks[o.activeTrack|0])||o;nm=(tr&&tr.name)||'';}else if(t&&t.abc){var m=String(t.abc).match(/^V:[ \t]*\S+[^\n]*?(?:name|nm)\s*=\s*"?([^"\s]+)/m);if(m)nm=m[1];}}catch(e){}return [nm||'Voix 1'];}function __appMapSel4779(t,i){var v=__appVoixTous4779(t),T=state.tracks||[],esc=function(x){return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');};var h='<div data-app-mbox="'+i+'" style="flex:1 1 100%;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:center;margin:2px 0 6px 24px;">';for(var ti=0;ti<T.length;ti++){var nm=(T[ti]&&T[ti].name)||('Voix '+(ti+1));h+='<span style="white-space:nowrap;opacity:.85;">'+esc(nm)+' ←</span><select data-app-m="'+i+':'+ti+'" title="Ce qui vient à la suite de cette voix" style="min-width:0;max-width:12em;">';for(var k=0;k<v.length;k++)h+='<option value="'+k+'"'+(k===ti?' selected':'')+'>'+esc(v[k])+'</option>';h+='<option value=""'+(ti>=v.length?' selected':'')+'>rien</option></select>';}return h+'</div>';}function __appSil4779(o,ref){var c=JSON.parse(JSON.stringify(o));var tr=(c.tracks&&c.tracks[ref])||c;tr.measures=(tr.measures||[]).map(function(m){var d=0;(m||[]).forEach(function(s){d+=effDur(s);});d=+d.toFixed(6);return d>1e-6?durToSlots({type:'rest',dur:1,dot:false},d):[];});delete c.tabOv;delete c.diatoOv;return JSON.stringify(c);}function __appCollerMap4779(snap,titre,idx){var sel=document.querySelectorAll('select[data-app-m^="'+idx+':"]'),map={},ref=-1,k;for(k=0;k<sel.length;k++){var p=String(sel[k].getAttribute('data-app-m')).split(':'),v=sel[k].value;map[p[1]|0]=(v===''?null:(v|0));if(v!==''&&ref<0)ref=v|0;}if(ref<0)return false;var o;try{o=JSON.parse(snap);}catch(e){return false;}var sil=__appSil4779(o,ref);var a0=state.activeTrack|0,ok=false;__padAllVoicesToMax();var L0=state.measures.length;try{for(var t=0;t<(state.tracks||[]).length;t++){if(!(t in map))continue;state.activeTrack=t;if(state.measures.length>L0)state.measures.length=L0;if(map[t]!=null){if(__appColler(snap,titre,map[t]))ok=true;}else __appColler(sil,titre,ref);}}finally{state.activeTrack=a0;}if(typeof __padAllVoicesToMax==='function')__padAllVoicesToMax();return ok;}/*V4779_FN : A la suite, une liste par voix du morceau courant (TODO 146)*/
 function __appRetour(){
-  var k=__appVu;if(!k)return;__appVu=null;{var __ap2=document.getElementById('app');if(__ap2&&window.__appPad!=null){__ap2.style.paddingTop=window.__appPad;window.__appPad=null;}}/*V4558_UNPAD*/
+  var k=__appVu;if(!k)return;__appVu=null;{var _n4778r=(k.liste&&k.ui)?__appVoix(k.liste[k.ui.vu]):null,_t4778=state.activeTrack|0;if(_n4778r&&_t4778<_n4778r.length){k.ui.v=k.ui.v||{};k.ui.v[k.ui.vu]=String(_t4778);}}/*V4778_RET : la voix cliquee dans l'apercu devient le choix de la ligne (TODO 146)*/{var __ap2=document.getElementById('app');if(__ap2&&window.__appPad!=null){__ap2.style.paddingTop=window.__appPad;window.__appPad=null;}}/*V4558_UNPAD*/
   var b=document.getElementById('app-bar');
   if(b&&b.parentNode)b.parentNode.removeChild(b);
   loadFrom(k.e);history.stack=k.p;history.pos=k.i;
@@ -10086,7 +10086,7 @@ function __appVoir(i){
     mf:(typeof lastMultiFileName!=='undefined')?lastMultiFileName:null,
     liste:liste,avec:__appCtx.avec,rouvrir:__appCtx.rouvrir||null,ui:__appUIget(i)};/*V4589_VU*/
   closePanel();
-  try{loadFrom(snap);}catch(e){}
+  try{loadFrom(snap);}catch(e){}{var _n4778=__appVoix(liste[i]),_v4778=(__appVu&&__appVu.ui&&__appVu.ui.v)?parseInt(__appVu.ui.v[i],10):NaN;if(_n4778&&_v4778>0&&_v4778<_n4778.length&&state.tracks&&_v4778<state.tracks.length)state.activeTrack=_v4778;}/*V4778_VOIR : l'apercu s'ouvre sur la voix choisie dans la ligne*/
   try{render();}catch(e){}
   var vieux=document.getElementById('app-bar');   /* jamais deux barres */
   if(vieux&&vieux.parentNode)vieux.parentNode.removeChild(vieux);
@@ -10112,7 +10112,7 @@ function __appVoir(i){
 function __appPanneau(liste,avecFichier){
   __appCtx={liste:liste,avec:!!avecFichier};/*APPEND_4508_CTX*/
   var h=/*V4629_AJSUITE*/'<small>Cochez les morceaux à ajouter à la suite du morceau courant.'
-       +/*V4629_AJVOIX*/' Ils seront ajoutés dans l\'ordre où vous les cochez. Une seule voix par morceau : pour un morceau à plusieurs voix, choisissez-la dans sa ligne.</small>'/*V4542_VX2*//*APPEND_4505_H*/
+       +/*V4629_AJVOIX*/' Ils seront ajoutés dans l\'ordre où vous les cochez. '+((state.tracks&&state.tracks.length>1)?'Pour chaque voix de votre morceau, choisissez dans la ligne ce qui vient à sa suite (ou « rien »).':'Une seule voix par morceau : pour un morceau à plusieurs voix, choisissez-la dans sa ligne.')+'</small>'/*V4779_TXT*//*V4542_VX2*//*APPEND_4505_H*/
        +'<div class="row" style="gap:6px;margin-top:6px;align-items:center;">'
        +'<input id="app-q" type="text" placeholder="Chercher un titre" '
        +'style="flex:1 1 auto;min-width:0;"/>'
@@ -10125,8 +10125,8 @@ function __appPanneau(liste,avecFichier){
     var xx=(liste[i]&&liste[i].x!=null)?String(liste[i].x):'';/*APPEND_4505_ROW*/
     h+='<div class="row" data-app-row="1" data-k="'+__appPli(ti+' '+xx)
       +'" data-x="'+xx.replace(/[^0-9]/g,'')+'"'
-      +' style="display:flex;align-items:center;gap:6px;">'/*APPEND_4506_ROW*/
-      +'<label style="display:flex;gap:8px;align-items:center;flex:1 1 auto;min-width:0;">'/*LARG4523_LAB*/
+      +' style="display:flex;'+((state.tracks&&state.tracks.length>1)?'flex-wrap:wrap;':'')+'align-items:center;gap:6px;">'/*APPEND_4506_ROW*//*V4779_ROW*/
+      +'<label style="display:flex;gap:8px;align-items:center;flex:1 1 '+((state.tracks&&state.tracks.length>1)?'0':'auto')+';min-width:0;">'/*LARG4523_LAB*//*V4779_LAB*/
       +'<input type="checkbox" data-app="'+i+'" style="flex:0 0 auto;margin:0;"/>'/*LARG4523_CK*/
       +'<span data-app-n="'+i+'" style="min-width:1.4em;text-align:right;opacity:.7;"></span>'
       +'<span>'
@@ -10136,7 +10136,7 @@ function __appPanneau(liste,avecFichier){
       +'<button class="k" type="button" data-app-voir="'+i+'"'
       +' title="Voir la partition de ce morceau"'
       +' style="margin-left:auto;flex:0 0 auto;width:auto;">Voir</button>'/*LARG4523_VOIR*//*APPEND_4508_BTN*/
-      +__appVoixSel(liste[i],i)+'</div>';
+      +((state.tracks&&state.tracks.length>1)?__appMapSel4779(liste[i],i):__appVoixSel(liste[i],i))+'</div>';/*V4779_SEL*/
   }
   h+='</div>';
   openPanel({title:'Ajouter à la suite',body:h,hideActions:true,onMount:__appWire,/*APPEND_4505_MOUNT*/
@@ -10159,7 +10159,7 @@ function __appPanneau(liste,avecFichier){
         if(!snap)continue;
         var sv=document.querySelector('select[data-app-v="'+idx+'"]');/*APPEND_4506_PICK*/
         var vi=sv?parseInt(sv.value,10):NaN;
-        if(__appColler(snap,(liste[idx]&&liste[idx].title)||'',isNaN(vi)?null:vi))n++;
+        if(document.querySelector('select[data-app-m^="'+idx+':"]')?__appCollerMap4779(snap,(liste[idx]&&liste[idx].title)||'',idx):__appColler(snap,(liste[idx]&&liste[idx].title)||'',isNaN(vi)?null:vi))n++;/*V4779_ADD*/
       }
       closePanel();
       if(n){if(typeof pushHistory==='function')pushHistory();render();}
@@ -10204,7 +10204,7 @@ function __appDepuisFichier(){
       if(lst&&lst.length>1){/*APPEND_4504_MULTI plusieurs morceaux : on choisit*/
         render();__appPanneau(lst,false);return;
       }
-      if(vx){   /* SATB et compagnie : une seule ligne, mais il faut choisir */
+      if(vx||(state.tracks&&state.tracks.length>1)){/*V4779_UNE*/   /* SATB et compagnie : une seule ligne, mais il faut choisir */
         render();__appPanneau([{title:nom,snap:src,voix:vx}],false);return;
       }
       if(__appColler(src,nom)){
